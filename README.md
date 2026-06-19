@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Premier Auto Centre
+
+Full-stack automobile sales and service centre website built with **Next.js**, **React**, **Tailwind CSS**, **Prisma**, **PostgreSQL**, and **NextAuth**.
+
+## Features
+
+- Public site: vehicle inventory, services, service booking, test drive requests, contact
+- Admin panel: manage vehicles, bookings, inquiries, and services
+- Authentication-protected admin routes
+- CI/CD via GitHub Actions
+- Production-ready for Vercel or Docker
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
+- Node.js 20+
+- Docker Desktop (for local PostgreSQL)
+
+### Setup
+
+```powershell
+cd auto-centre
+npm install
+npm run db:up
+copy .env.example .env
+npm run db:migrate:deploy
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) for the public site.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Admin Login
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- URL: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+- Email: `admin@autocentre.com`
+- Password: value of `ADMIN_PASSWORD` in `.env` (default in `.env.example`)
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run build:prod` | Migrate DB + build (used in CI/production) |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run db:up` | Start local Postgres (Docker) |
+| `npm run db:down` | Stop local Postgres |
+| `npm run db:migrate` | Create/apply dev migrations |
+| `npm run db:migrate:deploy` | Apply migrations (production/CI) |
+| `npm run db:seed` | Seed sample data |
+| `npm run db:reset` | Reset database and re-seed |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## CI/CD
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **CI**: `.github/workflows/ci.yml` — lint, migrate, build on every push/PR
+- **CD (Vercel)**: `.github/workflows/deploy-vercel.yml` — deploy to production
+- **CD (Docker)**: `.github/workflows/deploy-docker.yml` — push image to GHCR
 
-## Deploy on Vercel
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for full production setup (Neon, Vercel, secrets, seeding).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy `.env.example` to `.env`:
+
+```env
+DATABASE_URL="postgresql://autocentre:autocentre@localhost:5432/autocentre?schema=public"
+NEXTAUTH_SECRET="your-secret"
+AUTH_SECRET="your-secret"
+NEXTAUTH_URL="http://localhost:3000"
+ADMIN_EMAIL="admin@autocentre.com"
+ADMIN_PASSWORD="change-me-in-production"
+```
+
+## Health Check
+
+```text
+GET /api/health
+```
+
+Returns `{ "status": "ok" }` when the database is reachable.

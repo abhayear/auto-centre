@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, migrate, and build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: autocentre
+          POSTGRES_PASSWORD: autocentre
+          POSTGRES_DB: autocentre_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U autocentre -d autocentre_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://autocentre:autocentre@localhost:5432/autocentre_test?schema=public
+      NEXTAUTH_SECRET: ci-test-secret-min-32-characters-long
+      AUTH_SECRET: ci-test-secret-min-32-characters-long
+      NEXTAUTH_URL: http://localhost:3000
+      ADMIN_EMAIL: admin@autocentre.com
+      ADMIN_PASSWORD: ci-admin-password
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Apply database migrations
+        run: npm run db:migrate:deploy
+
+      - name: Build application
+        run: npm run build
