@@ -1,7 +1,7 @@
 "use client";
 
 import { Inquiry, Vehicle } from "@prisma/client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
@@ -15,19 +15,34 @@ export default function AdminInquiriesPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchInquiries = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      if (typeFilter) params.set("type", typeFilter);
+      const res = await fetch(`/api/inquiries?${params}`);
+      const data = await res.json();
+      if (active) {
+        setInquiries(data);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [statusFilter, typeFilter]);
+
+  async function refreshInquiries() {
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
     if (typeFilter) params.set("type", typeFilter);
     const res = await fetch(`/api/inquiries?${params}`);
-    const data = await res.json();
-    setInquiries(data);
-    setLoading(false);
-  }, [statusFilter, typeFilter]);
-
-  useEffect(() => {
-    fetchInquiries();
-  }, [fetchInquiries]);
+    setInquiries(await res.json());
+  }
 
   async function updateStatus(id: string, status: string) {
     const res = await fetch("/api/inquiries", {
@@ -38,7 +53,7 @@ export default function AdminInquiriesPage() {
 
     if (res.ok) {
       toast.success("Status updated");
-      fetchInquiries();
+      refreshInquiries();
     } else {
       toast.error("Failed to update status");
     }

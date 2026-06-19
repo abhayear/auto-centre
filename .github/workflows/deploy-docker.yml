@@ -2,15 +2,6 @@ name: Deploy Docker image
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-    paths:
-      - "Dockerfile"
-      - ".github/workflows/deploy-docker.yml"
-      - "src/**"
-      - "prisma/**"
-      - "package.json"
-      - "package-lock.json"
 
 jobs:
   build-and-push:
@@ -37,9 +28,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=branch
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || github.ref == format('refs/heads/{0}', 'master') }}
+            type=raw,value=latest
 
       - name: Build and push
         uses: docker/build-push-action@v6

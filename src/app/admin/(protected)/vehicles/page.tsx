@@ -1,7 +1,7 @@
 "use client";
 
 import { Vehicle } from "@prisma/client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
@@ -15,16 +15,29 @@ export default function AdminVehiclesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | undefined>();
 
-  const fetchVehicles = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const res = await fetch("/api/vehicles");
+      const data = await res.json();
+      if (active) {
+        setVehicles(data);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function refreshVehicles() {
     const res = await fetch("/api/vehicles");
     const data = await res.json();
     setVehicles(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchVehicles();
-  }, [fetchVehicles]);
+  }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this vehicle?")) return;
@@ -32,7 +45,7 @@ export default function AdminVehiclesPage() {
     const res = await fetch(`/api/vehicles/${id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Vehicle deleted");
-      fetchVehicles();
+      refreshVehicles();
     } else {
       toast.error("Failed to delete vehicle");
     }
@@ -125,7 +138,7 @@ export default function AdminVehiclesPage() {
           onSuccess={() => {
             setShowForm(false);
             setEditingVehicle(undefined);
-            fetchVehicles();
+            refreshVehicles();
           }}
           onCancel={() => {
             setShowForm(false);

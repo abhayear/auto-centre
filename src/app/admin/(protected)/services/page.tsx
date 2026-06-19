@@ -1,7 +1,7 @@
 "use client";
 
 import { Service } from "@prisma/client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -15,16 +15,28 @@ export default function AdminServicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | undefined>();
 
-  const fetchServices = useCallback(async () => {
-    const res = await fetch("/api/services?all=true");
-    const data = await res.json();
-    setServices(data);
-    setLoading(false);
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const res = await fetch("/api/services?all=true");
+      const data = await res.json();
+      if (active) {
+        setServices(data);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+  async function refreshServices() {
+    const res = await fetch("/api/services?all=true");
+    setServices(await res.json());
+  }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this service?")) return;
@@ -32,7 +44,7 @@ export default function AdminServicesPage() {
     const res = await fetch(`/api/services?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Service deleted");
-      fetchServices();
+      refreshServices();
     } else {
       toast.error("Failed to delete service");
     }
@@ -123,7 +135,7 @@ export default function AdminServicesPage() {
           onSuccess={() => {
             setShowForm(false);
             setEditingService(undefined);
-            fetchServices();
+            refreshServices();
           }}
           onCancel={() => {
             setShowForm(false);

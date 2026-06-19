@@ -1,7 +1,7 @@
 "use client";
 
 import { ServiceBooking, Service } from "@prisma/client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
@@ -14,17 +14,30 @@ export default function AdminBookingsPage() {
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchBookings = useCallback(async () => {
-    const url = filter ? `/api/bookings?status=${filter}` : "/api/bookings";
-    const res = await fetch(url);
-    const data = await res.json();
-    setBookings(data);
-    setLoading(false);
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const url = filter ? `/api/bookings?status=${filter}` : "/api/bookings";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (active) {
+        setBookings(data);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
   }, [filter]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  async function refreshBookings() {
+    const url = filter ? `/api/bookings?status=${filter}` : "/api/bookings";
+    const res = await fetch(url);
+    setBookings(await res.json());
+  }
 
   async function updateStatus(id: string, status: string) {
     const res = await fetch("/api/bookings", {
@@ -35,7 +48,7 @@ export default function AdminBookingsPage() {
 
     if (res.ok) {
       toast.success("Status updated");
-      fetchBookings();
+      refreshBookings();
     } else {
       toast.error("Failed to update status");
     }
