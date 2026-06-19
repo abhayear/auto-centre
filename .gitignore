@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 .cursor/
+prisma/*.db
+prisma/*.db-journal
 
 # debug
 npm-debug.log*
