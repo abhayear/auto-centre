@@ -1,22 +1,21 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import authConfig from "@/lib/auth.config";
 
-export async function middleware(request: NextRequest) {
-  const session = await auth();
-  const { pathname } = request.nextUrl;
+const { auth } = NextAuth(authConfig);
+
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
   const isLoginPage = pathname === "/admin/login";
+  const isAuthenticated = Boolean(req.auth);
 
-  if (pathname.startsWith("/admin") && !isLoginPage && !session?.user) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+  if (pathname.startsWith("/admin") && !isLoginPage && !isAuthenticated) {
+    return Response.redirect(new URL("/admin/login", req.url));
   }
 
-  if (isLoginPage && session?.user) {
-    return NextResponse.redirect(new URL("/admin", request.url));
+  if (isLoginPage && isAuthenticated) {
+    return Response.redirect(new URL("/admin", req.url));
   }
-
-  return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/admin/:path*"],
