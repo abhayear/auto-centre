@@ -53,6 +53,7 @@ export function ServiceAreaForm({ area, onSuccess, onCancel }: ServiceAreaFormPr
 
   return (
     <Modal
+      open
       title={isEdit ? "Edit Service Area" : "Add Service Area"}
       onClose={onCancel}
     >
