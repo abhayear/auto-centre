@@ -86,6 +86,7 @@ export default function AdminBookingsPage() {
           <thead className="border-b border-slate-700 bg-slate-800/50">
             <tr>
               <th className="px-4 py-3 font-medium text-slate-300">Customer</th>
+              <th className="px-4 py-3 font-medium text-slate-300">Area</th>
               <th className="px-4 py-3 font-medium text-slate-300">Service</th>
               <th className="px-4 py-3 font-medium text-slate-300">Date</th>
               <th className="px-4 py-3 font-medium text-slate-300">Status</th>
@@ -98,6 +99,12 @@ export default function AdminBookingsPage() {
                 <td className="px-4 py-3">
                   <p className="text-white">{booking.customerName}</p>
                   <p className="text-xs text-slate-400">{booking.email}</p>
+                </td>
+                <td className="px-4 py-3 text-slate-300">
+                  <p>{booking.customerArea}</p>
+                  {booking.customerAddress && (
+                    <p className="text-xs text-slate-500">{booking.customerAddress}</p>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-300">
                   {booking.service.name}

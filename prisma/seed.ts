@@ -29,6 +29,28 @@ async function main() {
   await prisma.jobPosting.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.serviceArea.deleteMany();
+
+  await Promise.all([
+    prisma.serviceArea.create({
+      data: { name: "Lalitpur", pinCode: "284403", active: true },
+    }),
+    prisma.serviceArea.create({
+      data: { name: "Civil Line, Lalitpur", pinCode: "284403", active: true },
+    }),
+    prisma.serviceArea.create({
+      data: { name: "Siddhan Road, Lalitpur", active: true },
+    }),
+    prisma.serviceArea.create({
+      data: { name: "Jhansi", pinCode: "284001", active: true },
+    }),
+    prisma.serviceArea.create({
+      data: { name: "Mahroni", pinCode: "284405", active: true },
+    }),
+    prisma.serviceArea.create({
+      data: { name: "Talbehat", pinCode: "284126", active: true },
+    }),
+  ]);
 
   const services = await Promise.all([
     prisma.service.create({
@@ -197,6 +219,7 @@ async function main() {
       customerName: "Rahul Sharma",
       email: "rahul@example.com",
       phone: "7985831851",
+      customerArea: "Civil Line, Lalitpur",
       vehicleInfo: "2023 TVS iQube",
       serviceId: services[0].id,
       preferredDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),

@@ -39,19 +39,42 @@ model Service {
 }
 
 model ServiceBooking {
-  id            String   @id @default(cuid())
-  customerName  String
-  email         String
-  phone         String
-  vehicleInfo   String
-  serviceId     String
-  service       Service  @relation(fields: [serviceId], references: [id])
-  preferredDate DateTime
-  preferredTime String
-  notes         String?
-  status        String   @default("pending")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  customerName     String
+  email            String
+  phone            String
+  customerArea     String
+  customerAddress  String?
+  latitude         Float?
+  longitude        Float?
+  vehicleInfo      String
+  serviceId        String
+  service          Service  @relation(fields: [serviceId], references: [id])
+  preferredDate    DateTime
+  preferredTime    String
+  notes            String?
+  status           String   @default("pending")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ServiceArea {
+  id        String   @id @default(cuid())
+  name      String
+  pinCode   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceCentreConfig {
+  id                 String   @id @default("default")
+  latitude           Float
+  longitude          Float
+  radiusKm           Float    @default(25)
+  radiusCheckEnabled Boolean  @default(true)
+  label              String   @default("Auto Galaxy Service Centre")
+  updatedAt          DateTime @updatedAt
 }
 
 model Inquiry {

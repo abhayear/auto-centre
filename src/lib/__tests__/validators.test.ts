@@ -69,6 +69,7 @@ describe("bookingSchema", () => {
       customerName: "Jane Doe",
       email: "jane@example.com",
       phone: "555-123-4567",
+      customerArea: "Lalitpur",
       vehicleInfo: "Toyota Camry 2020",
       serviceId: "clxyz123",
       preferredDate: "2026-07-01",

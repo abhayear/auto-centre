@@ -34,11 +34,47 @@ export const bookingSchema = z.object({
   customerName: z.string().min(2, "Name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(7, "Phone number is required"),
+  customerArea: z.string().min(2, "Area or locality is required"),
+  customerAddress: z.string().optional(),
+  locality: z.string().optional(),
+  sublocality: z.string().optional(),
+  postalCode: z.string().optional(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
   vehicleInfo: z.string().min(2, "Vehicle info is required"),
   serviceId: z.string().min(1, "Please select a service"),
   preferredDate: z.string().min(1, "Preferred date is required"),
   preferredTime: z.string().min(1, "Preferred time is required"),
   notes: z.string().optional(),
+});
+
+export const serviceAreaCheckSchema = z
+  .object({
+    area: z.string().optional(),
+    locality: z.string().optional(),
+    sublocality: z.string().optional(),
+    postalCode: z.string().optional(),
+    formattedAddress: z.string().optional(),
+    adminArea: z.string().optional(),
+    lat: z.coerce.number().optional(),
+    lng: z.coerce.number().optional(),
+  })
+  .refine(
+    (data) =>
+      Boolean(
+        data.area?.trim() ||
+          data.locality?.trim() ||
+          data.sublocality?.trim() ||
+          data.postalCode?.trim() ||
+          data.formattedAddress?.trim()
+      ),
+    { message: "Enter your area or select a location on the map" }
+  );
+
+export const serviceAreaSchema = z.object({
+  name: z.string().min(2, "Area name is required"),
+  pinCode: z.string().optional(),
+  active: z.boolean().default(true),
 });
 
 export const inquirySchema = z.object({

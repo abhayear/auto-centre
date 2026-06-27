@@ -9,6 +9,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  MapPin,
   MessageSquare,
   Wrench,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/services", label: "Services", icon: Wrench },
+  { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
   { href: "/admin/job-applications", label: "Applications", icon: ClipboardList },
 ];

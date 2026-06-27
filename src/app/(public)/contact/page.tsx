@@ -1,4 +1,5 @@
 import { InquiryForm } from "@/components/forms/InquiryForm";
+import { StoreMap } from "@/components/maps/StoreMap";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import {
   BUSINESS_HOURS,
@@ -65,12 +66,7 @@ export default function ContactPage() {
             </ul>
           </div>
 
-          <div className="flex aspect-[16/9] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-800/20">
-            <div className="text-center text-slate-500">
-              <MapPin className="mx-auto mb-2 h-8 w-8" />
-              <p className="text-sm">Map placeholder</p>
-            </div>
-          </div>
+          <StoreMap />
         </div>
 
         <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">

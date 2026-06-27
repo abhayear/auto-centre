@@ -21,7 +21,7 @@ export default async function BookServicePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">Book a Service</h1>
         <p className="mt-2 text-slate-400">
-          Fill out the form below and our team will confirm your appointment.
+          Pick your location on Google Maps — we&apos;ll verify service availability first.
         </p>
       </div>
 
