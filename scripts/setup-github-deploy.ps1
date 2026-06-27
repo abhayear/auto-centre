@@ -1,33 +1,57 @@
-# GitHub & deployment setup
-# Run from repo root after committing changes.
-# Requires: gh CLI logged in (gh auth login)
+# Configure GitHub Actions secrets for Vercel CD
+# Run from repo root. Requires: gh CLI (gh auth login), Vercel project linked (vercel link).
 
 $ErrorActionPreference = "Stop"
 $Repo = "abhayear/auto-centre"
 
-Write-Host "==> Pushing master..."
-git push origin master
+function Get-VercelIds {
+    $repoJson = Join-Path $PSScriptRoot ".." ".vercel" "repo.json" | Resolve-Path -ErrorAction SilentlyContinue
+    if (-not $repoJson) {
+        Write-Host "Linking Vercel project..."
+        Push-Location (Join-Path $PSScriptRoot "..")
+        vercel link --yes --project auto-centre
+        Pop-Location
+        $repoJson = Join-Path $PSScriptRoot ".." ".vercel" "repo.json" | Resolve-Path
+    }
 
-Write-Host "==> Creating and pushing develop branch..."
-git checkout develop 2>$null
-if ($LASTEXITCODE -ne 0) {
-  git checkout -b develop
+    $config = Get-Content $repoJson | ConvertFrom-Json
+    $project = $config.projects | Select-Object -First 1
+    return @{
+        OrgId     = $project.orgId
+        ProjectId = $project.id
+    }
 }
-git push -u origin develop
-git checkout master
 
-Write-Host "==> Creating GitHub environments (skip if already exist)..."
-try { gh api "repos/$Repo/environments/staging" -X PUT -H "Accept: application/vnd.github+json" --raw-field wait_timer=0 } catch {}
-try { gh api "repos/$Repo/environments/production" -X PUT -H "Accept: application/vnd.github+json" --raw-field wait_timer=0 } catch {}
+Write-Host "==> Reading Vercel project IDs..."
+$ids = Get-VercelIds
+Write-Host "    ORG_ID:     $($ids.OrgId)"
+Write-Host "    PROJECT_ID: $($ids.ProjectId)"
 
-Write-Host "==> Environments:"
-gh api "repos/$Repo/environments" --jq ".environments[].name"
+Write-Host "==> Setting GitHub secrets (org + project)..."
+gh secret set VERCEL_ORG_ID -R $Repo --body $ids.OrgId
+gh secret set VERCEL_PROJECT_ID -R $Repo --body $ids.ProjectId
 
-Write-Host ""
-Write-Host "==> Configured secrets (names only):"
+if ($env:VERCEL_TOKEN) {
+    Write-Host "==> Setting VERCEL_TOKEN from environment..."
+    gh secret set VERCEL_TOKEN -R $Repo --body $env:VERCEL_TOKEN
+} else {
+    Write-Host ""
+    Write-Host "VERCEL_TOKEN not set in this shell."
+    Write-Host "1. Create a classic token: https://vercel.com/account/tokens"
+    Write-Host "2. Run:"
+    Write-Host '   $env:VERCEL_TOKEN="your-token"; .\scripts\setup-github-deploy.ps1'
+    Write-Host "   Or: gh secret set VERCEL_TOKEN -R $Repo"
+    Write-Host ""
+}
+
+Write-Host "==> GitHub secrets:"
 gh secret list -R $Repo
 
 Write-Host ""
-Write-Host "Done. If VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID are missing,"
-Write-Host "add them at: https://github.com/$Repo/settings/secrets/actions"
-Write-Host "See CI_CD.md for Vercel token instructions."
+Write-Host "==> GitHub environments:"
+gh api "repos/$Repo/environments" --jq ".environments[].name"
+
+Write-Host ""
+Write-Host "After VERCEL_TOKEN is set, re-run failed deploys:"
+Write-Host "  gh workflow run deploy-vercel.yml -R $Repo"
+Write-Host "  gh workflow run deploy-staging.yml -R $Repo"
