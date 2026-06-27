@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { serviceSchema } from "@/lib/validators";
+import { revalidatePublicServicePages } from "@/lib/revalidate";
+import { formatZodErrors, serviceSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
@@ -26,10 +28,14 @@ export async function POST(request: NextRequest) {
     const data = serviceSchema.parse(body);
 
     const service = await prisma.service.create({ data });
+    revalidatePublicServicePages();
     return NextResponse.json(service, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(error) },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
   }
@@ -56,10 +62,14 @@ export async function PATCH(request: NextRequest) {
       data,
     });
 
+    revalidatePublicServicePages();
     return NextResponse.json(service);
   } catch (error) {
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(error) },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: "Failed to update service" }, { status: 500 });
   }
@@ -78,6 +88,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await prisma.service.delete({ where: { id } });
+    revalidatePublicServicePages();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete service" }, { status: 500 });

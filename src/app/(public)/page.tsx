@@ -5,6 +5,8 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [featuredVehicles, services] = await Promise.all([
     prisma.vehicle.findMany({
@@ -14,8 +16,8 @@ export default async function HomePage() {
     }),
     prisma.service.findMany({
       where: { active: true },
+      orderBy: { createdAt: "desc" },
       take: 4,
-      orderBy: { name: "asc" },
     }),
   ]);
 

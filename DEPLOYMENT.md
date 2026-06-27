@@ -51,13 +51,31 @@ Stop Postgres: `npm run db:down`
 
 Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
-Runs on every push/PR to `main` or `master`:
+Runs on every push/PR to `main`, `master`, or `develop`:
 
 1. ESLint
-2. `prisma migrate deploy` against a CI Postgres container
-3. `next build`
+2. **Unit tests** (`npm test` — Vitest)
+3. `prisma migrate deploy` against a CI Postgres container
+4. `next build`
 
 No secrets required for CI.
+
+---
+
+## 3b. Branch-based deployment
+
+See **[BRANCHING.md](./BRANCHING.md)** for the full model.
+
+| Branch | Vercel | Docker tag |
+|--------|--------|------------|
+| `develop` | Staging (preview) | `:staging` |
+| `main` / `master` | Production | `:latest` |
+
+Workflows:
+
+- [`.github/workflows/deploy-staging.yml`](.github/workflows/deploy-staging.yml) — auto on push to `develop`
+- [`.github/workflows/deploy-vercel.yml`](.github/workflows/deploy-vercel.yml) — auto on push to `main`/`master`
+- [`.github/workflows/deploy-docker.yml`](.github/workflows/deploy-docker.yml) — branch-aware image tags
 
 ---
 

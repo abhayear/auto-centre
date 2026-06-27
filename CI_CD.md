@@ -2,25 +2,51 @@
 
 Repository: **https://github.com/abhayear/auto-centre**
 
+See also: **[BRANCHING.md](./BRANCHING.md)** for the full branch and deployment model.
+
 ## Pipeline overview
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| **CI** | `.github/workflows/ci.yml` | Push/PR to `master` | Lint → migrate → build |
-| **Deploy Vercel** | `.github/workflows/deploy-vercel.yml` | Manual | Deploy to production |
-| **Deploy Docker** | `.github/workflows/deploy-docker.yml` | Manual | Push image to GHCR |
+| **CI** | `.github/workflows/ci.yml` | Push/PR → `main`, `master`, `develop` | Lint → **unit tests** → migrate → build |
+| **Deploy staging** | `.github/workflows/deploy-staging.yml` | Push → `develop` | Vercel preview / staging |
+| **Deploy production** | `.github/workflows/deploy-vercel.yml` | Push → `main`/`master` | Vercel production |
+| **Deploy Docker** | `.github/workflows/deploy-docker.yml` | Push → `develop` / `main` | GHCR `:staging` or `:latest` |
 
 View runs: **https://github.com/abhayear/auto-centre/actions**
 
 ---
 
+## Branch flow
+
+```text
+feature/* → PR → develop → staging deploy
+                    ↓
+              PR → main → production deploy
+```
+
+1. Work on `feature/*` branches; open PRs into **`develop`**
+2. Merging to **`develop`** runs CI + deploys to **staging**
+3. When ready, PR **`develop` → `main`**; merge deploys to **production**
+
+---
+
 ## Step 1 — CI (automatic)
 
-CI runs on every push. No secrets required.
+CI runs on every push/PR to `main`, `master`, or `develop`. No secrets required.
 
-It uses a temporary Postgres container, runs migrations, lint, and build.
+Jobs:
 
-**Status:** Should pass after the latest lint fixes are pushed.
+1. **Lint and unit tests** — ESLint + Vitest
+2. **Migrate and build** — Postgres service, `prisma migrate deploy`, `next build`
+
+Local equivalent:
+
+```powershell
+npm run lint
+npm test
+npm run build
+```
 
 ---
 
@@ -29,6 +55,7 @@ It uses a temporary Postgres container, runs migrations, lint, and build.
 1. Create account at [neon.tech](https://neon.tech)
 2. New project → copy **connection string**
 3. Ensure URL includes `?sslmode=require`
+4. (Optional) Create a second Neon database for **staging**
 
 ---
 
@@ -36,7 +63,10 @@ It uses a temporary Postgres container, runs migrations, lint, and build.
 
 1. [vercel.com](https://vercel.com) → **Add New Project**
 2. Import **`abhayear/auto-centre`**
-3. Add environment variables (Production):
+3. Set **Production Branch** to `main` (or `master`)
+4. Add environment variables:
+
+**Production** (main branch):
 
 ```
 DATABASE_URL=postgresql://...?sslmode=require
@@ -47,15 +77,20 @@ ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=<strong-password>
 ```
 
-4. Deploy once from Vercel dashboard
+**Preview** (develop / PR branches) — use a separate staging database and URL:
+
+```
+DATABASE_URL=postgresql://...staging...?sslmode=require
+NEXTAUTH_URL=https://your-staging-url.vercel.app
+```
+
+5. Deploy once from the Vercel dashboard
 
 ---
 
-## Step 4 — GitHub secrets (for automated deploy)
+## Step 4 — GitHub secrets & environments
 
 Go to: **https://github.com/abhayear/auto-centre/settings/secrets/actions**
-
-Add these secrets:
 
 | Secret | How to get it |
 |--------|----------------|
@@ -63,25 +98,44 @@ Add these secrets:
 | `VERCEL_ORG_ID` | Run locally after `vercel link`: `cat .vercel/project.json` |
 | `VERCEL_PROJECT_ID` | Same file as above |
 
-Create environment (optional): **Settings → Environments → New → `production`**
+Create GitHub **environments**:
+
+| Name | Deployed from | Suggested protection |
+|------|---------------|----------------------|
+| `staging` | `develop` | Optional reviewers |
+| `production` | `main` / `master` | Required reviewers recommended |
 
 ---
 
-## Step 5 — Run CD manually
+## Step 5 — Automatic deploys
 
-After secrets are set:
+After secrets and environments are configured:
 
-1. Open **https://github.com/abhayear/auto-centre/actions**
-2. Click **Deploy to Vercel**
-3. Click **Run workflow** → **Run workflow**
+| Event | Result |
+|-------|--------|
+| Push to `develop` | CI → staging Vercel deploy → Docker `:staging` |
+| Push to `main` | CI → production Vercel deploy → Docker `:latest` |
+| PR to any protected branch | CI only (no deploy) |
+
+Manual deploy: **Actions** tab → choose workflow → **Run workflow**
 
 ---
 
-## Step 6 — Seed production database
+## Step 6 — Seed databases
+
+**Staging:**
 
 ```powershell
-cd C:\Users\akshay\projects\auto-centre
-$env:DATABASE_URL="your-neon-url"
+$env:DATABASE_URL="your-staging-neon-url"
+$env:ADMIN_EMAIL="admin@autocentre.com"
+$env:ADMIN_PASSWORD="staging-password"
+npm run db:seed
+```
+
+**Production:**
+
+```powershell
+$env:DATABASE_URL="your-production-neon-url"
 $env:ADMIN_EMAIL="admin@autocentre.com"
 $env:ADMIN_PASSWORD="your-strong-password"
 npm run db:seed
@@ -92,7 +146,8 @@ npm run db:seed
 ## Verify
 
 - CI green: `/actions` tab
-- Live site: your Vercel URL
+- Staging: URL from **Deploy staging** workflow summary
+- Production: your Vercel production URL
 - Health check: `https://your-app.vercel.app/api/health`
 - Admin: `https://your-app.vercel.app/admin/login`
 
@@ -100,4 +155,4 @@ npm run db:seed
 
 ## Alternative: Vercel auto-deploy from Git
 
-Skip GitHub Actions CD entirely — connect the repo in Vercel and it deploys on every push to `master` automatically. CI still runs on GitHub for quality checks.
+If you connect the repo in Vercel, it can deploy previews on every PR and production on `main` without GitHub Actions CD. Keep GitHub CI for lint + tests + build validation.

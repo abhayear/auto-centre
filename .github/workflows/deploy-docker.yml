@@ -1,7 +1,22 @@
 name: Deploy Docker image
 
 on:
+  push:
+    branches: [main, master, develop]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment tag
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
@@ -14,6 +29,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            echo "value=staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -28,7 +54,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=${{ steps.tag.outputs.value }}
+            type=sha,prefix=
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -37,3 +64,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Image summary
+        run: echo "Pushed ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.value }}"

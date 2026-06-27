@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { serviceSchema } from "@/lib/validators";
+import { revalidatePublicServicePages } from "@/lib/revalidate";
+import { formatZodErrors, serviceSchema } from "@/lib/validators";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -33,8 +35,15 @@ export async function PATCH(request: Request, { params }: Params) {
       data,
     });
 
+    revalidatePublicServicePages();
     return NextResponse.json(service);
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(error) },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: "Failed to update service" }, { status: 500 });
   }
 }
@@ -49,6 +58,7 @@ export async function DELETE(_request: Request, { params }: Params) {
 
   try {
     await prisma.service.delete({ where: { id } });
+    revalidatePublicServicePages();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete service" }, { status: 500 });

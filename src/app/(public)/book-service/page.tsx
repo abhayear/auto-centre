@@ -7,10 +7,12 @@ export const metadata: Metadata = {
   description: "Schedule a service appointment for your vehicle.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function BookServicePage() {
   const services = await prisma.service.findMany({
     where: { active: true },
-    orderBy: { name: "asc" },
+    orderBy: { createdAt: "desc" },
     select: { id: true, name: true },
   });
 

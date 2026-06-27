@@ -40,7 +40,10 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
 
       if (!res.ok) {
         const result = await res.json();
-        toast.error(result.error ?? "Failed to save service");
+        const detailMessage = Array.isArray(result.details)
+          ? result.details.map((detail: { message: string }) => detail.message).join(". ")
+          : undefined;
+        toast.error(detailMessage ?? result.error ?? "Failed to save service");
         return;
       }
 
@@ -67,6 +70,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           label="Description"
           rows={3}
           defaultValue={service?.description}
+          minLength={10}
+          placeholder="At least 10 characters"
           required
         />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -76,6 +81,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             type="number"
             label="Estimated Price ($)"
             defaultValue={service?.estimatedPrice}
+            min="0.01"
+            step="0.01"
             required
           />
           <Input
@@ -84,6 +91,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             type="number"
             label="Duration (minutes)"
             defaultValue={service?.durationMinutes}
+            min="1"
+            step="1"
             required
           />
         </div>
