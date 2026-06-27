@@ -87,7 +87,7 @@ export function BookingForm({ services }: { services: Service[] }) {
         <Input
           id="vehicleInfo"
           name="vehicleInfo"
-          label="Vehicle (Make/Model/Year)"
+          label="E-Scooter (Make/Model/Year)"
           placeholder="e.g. Toyota Camry 2020"
           required
           error={errors.vehicleInfo}

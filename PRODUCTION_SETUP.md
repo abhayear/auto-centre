@@ -35,7 +35,7 @@ Follow these steps in order. Your repo is already on GitHub and CI is passing.
 | `NEXTAUTH_SECRET` | *(generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`)*
 | `AUTH_SECRET` | *(same value as NEXTAUTH_SECRET)*
 | `NEXTAUTH_URL` | `https://auto-centre.vercel.app` *(update after deploy if URL differs)*
-| `ADMIN_EMAIL` | `admin@autocentre.com` |
+| `ADMIN_EMAIL` | `admin@autogalaxy.in` |
 | `ADMIN_PASSWORD` | *(choose a strong password — used only for seeding)*
 
 5. **Framework Preset:** Next.js (auto-detected)
@@ -59,7 +59,7 @@ Run in PowerShell (replace `NEON_URL` with your real connection string):
 ```powershell
 cd C:\Users\akshay\projects\auto-centre
 $env:DATABASE_URL="NEON_URL"
-$env:ADMIN_EMAIL="admin@autocentre.com"
+$env:ADMIN_EMAIL="admin@autogalaxy.in"
 $env:ADMIN_PASSWORD="YOUR_STRONG_PASSWORD"
 npm run db:seed
 ```

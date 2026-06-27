@@ -74,7 +74,7 @@ export function VehicleFilters({ vehicles }: VehicleFiltersProps) {
       </div>
 
       <p className="mb-4 text-sm text-slate-400">
-        Showing {filtered.length} of {vehicles.length} vehicles
+        Showing {filtered.length} of {vehicles.length} e-scooters
       </p>
 
       <VehicleGrid vehicles={filtered} />

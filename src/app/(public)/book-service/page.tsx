@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Book Service",
-  description: "Schedule a service appointment for your vehicle.",
+  description: "Schedule a service appointment for your electric 2-wheeler.",
 };
 
 export const dynamic = "force-dynamic";

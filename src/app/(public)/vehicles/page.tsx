@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Vehicles",
-  description: "Browse our inventory of new and pre-owned vehicles.",
+  title: "E-Scooters",
+  description: "Browse electric 2-wheelers — new and pre-owned e-scooters at Auto Galaxy, Lalitpur.",
 };
 
 export default async function VehiclesPage() {
@@ -15,9 +15,9 @@ export default async function VehiclesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Vehicle Inventory</h1>
+        <h1 className="text-3xl font-bold text-white">E-Scooter Inventory</h1>
         <p className="mt-2 text-slate-400">
-          Find your perfect vehicle from our curated selection.
+          Find your perfect electric 2-wheeler from our curated selection.
         </p>
       </div>
       <VehicleFilters vehicles={vehicles} />

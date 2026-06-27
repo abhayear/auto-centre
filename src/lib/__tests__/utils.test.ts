@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { cn, formatDate, formatPrice, parseImages } from "../utils";
+import { cn, formatDate, formatEmploymentType, formatPrice, parseImages } from "../utils";
 
 describe("formatPrice", () => {
-  it("formats USD without decimals", () => {
-    expect(formatPrice(45900)).toBe("$45,900");
+  it("formats INR without decimals", () => {
+    expect(formatPrice(45900)).toMatch(/45,900/);
+    expect(formatPrice(45900)).toMatch(/₹|INR/);
   });
 
   it("formats zero", () => {
-    expect(formatPrice(0)).toBe("$0");
+    expect(formatPrice(0)).toMatch(/0/);
   });
 });
 
@@ -32,6 +33,14 @@ describe("parseImages", () => {
 
   it("returns empty array for non-array JSON", () => {
     expect(parseImages('{"url":"https://example.com/a.jpg"}')).toEqual([]);
+  });
+});
+
+describe("formatEmploymentType", () => {
+  it("formats employment types", () => {
+    expect(formatEmploymentType("full_time")).toBe("Full-time");
+    expect(formatEmploymentType("part_time")).toBe("Part-time");
+    expect(formatEmploymentType("contract")).toBe("Contract");
   });
 });
 

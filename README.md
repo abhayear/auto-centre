@@ -1,11 +1,11 @@
-# Premier Auto Centre
+# Auto Galaxy
 
-Full-stack automobile sales and service centre website built with **Next.js**, **React**, **Tailwind CSS**, **Prisma**, **PostgreSQL**, and **NextAuth**.
+Electric 2-wheeler sales and service website for **Auto Galaxy**, Lalitpur — built with **Next.js**, **React**, **Tailwind CSS**, **Prisma**, **PostgreSQL**, and **NextAuth**.
 
 ## Features
 
-- Public site: vehicle inventory, services, service booking, test drive requests, contact
-- Admin panel: manage vehicles, bookings, inquiries, and services
+- Public site: e-scooter inventory, services, service booking, test ride requests, contact, careers
+- Admin panel: manage vehicles, bookings, inquiries, services, and job postings
 - Authentication-protected admin routes
 - CI/CD via GitHub Actions
 - Production-ready for Vercel or Docker
@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site.
 ### Admin Login
 
 - URL: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-- Email: `admin@autocentre.com`
+- Email: `admin@autogalaxy.in` (or value of `ADMIN_EMAIL` in `.env`)
 - Password: value of `ADMIN_PASSWORD` in `.env` (default in `.env.example`)
 
 ## Scripts
@@ -77,11 +77,11 @@ See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for production setup (Neon, Vercel, sec
 Copy `.env.example` to `.env`:
 
 ```env
-DATABASE_URL="postgresql://autocentre:autocentre@localhost:5432/autocentre?schema=public"
+DATABASE_URL="postgresql://autocentre:autocentre@localhost:5433/autocentre?schema=public"
 NEXTAUTH_SECRET="your-secret"
 AUTH_SECRET="your-secret"
 NEXTAUTH_URL="http://localhost:3000"
-ADMIN_EMAIL="admin@autocentre.com"
+ADMIN_EMAIL="admin@autogalaxy.in"
 ADMIN_PASSWORD="change-me-in-production"
 ```
 

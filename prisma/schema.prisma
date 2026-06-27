@@ -75,3 +75,33 @@ model AdminUser {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model JobPosting {
+  id             String           @id @default(cuid())
+  title          String
+  department     String
+  location       String
+  employmentType String
+  description    String
+  requirements   String
+  salaryRange    String?
+  status         String           @default("open")
+  active         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  applications   JobApplication[]
+}
+
+model JobApplication {
+  id          String     @id @default(cuid())
+  jobId       String
+  job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  phone       String?
+  resumeUrl   String?
+  coverLetter String?
+  status      String     @default("new")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}

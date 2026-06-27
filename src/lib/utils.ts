@@ -1,7 +1,7 @@
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(price);
 }
@@ -23,4 +23,13 @@ export function parseImages(images: string): string[] {
 
 export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
+}
+
+export function formatEmploymentType(type: string): string {
+  const labels: Record<string, string> = {
+    full_time: "Full-time",
+    part_time: "Part-time",
+    contract: "Contract",
+  };
+  return labels[type] ?? type;
 }

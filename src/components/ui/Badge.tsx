@@ -37,16 +37,21 @@ export function statusVariant(
     case "available":
     case "confirmed":
     case "completed":
+    case "open":
+    case "hired":
       return "success";
     case "pending":
     case "new":
     case "reserved":
+    case "reviewing":
       return "warning";
     case "sold":
     case "cancelled":
     case "closed":
+    case "rejected":
       return "danger";
     case "replied":
+    case "interviewed":
       return "info";
     default:
       return "default";

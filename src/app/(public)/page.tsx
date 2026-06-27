@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Shield, Star, Wrench } from "lucide-react";
+import { ArrowRight, Battery, Shield, Wrench, Zap } from "lucide-react";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
@@ -24,11 +24,11 @@ export default async function HomePage() {
   return (
     <>
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80')] bg-cover bg-center opacity-10" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80')] bg-cover bg-center opacity-15" />
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="max-w-2xl">
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Drive Your Dreams at{" "}
+              Go Electric with{" "}
               <span className="text-red-500">{SITE_NAME}</span>
             </h1>
             <p className="mt-6 text-lg text-slate-300">{SITE_DESCRIPTION}</p>
@@ -37,7 +37,7 @@ export default async function HomePage() {
                 href="/vehicles"
                 className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 font-medium text-white transition-colors hover:bg-red-700"
               >
-                Browse Inventory
+                Browse E-Scooters
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -55,10 +55,10 @@ export default async function HomePage() {
         <div className="mb-10 flex items-end justify-between">
           <div>
             <h2 className="text-2xl font-bold text-white sm:text-3xl">
-              Featured Vehicles
+              Featured E-Scooters
             </h2>
             <p className="mt-2 text-slate-400">
-              Hand-picked selections from our premium inventory
+              Top electric 2-wheelers from leading brands
             </p>
           </div>
           <Link
@@ -78,7 +78,7 @@ export default async function HomePage() {
               Our Services
             </h2>
             <p className="mt-2 text-slate-400">
-              Expert care to keep your vehicle running at its best
+              Expert electric 2-wheeler sales and service in Lalitpur
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -113,29 +113,29 @@ export default async function HomePage() {
         <div className="grid gap-8 md:grid-cols-3">
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600/20">
-              <Star className="h-6 w-6 text-red-500" />
+              <Zap className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="font-semibold text-white">Premium Selection</h3>
+            <h3 className="font-semibold text-white">Electric 2-Wheelers</h3>
             <p className="mt-2 text-sm text-slate-400">
-              Curated inventory of new and pre-owned vehicles from top brands.
+              New and pre-owned e-scooters from Ola, Ather, TVS, Bajaj, and more.
             </p>
           </div>
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600/20">
-              <Wrench className="h-6 w-6 text-red-500" />
+              <Battery className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="font-semibold text-white">Expert Service</h3>
+            <h3 className="font-semibold text-white">Battery & Motor Care</h3>
             <p className="mt-2 text-sm text-slate-400">
-              Certified technicians using the latest diagnostic equipment.
+              Specialized diagnostics and service for electric drivetrains and batteries.
             </p>
           </div>
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600/20">
               <Shield className="h-6 w-6 text-red-500" />
             </div>
-            <h3 className="font-semibold text-white">Trusted Experience</h3>
+            <h3 className="font-semibold text-white">Trusted in Lalitpur</h3>
             <p className="mt-2 text-sm text-slate-400">
-              Transparent pricing and dedicated support every step of the way.
+              Civil Line, near Government ITI College — honest advice and after-sales support.
             </p>
           </div>
         </div>
@@ -144,16 +144,16 @@ export default async function HomePage() {
       <section className="bg-gradient-to-r from-red-600 to-red-700">
         <div className="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white">
-            Ready for a Test Drive?
+            Ready for a Test Ride?
           </h2>
           <p className="mt-2 text-red-100">
-            Experience your next vehicle firsthand. Schedule today.
+            Experience your next e-scooter on the road. Book a ride today.
           </p>
           <Link
             href="/test-drive"
             className="mt-6 inline-block rounded-lg bg-white px-6 py-3 font-medium text-red-600 transition-colors hover:bg-red-50"
           >
-            Request Test Drive
+            Request Test Ride
           </Link>
         </div>
       </section>

@@ -39,7 +39,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             {formatPrice(vehicle.price)}
           </p>
           <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-            <span>{vehicle.mileage.toLocaleString()} mi</span>
+            <span>{vehicle.mileage.toLocaleString("en-IN")} km</span>
             <span>{vehicle.fuelType}</span>
             <span>{vehicle.transmission}</span>
           </div>

@@ -99,7 +99,7 @@ export function InquiryForm({ type, vehicleId, vehicleLabel }: InquiryFormProps)
         error={errors.message}
       />
       <Button type="submit" loading={loading} className="w-full sm:w-auto">
-        {type === "test_drive" ? "Request Test Drive" : "Send Message"}
+        {type === "test_drive" ? "Request Test Ride" : "Send Message"}
       </Button>
     </form>
   );

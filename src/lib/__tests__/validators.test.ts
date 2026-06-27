@@ -4,6 +4,8 @@ import {
   bookingStatusSchema,
   inquirySchema,
   inquiryStatusSchema,
+  jobApplicationSchema,
+  jobPostingSchema,
   loginSchema,
   serviceSchema,
   vehicleSchema,
@@ -133,5 +135,34 @@ describe("status schemas", () => {
     for (const status of ["new", "replied", "closed"]) {
       expect(inquiryStatusSchema.safeParse({ status }).success).toBe(true);
     }
+  });
+});
+
+describe("jobPostingSchema", () => {
+  it("accepts valid job posting", () => {
+    const result = jobPostingSchema.safeParse({
+      title: "Sales Consultant",
+      department: "Sales",
+      location: "Auto City",
+      employmentType: "full_time",
+      description: "Help customers find their ideal vehicle in a fast-paced showroom environment.",
+      requirements: "Sales experience and valid driver's license required.",
+      salaryRange: "$45,000 - $55,000",
+      status: "open",
+      active: true,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("jobApplicationSchema", () => {
+  it("accepts valid job application", () => {
+    const result = jobApplicationSchema.safeParse({
+      jobId: "job-123",
+      name: "Jane Doe",
+      email: "jane@example.com",
+      coverLetter: "I am excited to apply for this role.",
+    });
+    expect(result.success).toBe(true);
   });
 });

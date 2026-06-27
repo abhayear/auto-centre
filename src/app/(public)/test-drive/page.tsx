@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Test Drive",
-  description: "Request a test drive for any vehicle in our inventory.",
+  title: "Test Ride",
+  description: "Request a test ride for any e-scooter in our inventory.",
 };
 
 type PageProps = {
@@ -25,9 +25,9 @@ export default async function TestDrivePage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Request a Test Drive</h1>
+        <h1 className="text-3xl font-bold text-white">Request a Test Ride</h1>
         <p className="mt-2 text-slate-400">
-          Experience the vehicle before you buy. We&apos;ll arrange a convenient time for you.
+          Experience the e-scooter before you buy. We&apos;ll arrange a convenient time for you.
         </p>
       </div>
 

@@ -10,3 +10,7 @@ export function revalidatePublicVehiclePages() {
   revalidatePath("/");
   revalidatePath("/vehicles");
 }
+
+export function revalidatePublicCareerPages() {
+  revalidatePath("/careers");
+}

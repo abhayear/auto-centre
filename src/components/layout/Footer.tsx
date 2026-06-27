@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Car, Mail, MapPin, Phone } from "lucide-react";
+import { Zap, Mail, MapPin, Phone } from "lucide-react";
 import {
   SITE_ADDRESS,
   SITE_EMAIL,
   SITE_NAME,
-  SITE_PHONE,
+  SITE_PHONES,
+  SITE_TAGLINE,
 } from "@/lib/constants";
 
 export function Footer() {
@@ -14,13 +15,10 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <Car className="h-6 w-6 text-red-500" />
+              <Zap className="h-6 w-6 text-red-500" />
               <span className="text-lg font-bold text-white">{SITE_NAME}</span>
             </div>
-            <p className="text-sm text-slate-400">
-              Quality vehicles and expert service under one roof. Your journey
-              starts here.
-            </p>
+            <p className="text-sm text-slate-400">{SITE_TAGLINE}. {SITE_ADDRESS}.</p>
           </div>
 
           <div>
@@ -30,7 +28,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
                 <Link href="/vehicles" className="hover:text-red-400">
-                  Browse Vehicles
+                  Browse E-Scooters
                 </Link>
               </li>
               <li>
@@ -44,8 +42,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/careers" className="hover:text-red-400">
+                  Careers
+                </Link>
+              </li>
+              <li>
                 <Link href="/test-drive" className="hover:text-red-400">
-                  Request Test Drive
+                  Request Test Ride
                 </Link>
               </li>
             </ul>
@@ -60,9 +63,15 @@ export function Footer() {
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                 {SITE_ADDRESS}
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 shrink-0 text-red-500" />
-                {SITE_PHONE}
+              <li className="flex items-start gap-2">
+                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                <span className="flex flex-col gap-1">
+                  {SITE_PHONES.map((phone) => (
+                    <a key={phone} href={`tel:${phone}`} className="hover:text-red-400">
+                      {phone}
+                    </a>
+                  ))}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 shrink-0 text-red-500" />

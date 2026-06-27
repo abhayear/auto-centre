@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Services",
-  description: "Professional automotive services and maintenance.",
+  description: "Electric 2-wheeler service and maintenance at Auto Galaxy, Lalitpur.",
 };
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function ServicesPage() {
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-white">Our Services</h1>
         <p className="mt-2 text-slate-400">
-          Expert maintenance and repair services for all makes and models.
+          Expert maintenance and repair for electric scooters and bikes.
         </p>
       </div>
 

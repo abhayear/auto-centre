@@ -1,14 +1,18 @@
-import { Car, Calendar, MessageSquare, Wrench } from "lucide-react";
+import { Briefcase, Car, Calendar, ClipboardList, MessageSquare, Wrench } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboardPage() {
-  const [vehicleCount, pendingBookings, newInquiries, serviceCount] =
+  const [vehicleCount, pendingBookings, newInquiries, serviceCount, openJobs, newApplications] =
     await Promise.all([
       prisma.vehicle.count({ where: { status: "available" } }),
       prisma.serviceBooking.count({ where: { status: "pending" } }),
       prisma.inquiry.count({ where: { status: "new" } }),
       prisma.service.count({ where: { active: true } }),
+      prisma.jobPosting.count({ where: { status: "open", active: true } }),
+      prisma.jobApplication.count({ where: { status: "new" } }),
     ]);
 
   const stats = [
@@ -36,13 +40,25 @@ export default async function AdminDashboardPage() {
       icon: Wrench,
       color: "text-red-400",
     },
+    {
+      label: "Open Positions",
+      value: openJobs,
+      icon: Briefcase,
+      color: "text-purple-400",
+    },
+    {
+      label: "New Applications",
+      value: newApplications,
+      icon: ClipboardList,
+      color: "text-orange-400",
+    },
   ];
 
   return (
     <div>
       <h1 className="mb-8 text-2xl font-bold text-white">Dashboard</h1>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (

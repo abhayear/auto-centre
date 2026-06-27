@@ -5,7 +5,7 @@ import {
   SITE_ADDRESS,
   SITE_EMAIL,
   SITE_NAME,
-  SITE_PHONE,
+  SITE_PHONES,
 } from "@/lib/constants";
 import type { Metadata } from "next";
 
@@ -33,9 +33,15 @@ export default function ContactPage() {
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                 {SITE_ADDRESS}
               </li>
-              <li className="flex items-center gap-3 text-slate-300">
-                <Phone className="h-5 w-5 shrink-0 text-red-500" />
-                {SITE_PHONE}
+              <li className="flex items-start gap-3 text-slate-300">
+                <Phone className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                <span className="flex flex-col gap-1">
+                  {SITE_PHONES.map((phone) => (
+                    <a key={phone} href={`tel:${phone}`} className="hover:text-red-400">
+                      {phone}
+                    </a>
+                  ))}
+                </span>
               </li>
               <li className="flex items-center gap-3 text-slate-300">
                 <Mail className="h-5 w-5 shrink-0 text-red-500" />

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Briefcase,
   Calendar,
   Car,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -21,6 +23,8 @@ const navItems = [
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/services", label: "Services", icon: Wrench },
+  { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
+  { href: "/admin/job-applications", label: "Applications", icon: ClipboardList },
 ];
 
 export function AdminSidebar() {

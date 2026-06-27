@@ -63,6 +63,31 @@ export const inquiryStatusSchema = z.object({
   status: z.enum(["new", "replied", "closed"]),
 });
 
+export const jobPostingSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  department: z.string().min(1, "Department is required"),
+  location: z.string().min(1, "Location is required"),
+  employmentType: z.enum(["full_time", "part_time", "contract"]),
+  description: z.string().min(20, "Description must be at least 20 characters"),
+  requirements: z.string().min(10, "Requirements must be at least 10 characters"),
+  salaryRange: z.string().optional(),
+  status: z.enum(["open", "closed"]).default("open"),
+  active: z.boolean().default(true),
+});
+
+export const jobApplicationSchema = z.object({
+  jobId: z.string().min(1, "Job is required"),
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().optional(),
+  resumeUrl: z.string().optional(),
+  coverLetter: z.string().optional(),
+});
+
+export const jobApplicationStatusSchema = z.object({
+  status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]),
+});
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;

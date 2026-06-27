@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This guide covers CI/CD and production hosting for **Premier Auto Centre**.
+This guide covers CI/CD and production hosting for **Auto Galaxy**.
 
 ## Architecture
 
