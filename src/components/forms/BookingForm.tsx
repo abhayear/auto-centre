@@ -169,11 +169,11 @@ export function BookingForm({ services }: { services: Service[] }) {
       <div className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4">
         <div className="mb-3 flex items-center gap-2">
           <MapPin className="h-5 w-5 text-red-500" />
-          <h2 className="font-semibold text-white">Step 1 — Pick your location</h2>
+          <h2 className="font-semibold text-white">Step 1 — Your current location</h2>
         </div>
         <p className="mb-4 text-sm text-slate-400">
-          Search with Google Maps or use your current location. We&apos;ll confirm service
-          availability before you book.
+          We detect your current location to check service availability. Allow location access when
+          prompted, or search for a different address.
         </p>
 
         <LocationPicker
