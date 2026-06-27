@@ -33,7 +33,8 @@ describe("vehicleSchema", () => {
   });
 
   it("rejects missing make", () => {
-    const { make: _, ...rest } = validVehicle;
+    const { make, ...rest } = validVehicle;
+    void make;
     const result = vehicleSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });

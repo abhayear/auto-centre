@@ -1,7 +1,7 @@
 "use client";
 
 import { JobApplication, JobPosting } from "@prisma/client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge, statusVariant } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
@@ -14,32 +14,52 @@ export default function AdminJobApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchApplications = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const url = statusFilter
+        ? `/api/job-applications?status=${statusFilter}`
+        : "/api/job-applications";
+
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : [];
+
+        if (!res.ok) {
+          toast.error(data.error ?? "Failed to load applications");
+          if (active) setLoading(false);
+          return;
+        }
+
+        if (active) {
+          setApplications(Array.isArray(data) ? data : []);
+          setLoading(false);
+        }
+      } catch {
+        toast.error("Failed to load applications");
+        if (active) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [statusFilter]);
+
+  async function refreshApplications() {
     const url = statusFilter
       ? `/api/job-applications?status=${statusFilter}`
       : "/api/job-applications";
-    try {
-      const res = await fetch(url);
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : [];
-
-      if (!res.ok) {
-        toast.error(data.error ?? "Failed to load applications");
-        setLoading(false);
-        return;
-      }
-
-      setApplications(Array.isArray(data) ? data : []);
-      setLoading(false);
-    } catch {
-      toast.error("Failed to load applications");
-      setLoading(false);
+    const res = await fetch(url);
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : [];
+    if (res.ok && Array.isArray(data)) {
+      setApplications(data);
     }
-  }, [statusFilter]);
-
-  useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+  }
 
   async function updateStatus(id: string, status: string) {
     const res = await fetch("/api/job-applications", {
@@ -50,7 +70,7 @@ export default function AdminJobApplicationsPage() {
 
     if (res.ok) {
       toast.success("Status updated");
-      fetchApplications();
+      refreshApplications();
     } else {
       toast.error("Failed to update status");
     }
