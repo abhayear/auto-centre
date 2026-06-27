@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$DatabaseUrl,
 
-    [string]$AdminEmail = "admin@autocentre.com",
+    [string]$AdminEmail = "admin@autogalaxy.in",
     [string]$AdminPassword = ""
 )
 
