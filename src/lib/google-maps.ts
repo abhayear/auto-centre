@@ -1,5 +1,6 @@
-import { Loader } from "@googlemaps/js-api-loader";
+import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 
+let configured = false;
 let loadPromise: Promise<typeof google> | null = null;
 
 export function getGoogleMapsApiKey(): string | undefined {
@@ -13,12 +14,17 @@ export function loadGoogleMaps(): Promise<typeof google> {
   }
 
   if (!loadPromise) {
-    const loader = new Loader({
-      apiKey,
-      version: "weekly",
-      libraries: ["places"],
-    });
-    loadPromise = loader.load();
+    loadPromise = (async () => {
+      if (!configured) {
+        setOptions({ key: apiKey, v: "weekly" });
+        configured = true;
+      }
+
+      await importLibrary("maps");
+      await importLibrary("places");
+
+      return google;
+    })();
   }
 
   return loadPromise;
