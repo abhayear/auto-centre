@@ -85,6 +85,15 @@ model SiteSettings {
   updatedAt     DateTime @updatedAt
 }
 
+model ServiceScheduleContent {
+  id        String   @id @default("default")
+  title     String
+  summary   String?
+  content   String   @db.Text
+  published Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
 model Inquiry {
   id        String   @id @default(cuid())
   type      String

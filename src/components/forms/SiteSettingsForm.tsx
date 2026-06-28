@@ -84,6 +84,7 @@ export function SiteSettingsForm() {
         noticeText: result.noticeText ?? "",
         noticeActive: result.noticeActive,
       });
+      window.dispatchEvent(new CustomEvent("site-settings-updated"));
       toast.success("Site settings updated");
     } catch {
       toast.error("Failed to save settings");

@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import {
+  DEFAULT_SERVICE_SCHEDULE_CONTENT,
+  DEFAULT_SERVICE_SCHEDULE_SUMMARY,
+  DEFAULT_SERVICE_SCHEDULE_TITLE,
+} from "../src/lib/service-schedule-default";
 
 const prisma = new PrismaClient();
 
@@ -319,6 +324,18 @@ async function main() {
       id: "default",
       businessHours: defaultBusinessHours,
       noticeActive: false,
+    },
+  });
+
+  await prisma.serviceScheduleContent.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      title: DEFAULT_SERVICE_SCHEDULE_TITLE,
+      summary: DEFAULT_SERVICE_SCHEDULE_SUMMARY,
+      content: DEFAULT_SERVICE_SCHEDULE_CONTENT,
+      published: true,
     },
   });
 

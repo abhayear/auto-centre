@@ -16,3 +16,35 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
 }
+
+@keyframes notice-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.notice-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: notice-marquee 28s linear infinite;
+}
+
+.notice-marquee-content {
+  flex-shrink: 0;
+  padding-right: 3rem;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice-marquee-track {
+    animation: none;
+    width: 100%;
+  }
+
+  .notice-marquee-content:last-child {
+    display: none;
+  }
+}

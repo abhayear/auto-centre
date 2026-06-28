@@ -12,7 +12,11 @@ import { formatZodErrors, siteSettingsSchema } from "@/lib/validators";
 
 export async function GET() {
   const settings = await getSiteSettings();
-  return NextResponse.json(settings);
+  return NextResponse.json(settings, {
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
 }
 
 export async function PATCH(request: NextRequest) {

@@ -16,7 +16,11 @@ export function revalidatePublicCareerPages() {
 }
 
 export function revalidatePublicSitePages() {
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   revalidatePath("/contact");
   revalidatePath("/about");
+  revalidatePath("/service-schedule");
+  revalidatePath("/vehicles");
+  revalidatePath("/services");
+  revalidatePath("/book-service");
 }

@@ -48,6 +48,21 @@ export default async function ServicesPage() {
         ))}
       </div>
 
+      <div className="mt-12 rounded-xl border border-slate-700/50 bg-slate-800/30 p-8 md:flex md:items-center md:justify-between md:gap-6">
+        <div className="text-left">
+          <h2 className="text-xl font-bold text-white">Low-speed electric bike schedule</h2>
+          <p className="mt-2 text-slate-400">
+            Meter resets often? Use our time-based maintenance guide for reliable service planning.
+          </p>
+        </div>
+        <Link
+          href="/service-schedule"
+          className="mt-4 inline-block shrink-0 rounded-lg border border-red-600/40 bg-red-600/10 px-6 py-3 font-medium text-red-300 hover:bg-red-600/20 md:mt-0"
+        >
+          View service schedule
+        </Link>
+      </div>
+
       <div className="mt-12 rounded-xl bg-gradient-to-r from-red-600/20 to-red-700/10 border border-red-600/30 p-8 text-center">
         <h2 className="text-xl font-bold text-white">Ready to book?</h2>
         <p className="mt-2 text-slate-400">
