@@ -77,6 +77,14 @@ model ServiceCentreConfig {
   updatedAt          DateTime @updatedAt
 }
 
+model SiteSettings {
+  id            String   @id @default("default")
+  businessHours String   @default("[]")
+  noticeText    String?
+  noticeActive  Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
 model Inquiry {
   id        String   @id @default(cuid())
   type      String

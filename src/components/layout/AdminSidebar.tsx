@@ -7,6 +7,7 @@ import {
   Calendar,
   Car,
   ClipboardList,
+  Clock,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/services", label: "Services", icon: Wrench },
   { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
+  { href: "/admin/site-settings", label: "Site Settings", icon: Clock },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
   { href: "/admin/job-applications", label: "Applications", icon: ClipboardList },
 ];

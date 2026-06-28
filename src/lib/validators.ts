@@ -124,6 +124,25 @@ export const jobApplicationStatusSchema = z.object({
   status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]),
 });
 
+export const businessHourSchema = z.object({
+  day: z.string().min(1, "Day label is required"),
+  hours: z.string().min(1, "Hours are required"),
+});
+
+export const siteSettingsSchema = z
+  .object({
+    businessHours: z.array(businessHourSchema).min(1, "Add at least one timing row"),
+    noticeText: z.string().max(500).nullable().optional(),
+    noticeActive: z.boolean(),
+  })
+  .refine(
+    (data) => !data.noticeActive || Boolean(data.noticeText?.trim()),
+    {
+      message: "Notice text is required when notice is active",
+      path: ["noticeText"],
+    }
+  );
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;

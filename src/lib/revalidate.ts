@@ -14,3 +14,9 @@ export function revalidatePublicVehiclePages() {
 export function revalidatePublicCareerPages() {
   revalidatePath("/careers");
 }
+
+export function revalidatePublicSitePages() {
+  revalidatePath("/");
+  revalidatePath("/contact");
+  revalidatePath("/about");
+}

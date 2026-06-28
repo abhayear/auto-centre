@@ -2,12 +2,12 @@ import { InquiryForm } from "@/components/forms/InquiryForm";
 import { StoreMap } from "@/components/maps/StoreMap";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import {
-  BUSINESS_HOURS,
   SITE_ADDRESS,
   SITE_EMAIL,
   SITE_NAME,
   SITE_PHONES,
 } from "@/lib/constants";
+import { getSiteSettings } from "@/lib/site-settings";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,7 +15,9 @@ export const metadata: Metadata = {
   description: `Get in touch with ${SITE_NAME}.`,
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { businessHours } = await getSiteSettings();
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-10">
@@ -57,7 +59,7 @@ export default function ContactPage() {
               Business Hours
             </h2>
             <ul className="space-y-2">
-              {BUSINESS_HOURS.map((item) => (
+              {businessHours.map((item) => (
                 <li key={item.day} className="flex justify-between text-sm text-slate-300">
                   <span>{item.day}</span>
                   <span className="text-slate-400">{item.hours}</span>

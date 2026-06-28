@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+const defaultBusinessHours = JSON.stringify([
+  { day: "Monday – Saturday", hours: "9:00 AM – 7:00 PM" },
+  { day: "Sunday", hours: "10:00 AM – 5:00 PM" },
+]);
+
 const vehicleImages = [
   "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
   "https://images.unsplash.com/photo-1622185135855-8812708b39f0?w=800",
@@ -304,6 +309,16 @@ async function main() {
       coverLetter:
         "I have 2 years of sales experience and am passionate about promoting electric mobility in Lalitpur.",
       status: "new",
+    },
+  });
+
+  await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      businessHours: defaultBusinessHours,
+      noticeActive: false,
     },
   });
 
