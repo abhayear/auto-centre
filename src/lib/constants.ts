@@ -8,6 +8,9 @@ export const SITE_EMAIL = "info@autogalaxy.in";
 export const SITE_ADDRESS =
   "Civil Line, Near Government ITI College, Siddhan Road, Lalitpur, Uttar Pradesh";
 
+export const ONLINE_STORE_URL =
+  "https://api1.vyaparapp.in/store/autogalaxyonline";
+
 /** Auto Galaxy showroom — used for map centre & contact page */
 export const STORE_LOCATION = {
   lat: 25.386945,

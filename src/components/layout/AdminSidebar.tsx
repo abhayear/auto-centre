@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Briefcase,
+  BarChart3,
   Calendar,
   CalendarClock,
   Car,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/esteemed-customers", label: "Esteemed Customers", icon: Star },
+  { href: "/admin/site-analytics", label: "Site Analytics", icon: BarChart3 },
   { href: "/admin/services", label: "Services", icon: Wrench },
   { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/site-settings", label: "Site Settings", icon: Clock },

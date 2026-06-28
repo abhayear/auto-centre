@@ -109,6 +109,20 @@ model EsteemedCustomer {
   updatedAt    DateTime @updatedAt
 }
 
+model SiteVisit {
+  id        String   @id @default(cuid())
+  path      String
+  city      String?
+  region    String?
+  country   String?
+  device    String?
+  referer   String?
+  visitedAt DateTime @default(now())
+
+  @@index([visitedAt])
+  @@index([path])
+}
+
 model Inquiry {
   id        String   @id @default(cuid())
   type      String

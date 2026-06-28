@@ -36,7 +36,7 @@ function animateCount(
   requestAnimationFrame(frame);
 }
 
-export function VisitorCountBadge() {
+export function VisitorCountBadge({ className }: { className?: string }) {
   const [visible, setVisible] = useState(false);
   const [displayCount, setDisplayCount] = useState<number | null>(null);
   const mounted = useRef(false);
@@ -104,7 +104,7 @@ export function VisitorCountBadge() {
     <div
       role="status"
       aria-live="polite"
-      className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-600/60 bg-slate-900/60 px-4 py-2 text-sm text-slate-300 backdrop-blur-sm"
+      className={`inline-flex items-center gap-2 rounded-full border border-slate-600/60 bg-slate-900/60 px-4 py-2 text-sm text-slate-300 backdrop-blur-sm ${className ?? ""}`}
     >
       <Eye className="h-4 w-4 text-red-400" aria-hidden />
       <span>

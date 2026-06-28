@@ -38,7 +38,6 @@ export default async function HomePage() {
               <span className="text-red-500">{SITE_NAME}</span>
             </h1>
             <p className="mt-6 text-lg text-slate-300">{SITE_DESCRIPTION}</p>
-            <VisitorCountBadge />
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 href="/vehicles"
@@ -164,6 +163,12 @@ export default async function HomePage() {
           >
             Request Test Ride
           </Link>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-800 bg-slate-950 py-8">
+        <div className="mx-auto flex max-w-7xl justify-center px-4 sm:px-6 lg:px-8">
+          <VisitorCountBadge />
         </div>
       </section>
     </>

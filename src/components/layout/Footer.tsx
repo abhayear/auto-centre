@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Zap, Mail, MapPin, Phone } from "lucide-react";
 import {
+  ONLINE_STORE_URL,
   SITE_ADDRESS,
   SITE_EMAIL,
   SITE_NAME,
@@ -30,6 +31,16 @@ export function Footer() {
                 <Link href="/vehicles" className="hover:text-red-400">
                   Browse E-Scooters
                 </Link>
+              </li>
+              <li>
+                <a
+                  href={ONLINE_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-red-400"
+                >
+                  Online Store
+                </a>
               </li>
               <li>
                 <Link href="/services" className="hover:text-red-400">
