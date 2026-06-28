@@ -77,6 +77,16 @@ export const serviceAreaSchema = z.object({
   active: z.boolean().default(true),
 });
 
+export const esteemedCustomerSchema = z.object({
+  name: z.string().min(2, "Customer name is required"),
+  designation: z.string().max(120).optional(),
+  locality: z.string().max(120).optional(),
+  vehicle: z.string().max(120).optional(),
+  note: z.string().max(300).optional(),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  active: z.boolean().default(true),
+});
+
 export const inquirySchema = z.object({
   type: z.enum(["test_drive", "contact", "general"]),
   name: z.string().min(2, "Name is required"),
@@ -134,6 +144,8 @@ export const siteSettingsSchema = z
     businessHours: z.array(businessHourSchema).min(1, "Add at least one timing row"),
     noticeText: z.string().max(500).nullable().optional(),
     noticeActive: z.boolean(),
+    visitorCount: z.coerce.number().int().min(0),
+    showVisitorCount: z.boolean(),
   })
   .refine(
     (data) => !data.noticeActive || Boolean(data.noticeText?.trim()),

@@ -40,6 +40,7 @@ async function main() {
   await prisma.vehicle.deleteMany();
   await prisma.service.deleteMany();
   await prisma.serviceArea.deleteMany();
+  await prisma.esteemedCustomer.deleteMany();
 
   await Promise.all([
     prisma.serviceArea.create({
@@ -56,6 +57,39 @@ async function main() {
     }),
     prisma.serviceArea.create({
       data: { name: "Mahroni", pinCode: "284405", active: true },
+    }),
+    prisma.esteemedCustomer.create({
+      data: {
+        name: "Rajesh Kumar",
+        designation: "Shopkeeper",
+        locality: "Civil Line, Lalitpur",
+        vehicle: "Ola S1 Air",
+        note: "Regular service customer since 2023",
+        sortOrder: 1,
+        active: true,
+      },
+    }),
+    prisma.esteemedCustomer.create({
+      data: {
+        name: "Priya Verma",
+        designation: "School Teacher",
+        locality: "Siddhan Road, Lalitpur",
+        vehicle: "TVS iQube",
+        note: "Purchased and services her e-scooter with us",
+        sortOrder: 2,
+        active: true,
+      },
+    }),
+    prisma.esteemedCustomer.create({
+      data: {
+        name: "Amit Delivery Services",
+        designation: "Fleet Owner",
+        locality: "Lalitpur",
+        vehicle: "5× low-speed e-bikes",
+        note: "Monthly fleet maintenance partner",
+        sortOrder: 3,
+        active: true,
+      },
     }),
     prisma.serviceArea.create({
       data: { name: "Talbehat", pinCode: "284126", active: true },

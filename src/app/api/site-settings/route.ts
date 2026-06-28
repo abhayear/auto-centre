@@ -35,12 +35,16 @@ export async function PATCH(request: NextRequest) {
         businessHours: serializeBusinessHours(data.businessHours),
         noticeText: data.noticeText?.trim() || null,
         noticeActive: data.noticeActive,
+        visitorCount: data.visitorCount,
+        showVisitorCount: data.showVisitorCount,
       },
       create: {
         id: "default",
         businessHours: serializeBusinessHours(data.businessHours),
         noticeText: data.noticeText?.trim() || null,
         noticeActive: data.noticeActive,
+        visitorCount: data.visitorCount,
+        showVisitorCount: data.showVisitorCount,
       },
     });
 
@@ -50,6 +54,8 @@ export async function PATCH(request: NextRequest) {
       businessHours: parseBusinessHours(row.businessHours),
       noticeText: row.noticeText,
       noticeActive: row.noticeActive,
+      visitorCount: row.visitorCount,
+      showVisitorCount: row.showVisitorCount,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

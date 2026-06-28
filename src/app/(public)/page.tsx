@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Battery, Shield, Wrench, Zap } from "lucide-react";
+import { EsteemedCustomersSection } from "@/components/customers/EsteemedCustomersSection";
+import { VisitorCountBadge } from "@/components/home/VisitorCountBadge";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +10,7 @@ import { formatPrice } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featuredVehicles, services] = await Promise.all([
+  const [featuredVehicles, services, esteemedCustomers] = await Promise.all([
     prisma.vehicle.findMany({
       where: { featured: true, status: "available" },
       take: 3,
@@ -18,6 +20,10 @@ export default async function HomePage() {
       where: { active: true },
       orderBy: { createdAt: "desc" },
       take: 4,
+    }),
+    prisma.esteemedCustomer.findMany({
+      where: { active: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
   ]);
 
@@ -32,6 +38,7 @@ export default async function HomePage() {
               <span className="text-red-500">{SITE_NAME}</span>
             </h1>
             <p className="mt-6 text-lg text-slate-300">{SITE_DESCRIPTION}</p>
+            <VisitorCountBadge />
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 href="/vehicles"
@@ -108,6 +115,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <EsteemedCustomersSection customers={esteemedCustomers} />
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-3">

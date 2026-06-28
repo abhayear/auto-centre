@@ -78,11 +78,13 @@ model ServiceCentreConfig {
 }
 
 model SiteSettings {
-  id            String   @id @default("default")
-  businessHours String   @default("[]")
-  noticeText    String?
-  noticeActive  Boolean  @default(false)
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default("default")
+  businessHours     String   @default("[]")
+  noticeText        String?
+  noticeActive      Boolean  @default(false)
+  visitorCount      Int      @default(0)
+  showVisitorCount  Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
 }
 
 model ServiceScheduleContent {
@@ -92,6 +94,19 @@ model ServiceScheduleContent {
   content   String   @db.Text
   published Boolean  @default(true)
   updatedAt DateTime @updatedAt
+}
+
+model EsteemedCustomer {
+  id           String   @id @default(cuid())
+  name         String
+  designation  String?
+  locality     String?
+  vehicle      String?
+  note         String?
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Inquiry {

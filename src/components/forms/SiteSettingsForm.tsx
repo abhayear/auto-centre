@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, Clock, Plus, Trash2 } from "lucide-react";
+import { Bell, Clock, Eye, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { BusinessHour } from "@/lib/site-settings";
@@ -11,6 +11,8 @@ type SiteSettingsFormData = {
   businessHours: BusinessHour[];
   noticeText: string;
   noticeActive: boolean;
+  visitorCount: number;
+  showVisitorCount: boolean;
 };
 
 export function SiteSettingsForm() {
@@ -26,6 +28,8 @@ export function SiteSettingsForm() {
           businessHours: data.businessHours ?? [],
           noticeText: data.noticeText ?? "",
           noticeActive: Boolean(data.noticeActive),
+          visitorCount: Number(data.visitorCount ?? 0),
+          showVisitorCount: Boolean(data.showVisitorCount ?? true),
         });
         setLoading(false);
       })
@@ -69,6 +73,8 @@ export function SiteSettingsForm() {
           businessHours: settings.businessHours,
           noticeText: settings.noticeText.trim() || null,
           noticeActive: settings.noticeActive,
+          visitorCount: settings.visitorCount,
+          showVisitorCount: settings.showVisitorCount,
         }),
       });
       const result = await res.json();
@@ -83,6 +89,8 @@ export function SiteSettingsForm() {
         businessHours: result.businessHours,
         noticeText: result.noticeText ?? "",
         noticeActive: result.noticeActive,
+        visitorCount: Number(result.visitorCount ?? 0),
+        showVisitorCount: Boolean(result.showVisitorCount ?? true),
       });
       window.dispatchEvent(new CustomEvent("site-settings-updated"));
       toast.success("Site settings updated");
@@ -190,6 +198,46 @@ export function SiteSettingsForm() {
           className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
         <p className="mt-1 text-xs text-slate-500">{settings.noticeText.length}/500 characters</p>
+      </section>
+
+      <section className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Eye className="h-5 w-5 text-red-500" />
+          <h2 className="text-lg font-semibold text-white">Homepage visitor count</h2>
+        </div>
+        <p className="mb-4 text-sm text-slate-400">
+          Shown on the home page and updates automatically when someone visits (once per browser
+          session).
+        </p>
+
+        <label className="mb-4 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={settings.showVisitorCount}
+            onChange={(e) =>
+              setSettings({ ...settings, showVisitorCount: e.target.checked })
+            }
+            className="rounded border-slate-600 bg-slate-800 text-red-600"
+          />
+          Show visitor count on homepage
+        </label>
+
+        <Input
+          id="visitorCount"
+          type="number"
+          label="Current count (manual adjust)"
+          min={0}
+          value={settings.visitorCount}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              visitorCount: Math.max(0, Number(e.target.value) || 0),
+            })
+          }
+        />
+        <p className="mt-2 text-xs text-slate-500">
+          Set a starting number if migrating from an old counter. New visits add automatically.
+        </p>
       </section>
 
       <Button type="submit" loading={saving}>
