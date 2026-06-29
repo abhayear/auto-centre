@@ -7,6 +7,7 @@ import {
   jobApplicationSchema,
   jobPostingSchema,
   loginSchema,
+  changePasswordSchema,
   serviceSchema,
   vehicleSchema,
 } from "../validators";
@@ -123,6 +124,35 @@ describe("loginSchema", () => {
       password: "secret",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  it("accepts valid password change", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "oldpass1",
+      newPassword: "newpass12",
+      confirmPassword: "newpass12",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects mismatched confirmation", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "oldpass1",
+      newPassword: "newpass12",
+      confirmPassword: "different",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects when new password equals current", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "samepass1",
+      newPassword: "samepass1",
+      confirmPassword: "samepass1",
+    });
+    expect(result.success).toBe(false);
   });
 });
 

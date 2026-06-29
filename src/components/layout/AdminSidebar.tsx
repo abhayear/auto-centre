@@ -10,6 +10,7 @@ import {
   Car,
   ClipboardList,
   Clock,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -75,7 +76,19 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-slate-800 p-4">
+      <div className="border-t border-slate-800 p-4 space-y-1">
+        <Link
+          href="/admin/change-password"
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+            pathname === "/admin/change-password"
+              ? "bg-red-600/20 text-red-400"
+              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+          )}
+        >
+          <KeyRound className="h-4 w-4" />
+          Change Password
+        </Link>
         <Button
           variant="ghost"
           className="w-full justify-start"
