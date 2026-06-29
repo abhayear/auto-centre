@@ -29,8 +29,8 @@ async function main() {
 
   await prisma.adminUser.upsert({
     where: { email: adminEmail },
-    update: { passwordHash },
-    create: { email: adminEmail, passwordHash },
+    update: { passwordHash, role: "admin", active: true },
+    create: { email: adminEmail, passwordHash, role: "admin", active: true },
   });
 
   await prisma.serviceBooking.deleteMany();

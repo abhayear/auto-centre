@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Briefcase,
   BarChart3,
@@ -16,6 +17,7 @@ import {
   MapPin,
   MessageSquare,
   Star,
+  UserCog,
   Wrench,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -36,10 +38,17 @@ const navItems = [
   { href: "/admin/service-schedule", label: "Service Schedule", icon: CalendarClock },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
   { href: "/admin/job-applications", label: "Applications", icon: ClipboardList },
+  { href: "/admin/managers", label: "Managers", icon: UserCog, adminOnly: true },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || isAdmin
+  );
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-950">
@@ -47,11 +56,13 @@ export function AdminSidebar() {
         <Link href="/admin" className="text-lg font-bold text-white">
           {SITE_NAME}
         </Link>
-        <p className="text-xs text-slate-500">Admin Panel</p>
+        <p className="text-xs text-slate-500">
+          {isAdmin ? "Admin Panel" : "Manager Panel"}
+        </p>
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/admin"

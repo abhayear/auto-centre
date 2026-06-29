@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import type { StaffRole } from "@/lib/admin-roles";
 
 export default {
   providers: [],
@@ -13,6 +14,7 @@ export default {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.role = user.role;
       }
       return token;
     },
@@ -20,6 +22,7 @@ export default {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.role = token.role as StaffRole;
       }
       return session;
     },

@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import authConfig from "./auth.config";
+import { MANAGER_ROLE, type StaffRole } from "./admin-roles";
 import { prisma } from "./prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -24,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email },
         });
 
-        if (!user) {
+        if (!user || !user.active) {
           return null;
         }
 
@@ -36,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: user.id,
           email: user.email,
+          role: user.role as StaffRole,
         };
       },
     }),
@@ -44,8 +46,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 export async function requireAdmin() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.email) {
+    return null;
+  }
+
+  const user = await prisma.adminUser.findUnique({
+    where: { email: session.user.email },
+    select: { active: true, role: true },
+  });
+
+  if (!user?.active) {
+    return null;
+  }
+
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      role: user.role as StaffRole,
+    },
+  };
+}
+
+/** Full admin only — for appointing managers and staff management. */
+export async function requireAdminRole() {
+  const session = await requireAdmin();
+  if (!session || session.user.role !== "admin") {
     return null;
   }
   return session;
+}
+
+export function canManageWebsiteContent(role: StaffRole): boolean {
+  return role === "admin" || role === MANAGER_ROLE;
 }

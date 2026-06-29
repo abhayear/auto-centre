@@ -8,6 +8,7 @@ import {
   jobPostingSchema,
   loginSchema,
   changePasswordSchema,
+  createManagerSchema,
   serviceSchema,
   vehicleSchema,
 } from "../validators";
@@ -124,6 +125,24 @@ describe("loginSchema", () => {
       password: "secret",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("createManagerSchema", () => {
+  it("accepts valid manager credentials", () => {
+    const result = createManagerSchema.safeParse({
+      email: "manager@autogalaxy.in",
+      password: "securepass",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects short password", () => {
+    const result = createManagerSchema.safeParse({
+      email: "manager@autogalaxy.in",
+      password: "short",
+    });
+    expect(result.success).toBe(false);
   });
 });
 

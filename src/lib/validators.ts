@@ -116,6 +116,17 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const createManagerSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const updateManagerSchema = z.object({
+  id: z.string().min(1),
+  active: z.boolean().optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+});
+
 export const bookingStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
 });
