@@ -1,5 +1,6 @@
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -16,7 +17,10 @@ export default async function TestDrivePage({ searchParams }: PageProps) {
 
   let vehicleLabel: string | undefined;
   if (vehicleId) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    const vehicle = await safeDbQuery(
+      () => prisma.vehicle.findUnique({ where: { id: vehicleId } }),
+      null
+    );
     if (vehicle) {
       vehicleLabel = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
     }

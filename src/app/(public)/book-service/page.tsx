@@ -1,5 +1,6 @@
 import { BookingForm } from "@/components/forms/BookingForm";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,11 +11,15 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function BookServicePage() {
-  const services = await prisma.service.findMany({
-    where: { active: true },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true },
-  });
+  const services = await safeDbQuery(
+    () =>
+      prisma.service.findMany({
+        where: { active: true },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true },
+      }),
+    []
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">

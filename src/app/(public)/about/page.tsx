@@ -2,6 +2,7 @@ import { Award, Users, Zap } from "lucide-react";
 import { EsteemedCustomersSection } from "@/components/customers/EsteemedCustomersSection";
 import { SITE_ADDRESS, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,10 +13,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
-  const esteemedCustomers = await prisma.esteemedCustomer.findMany({
-    where: { active: true },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
+  const esteemedCustomers = await safeDbQuery(
+    () =>
+      prisma.esteemedCustomer.findMany({
+        where: { active: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
+    []
+  );
 
   return (
     <>

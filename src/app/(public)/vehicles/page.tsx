@@ -1,5 +1,6 @@
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,9 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default async function VehiclesPage() {
-  const vehicles = await prisma.vehicle.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const vehicles = await safeDbQuery(
+    () => prisma.vehicle.findMany({ orderBy: { createdAt: "desc" } }),
+    []
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

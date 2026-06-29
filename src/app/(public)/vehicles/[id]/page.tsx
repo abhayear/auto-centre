@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import { formatPrice, parseImages } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -11,7 +12,10 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const vehicle = await prisma.vehicle.findUnique({ where: { id } });
+  const vehicle = await safeDbQuery(
+    () => prisma.vehicle.findUnique({ where: { id } }),
+    null
+  );
   if (!vehicle) return { title: "Vehicle Not Found" };
   return {
     title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
@@ -21,7 +25,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function VehicleDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const vehicle = await prisma.vehicle.findUnique({ where: { id } });
+  const vehicle = await safeDbQuery(
+    () => prisma.vehicle.findUnique({ where: { id } }),
+    null
+  );
 
   if (!vehicle) notFound();
 

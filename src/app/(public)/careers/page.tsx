@@ -3,6 +3,7 @@ import { Briefcase, MapPin, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import { formatEmploymentType } from "@/lib/utils";
 import { SITE_NAME } from "@/lib/constants";
 import type { Metadata } from "next";
@@ -15,10 +16,14 @@ export const metadata: Metadata = {
 };
 
 export default async function CareersPage() {
-  const jobs = await prisma.jobPosting.findMany({
-    where: { active: true, status: "open" },
-    orderBy: { createdAt: "desc" },
-  });
+  const jobs = await safeDbQuery(
+    () =>
+      prisma.jobPosting.findMany({
+        where: { active: true, status: "open" },
+        orderBy: { createdAt: "desc" },
+      }),
+    []
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

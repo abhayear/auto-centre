@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, Wrench } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import { formatPrice } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -12,10 +13,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ServicesPage() {
-  const services = await prisma.service.findMany({
-    where: { active: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const services = await safeDbQuery(
+    () =>
+      prisma.service.findMany({
+        where: { active: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    []
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

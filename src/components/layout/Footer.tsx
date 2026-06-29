@@ -67,6 +67,11 @@ export function Footer() {
                   Request Test Ride
                 </Link>
               </li>
+              <li>
+                <Link href="/investment" className="hover:text-red-400">
+                  Investment Proposal
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -98,7 +103,14 @@ export function Footer() {
         </div>
 
         <div className="mt-8 border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
-          &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+          <p>
+            &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+          </p>
+          <p className="mt-2">
+            <Link href="/sitemap" className="hover:text-red-400">
+              Sitemap
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

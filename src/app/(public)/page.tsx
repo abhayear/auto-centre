@@ -5,26 +5,39 @@ import { VisitorCountBadge } from "@/components/home/VisitorCountBadge";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [featuredVehicles, services, esteemedCustomers] = await Promise.all([
-    prisma.vehicle.findMany({
-      where: { featured: true, status: "available" },
-      take: 3,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.service.findMany({
-      where: { active: true },
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    }),
-    prisma.esteemedCustomer.findMany({
-      where: { active: true },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
+    safeDbQuery(
+      () =>
+        prisma.vehicle.findMany({
+          where: { featured: true, status: "available" },
+          take: 3,
+          orderBy: { createdAt: "desc" },
+        }),
+      []
+    ),
+    safeDbQuery(
+      () =>
+        prisma.service.findMany({
+          where: { active: true },
+          orderBy: { createdAt: "desc" },
+          take: 4,
+        }),
+      []
+    ),
+    safeDbQuery(
+      () =>
+        prisma.esteemedCustomer.findMany({
+          where: { active: true },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        }),
+      []
+    ),
   ]);
 
   return (

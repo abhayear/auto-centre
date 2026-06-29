@@ -4,6 +4,7 @@ import { MapPin, Clock, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { JobApplicationForm } from "@/components/forms/JobApplicationForm";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 import { formatEmploymentType } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -13,7 +14,10 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const job = await prisma.jobPosting.findUnique({ where: { id } });
+  const job = await safeDbQuery(
+    () => prisma.jobPosting.findUnique({ where: { id } }),
+    null
+  );
   if (!job) return { title: "Job Not Found" };
   return {
     title: `${job.title} — Careers`,
@@ -23,7 +27,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CareerDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const job = await prisma.jobPosting.findUnique({ where: { id } });
+  const job = await safeDbQuery(
+    () => prisma.jobPosting.findUnique({ where: { id } }),
+    null
+  );
 
   if (!job || !job.active || job.status !== "open") notFound();
 
