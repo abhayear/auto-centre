@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { isDbConnectionError, safeDbQuery } from "@/lib/safe-db";
 
 describe("isDbConnectionError", () => {
@@ -24,8 +24,7 @@ describe("isDbConnectionError", () => {
 
 describe("safeDbQuery", () => {
   it("returns fallback in development when database is unreachable", async () => {
-    const prev = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
 
     const result = await safeDbQuery(
       () =>
@@ -36,12 +35,11 @@ describe("safeDbQuery", () => {
     );
 
     expect(result).toEqual([]);
-    process.env.NODE_ENV = prev;
+    vi.unstubAllEnvs();
   });
 
   it("rethrows in production", async () => {
-    const prev = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     await expect(
       safeDbQuery(
@@ -53,6 +51,6 @@ describe("safeDbQuery", () => {
       )
     ).rejects.toBeInstanceOf(Prisma.PrismaClientInitializationError);
 
-    process.env.NODE_ENV = prev;
+    vi.unstubAllEnvs();
   });
 });

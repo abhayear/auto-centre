@@ -28,10 +28,16 @@ describe("parseBusinessHours", () => {
 });
 
 describe("getActiveNotice", () => {
+  const baseSettings = {
+    businessHours: BUSINESS_HOURS,
+    visitorCount: 0,
+    showVisitorCount: true,
+  };
+
   it("returns notice text when active", () => {
     expect(
       getActiveNotice({
-        businessHours: BUSINESS_HOURS,
+        ...baseSettings,
         noticeText: "Closed tomorrow",
         noticeActive: true,
       })
@@ -41,7 +47,7 @@ describe("getActiveNotice", () => {
   it("returns null when inactive or empty", () => {
     expect(
       getActiveNotice({
-        businessHours: BUSINESS_HOURS,
+        ...baseSettings,
         noticeText: "Closed tomorrow",
         noticeActive: false,
       })
@@ -49,7 +55,7 @@ describe("getActiveNotice", () => {
 
     expect(
       getActiveNotice({
-        businessHours: BUSINESS_HOURS,
+        ...baseSettings,
         noticeText: "   ",
         noticeActive: true,
       })

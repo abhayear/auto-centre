@@ -2,23 +2,28 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
-const STATIC_ROUTES: MetadataRoute.Sitemap = [
-  { url: "", changeFrequency: "weekly", priority: 1 },
-  { url: "/vehicles", changeFrequency: "daily", priority: 0.9 },
-  { url: "/services", changeFrequency: "weekly", priority: 0.8 },
-  { url: "/book-service", changeFrequency: "monthly", priority: 0.8 },
-  { url: "/test-drive", changeFrequency: "monthly", priority: 0.8 },
-  { url: "/service-schedule", changeFrequency: "monthly", priority: 0.7 },
-  { url: "/about", changeFrequency: "monthly", priority: 0.7 },
-  { url: "/contact", changeFrequency: "monthly", priority: 0.7 },
-  { url: "/careers", changeFrequency: "weekly", priority: 0.7 },
-  { url: "/investment", changeFrequency: "monthly", priority: 0.6 },
-  { url: "/sitemap", changeFrequency: "monthly", priority: 0.3 },
-].map(({ url, changeFrequency, priority }) => ({
-  url: `${getSiteUrl()}${url}`,
-  changeFrequency,
-  priority,
-}));
+const STATIC_PATHS = [
+  { path: "", changeFrequency: "weekly" as const, priority: 1 },
+  { path: "/vehicles", changeFrequency: "daily" as const, priority: 0.9 },
+  { path: "/services", changeFrequency: "weekly" as const, priority: 0.8 },
+  { path: "/book-service", changeFrequency: "monthly" as const, priority: 0.8 },
+  { path: "/test-drive", changeFrequency: "monthly" as const, priority: 0.8 },
+  { path: "/service-schedule", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/about", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/contact", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/careers", changeFrequency: "weekly" as const, priority: 0.7 },
+  { path: "/investment", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/sitemap", changeFrequency: "monthly" as const, priority: 0.3 },
+];
+
+function getStaticRoutes(): MetadataRoute.Sitemap {
+  const base = getSiteUrl();
+  return STATIC_PATHS.map(({ path, changeFrequency, priority }) => ({
+    url: `${base}${path}`,
+    changeFrequency,
+    priority,
+  }));
+}
 
 async function getDynamicRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
@@ -54,5 +59,5 @@ async function getDynamicRoutes(): Promise<MetadataRoute.Sitemap> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicRoutes = await getDynamicRoutes();
-  return [...STATIC_ROUTES, ...dynamicRoutes];
+  return [...getStaticRoutes(), ...dynamicRoutes];
 }
