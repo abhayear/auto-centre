@@ -100,7 +100,10 @@ export function WebVitalsRecorder() {
           }
         }
       });
-      inpObserver.observe({ type: "event", buffered: true, durationThreshold: 16 });
+      inpObserver.observe({
+        type: "event",
+        buffered: true,
+      } as PerformanceObserverInit);
       observers.push(inpObserver);
     } catch {
       // unsupported in this browser
