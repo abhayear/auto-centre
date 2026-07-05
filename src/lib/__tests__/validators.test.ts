@@ -34,6 +34,19 @@ describe("vehicleSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts uploaded image paths", () => {
+    const result = vehicleSchema.safeParse({
+      ...validVehicle,
+      images: ["/uploads/vehicles/abc.jpg"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("requires at least one image", () => {
+    const result = vehicleSchema.safeParse({ ...validVehicle, images: [] });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects missing make", () => {
     const { make, ...rest } = validVehicle;
     void make;

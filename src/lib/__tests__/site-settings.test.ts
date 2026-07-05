@@ -32,6 +32,8 @@ describe("getActiveNotice", () => {
     businessHours: BUSINESS_HOURS,
     visitorCount: 0,
     showVisitorCount: true,
+    heroImageUrl: null,
+    logoUrl: null,
   };
 
   it("returns notice text when active", () => {

@@ -1,4 +1,5 @@
 import { EsteemedCustomer } from "@prisma/client";
+import Image from "next/image";
 import { MapPin, Star, Zap } from "lucide-react";
 
 export function EsteemedCustomersSection({
@@ -28,8 +29,19 @@ export function EsteemedCustomersSection({
               key={customer.id}
               className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600/15 text-lg font-bold text-red-400">
-                {customer.name.charAt(0).toUpperCase()}
+              <div className="mb-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-red-600/15 text-lg font-bold text-red-400">
+                {customer.photoUrl ? (
+                  <Image
+                    src={customer.photoUrl}
+                    alt={customer.name}
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                    unoptimized={customer.photoUrl.startsWith("/uploads/")}
+                  />
+                ) : (
+                  customer.name.charAt(0).toUpperCase()
+                )}
               </div>
               <h3 className="text-lg font-semibold text-white">{customer.name}</h3>
               {customer.designation && (

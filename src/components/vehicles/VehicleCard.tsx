@@ -3,11 +3,13 @@ import Image from "next/image";
 import { Vehicle } from "@prisma/client";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { DEFAULT_VEHICLE_IMAGE } from "@/lib/image-constants";
 import { formatPrice, parseImages } from "@/lib/utils";
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const images = parseImages(vehicle.images);
-  const imageUrl = images[0] ?? "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80";
+  const imageUrl = images[0] ?? DEFAULT_VEHICLE_IMAGE;
+  const isLocalUpload = imageUrl.startsWith("/uploads/");
 
   return (
     <Link href={`/vehicles/${vehicle.id}`}>
@@ -19,6 +21,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            unoptimized={isLocalUpload}
           />
           {vehicle.featured && (
             <div className="absolute left-3 top-3">

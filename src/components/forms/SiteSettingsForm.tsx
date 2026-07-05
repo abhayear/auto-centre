@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, Clock, Eye, Plus, Trash2 } from "lucide-react";
+import { Bell, Clock, Eye, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
 import type { BusinessHour } from "@/lib/site-settings";
 
 type SiteSettingsFormData = {
@@ -13,6 +14,8 @@ type SiteSettingsFormData = {
   noticeActive: boolean;
   visitorCount: number;
   showVisitorCount: boolean;
+  heroImageUrl: string | null;
+  logoUrl: string | null;
 };
 
 export function SiteSettingsForm() {
@@ -30,6 +33,8 @@ export function SiteSettingsForm() {
           noticeActive: Boolean(data.noticeActive),
           visitorCount: Number(data.visitorCount ?? 0),
           showVisitorCount: Boolean(data.showVisitorCount ?? true),
+          heroImageUrl: data.heroImageUrl ?? null,
+          logoUrl: data.logoUrl ?? null,
         });
         setLoading(false);
       })
@@ -75,6 +80,8 @@ export function SiteSettingsForm() {
           noticeActive: settings.noticeActive,
           visitorCount: settings.visitorCount,
           showVisitorCount: settings.showVisitorCount,
+          heroImageUrl: settings.heroImageUrl,
+          logoUrl: settings.logoUrl,
         }),
       });
       const result = await res.json();
@@ -91,6 +98,8 @@ export function SiteSettingsForm() {
         noticeActive: result.noticeActive,
         visitorCount: Number(result.visitorCount ?? 0),
         showVisitorCount: Boolean(result.showVisitorCount ?? true),
+        heroImageUrl: result.heroImageUrl ?? null,
+        logoUrl: result.logoUrl ?? null,
       });
       window.dispatchEvent(new CustomEvent("site-settings-updated"));
       toast.success("Site settings updated");
@@ -113,6 +122,34 @@ export function SiteSettingsForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      <section className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <ImageIcon className="h-5 w-5 text-red-500" />
+          <h2 className="text-lg font-semibold text-white">Homepage images</h2>
+        </div>
+        <p className="mb-6 text-sm text-slate-400">
+          Optional hero background and logo for the site. Leave empty to use the default gradient hero.
+        </p>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          <SingleImageUploader
+            label="Hero background"
+            emptyHint="No hero image — gradient background only"
+            category="site"
+            value={settings.heroImageUrl}
+            onChange={(url) => setSettings({ ...settings, heroImageUrl: url })}
+          />
+          <SingleImageUploader
+            label="Site logo"
+            emptyHint="No logo uploaded"
+            previewAspect="aspect-square max-w-[200px]"
+            category="site"
+            value={settings.logoUrl}
+            onChange={(url) => setSettings({ ...settings, logoUrl: url })}
+          />
+        </div>
+      </section>
+
       <section className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
         <div className="mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5 text-red-500" />

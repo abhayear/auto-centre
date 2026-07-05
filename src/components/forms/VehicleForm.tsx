@@ -4,10 +4,12 @@ import { Vehicle } from "@prisma/client";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
+import { ImageUploader } from "@/components/forms/ImageUploader";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { parseImages } from "@/lib/utils";
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
@@ -17,18 +19,22 @@ interface VehicleFormProps {
 
 export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) {
   const [loading, setLoading] = useState(false);
+  const [images, setImages] = useState<string[]>(
+    vehicle ? parseImages(vehicle.images) : [],
+  );
   const isEdit = !!vehicle;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (images.length === 0) {
+      toast.error("Upload at least one vehicle photo");
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const imagesRaw = formData.get("images") as string;
-    const images = imagesRaw
-      .split("\n")
-      .map((url) => url.trim())
-      .filter(Boolean);
 
     const data = {
       make: formData.get("make"),
@@ -144,16 +150,11 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
           defaultValue={vehicle?.description}
           required
         />
-        <Textarea
-          id="images"
-          name="images"
-          label="Image URLs (one per line)"
-          rows={3}
-          defaultValue={
-            vehicle
-              ? JSON.parse(vehicle.images).join("\n")
-              : "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80"
-          }
+        <ImageUploader
+          value={images}
+          onChange={setImages}
+          category="vehicles"
+          label="Vehicle photos"
         />
         <label className="flex items-center gap-2 text-sm text-slate-300">
           <input

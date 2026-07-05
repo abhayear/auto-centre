@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Clock, Wrench } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
@@ -37,8 +38,24 @@ export default async function ServicesPage() {
             key={service.id}
             className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6"
           >
-            <div className="mb-4 flex items-start justify-between">
-              <Wrench className="h-6 w-6 text-red-500" />
+            {service.imageUrl ? (
+              <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-lg">
+                <Image
+                  src={service.imageUrl}
+                  alt={service.name}
+                  fill
+                  className="object-cover"
+                  sizes="400px"
+                  unoptimized={service.imageUrl.startsWith("/uploads/")}
+                />
+              </div>
+            ) : null}
+            <div className="mb-4 flex items-start justify-between gap-3">
+              {!service.imageUrl ? (
+                <Wrench className="h-6 w-6 shrink-0 text-red-500" />
+              ) : (
+                <div className="min-w-0 flex-1" />
+              )}
               <span className="text-lg font-bold text-red-400">
                 {formatPrice(service.estimatedPrice)}
               </span>

@@ -4,6 +4,7 @@ import { EsteemedCustomer } from "@prisma/client";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
+import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 
@@ -19,6 +20,7 @@ export function EsteemedCustomerForm({
   onCancel,
 }: EsteemedCustomerFormProps) {
   const [loading, setLoading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(customer?.photoUrl ?? null);
   const isEdit = !!customer;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -32,6 +34,7 @@ export function EsteemedCustomerForm({
       locality: formData.get("locality") || undefined,
       vehicle: formData.get("vehicle") || undefined,
       note: formData.get("note") || undefined,
+      photoUrl,
       sortOrder: Number(formData.get("sortOrder") || 0),
       active: formData.get("active") === "on",
     };
@@ -109,6 +112,14 @@ export function EsteemedCustomerForm({
             className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           />
         </div>
+        <SingleImageUploader
+          label="Customer photo"
+          emptyHint="No photo — initial letter shown on the website"
+          previewAspect="aspect-square max-w-[160px]"
+          category="customers"
+          value={photoUrl}
+          onChange={setPhotoUrl}
+        />
         <Input
           id="sortOrder"
           name="sortOrder"

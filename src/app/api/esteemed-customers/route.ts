@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         locality: data.locality?.trim() || null,
         vehicle: data.vehicle?.trim() || null,
         note: data.note?.trim() || null,
+        photoUrl: data.photoUrl ?? null,
         sortOrder: data.sortOrder,
         active: data.active,
       },

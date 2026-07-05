@@ -7,6 +7,20 @@ export function formatZodErrors(error: z.ZodError) {
   }));
 }
 
+export const uploadedImageUrlSchema = z
+  .string()
+  .max(2048)
+  .refine(
+    (value) =>
+      value.startsWith("/uploads/") ||
+      value.startsWith("/images/") ||
+      value.startsWith("https://") ||
+      value.startsWith("http://"),
+    "Must be an uploaded image or valid URL",
+  );
+
+export const optionalUploadedImageUrlSchema = uploadedImageUrlSchema.optional().nullable();
+
 export const vehicleSchema = z.object({
   make: z.string().min(1, "Make is required"),
   model: z.string().min(1, "Model is required"),
@@ -17,7 +31,11 @@ export const vehicleSchema = z.object({
   transmission: z.enum(["Automatic", "Manual", "CVT"]),
   condition: z.enum(["new", "used"]),
   status: z.enum(["available", "sold", "reserved"]).default("available"),
-  images: z.array(z.string().url()).default([]),
+  images: z
+    .array(uploadedImageUrlSchema)
+    .min(1, "Upload at least one vehicle photo")
+    .max(10)
+    .default([]),
   description: z.string().min(10, "Description must be at least 10 characters"),
   featured: z.boolean().default(false),
 });
@@ -27,6 +45,7 @@ export const serviceSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   estimatedPrice: z.coerce.number().positive("Price must be positive"),
   durationMinutes: z.coerce.number().int().positive(),
+  imageUrl: optionalUploadedImageUrlSchema,
   active: z.boolean().default(true),
 });
 
@@ -83,6 +102,7 @@ export const esteemedCustomerSchema = z.object({
   locality: z.string().max(120).optional(),
   vehicle: z.string().max(120).optional(),
   note: z.string().max(300).optional(),
+  photoUrl: optionalUploadedImageUrlSchema,
   sortOrder: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
 });
@@ -172,6 +192,8 @@ export const siteSettingsSchema = z
     noticeActive: z.boolean(),
     visitorCount: z.coerce.number().int().min(0),
     showVisitorCount: z.boolean(),
+    heroImageUrl: optionalUploadedImageUrlSchema,
+    logoUrl: optionalUploadedImageUrlSchema,
   })
   .refine(
     (data) => !data.noticeActive || Boolean(data.noticeText?.trim()),

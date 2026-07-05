@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_VEHICLE_IMAGE } from "@/lib/image-constants";
 import { safeDbQuery } from "@/lib/safe-db";
 import { formatPrice, parseImages } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -33,7 +34,8 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   if (!vehicle) notFound();
 
   const images = parseImages(vehicle.images);
-  const mainImage = images[0] ?? "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80";
+  const mainImage = images[0] ?? DEFAULT_VEHICLE_IMAGE;
+  const isLocalUpload = (url: string) => url.startsWith("/uploads/");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -51,13 +53,21 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               className="object-cover"
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
+              unoptimized={isLocalUpload(mainImage)}
             />
           </div>
           {images.length > 1 && (
             <div className="mt-4 grid grid-cols-4 gap-2">
               {images.slice(1, 5).map((img, i) => (
                 <div key={i} className="relative aspect-[16/10] overflow-hidden rounded-lg">
-                  <Image src={img} alt="" fill className="object-cover" sizes="150px" />
+                  <Image
+                    src={img}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="150px"
+                    unoptimized={isLocalUpload(img)}
+                  />
                 </div>
               ))}
             </div>

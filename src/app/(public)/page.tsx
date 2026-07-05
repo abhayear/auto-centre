@@ -1,17 +1,20 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Battery, Shield, Wrench, Zap } from "lucide-react";
 import { EsteemedCustomersSection } from "@/components/customers/EsteemedCustomersSection";
+import { StaffPortalSection } from "@/components/home/StaffPortalSection";
 import { VisitorCountBadge } from "@/components/home/VisitorCountBadge";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
+import { getSiteSettings } from "@/lib/site-settings";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featuredVehicles, services, esteemedCustomers] = await Promise.all([
+  const [featuredVehicles, services, esteemedCustomers, siteSettings] = await Promise.all([
     safeDbQuery(
       () =>
         prisma.vehicle.findMany({
@@ -38,12 +41,18 @@ export default async function HomePage() {
         }),
       []
     ),
+    getSiteSettings(),
   ]);
 
   return (
     <>
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80')] bg-cover bg-center opacity-15" />
+        {siteSettings.heroImageUrl ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15"
+            style={{ backgroundImage: `url(${siteSettings.heroImageUrl})` }}
+          />
+        ) : null}
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="max-w-2xl">
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
@@ -106,7 +115,20 @@ export default async function HomePage() {
                 key={service.id}
                 className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6"
               >
-                <Wrench className="mb-3 h-6 w-6 text-red-500" />
+                {service.imageUrl ? (
+                  <div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-lg">
+                    <Image
+                      src={service.imageUrl}
+                      alt={service.name}
+                      fill
+                      className="object-cover"
+                      sizes="280px"
+                      unoptimized={service.imageUrl.startsWith("/uploads/")}
+                    />
+                  </div>
+                ) : (
+                  <Wrench className="mb-3 h-6 w-6 text-red-500" />
+                )}
                 <h3 className="font-semibold text-white">{service.name}</h3>
                 <p className="mt-2 line-clamp-2 text-sm text-slate-400">
                   {service.description}
@@ -178,6 +200,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      <StaffPortalSection />
 
       <section className="border-t border-slate-800 bg-slate-950 py-8">
         <div className="mx-auto flex max-w-7xl justify-center px-4 sm:px-6 lg:px-8">

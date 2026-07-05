@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <rect width="800" height="500" fill="#0f172a"/>
+  <rect x="120" y="280" width="560" height="24" rx="12" fill="#334155"/>
+  <circle cx="220" cy="320" r="48" fill="#475569" stroke="#64748b" stroke-width="8"/>
+  <circle cx="580" cy="320" r="48" fill="#475569" stroke="#64748b" stroke-width="8"/>
+  <path d="M180 280 L260 180 L420 160 L560 200 L620 280 Z" fill="#475569" stroke="#64748b" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M300 180 L340 120 L420 110 L460 160" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
+  <text x="400" y="420" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="28">Auto Galaxy</text>
+</svg>

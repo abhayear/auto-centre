@@ -37,6 +37,8 @@ export async function PATCH(request: NextRequest) {
         noticeActive: data.noticeActive,
         visitorCount: data.visitorCount,
         showVisitorCount: data.showVisitorCount,
+        heroImageUrl: data.heroImageUrl ?? null,
+        logoUrl: data.logoUrl ?? null,
       },
       create: {
         id: "default",
@@ -45,6 +47,8 @@ export async function PATCH(request: NextRequest) {
         noticeActive: data.noticeActive,
         visitorCount: data.visitorCount,
         showVisitorCount: data.showVisitorCount,
+        heroImageUrl: data.heroImageUrl ?? null,
+        logoUrl: data.logoUrl ?? null,
       },
     });
 
@@ -56,6 +60,8 @@ export async function PATCH(request: NextRequest) {
       noticeActive: row.noticeActive,
       visitorCount: row.visitorCount,
       showVisitorCount: row.showVisitorCount,
+      heroImageUrl: row.heroImageUrl,
+      logoUrl: row.logoUrl,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

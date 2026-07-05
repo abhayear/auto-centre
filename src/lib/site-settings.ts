@@ -12,6 +12,8 @@ export type SiteSettingsData = {
   noticeActive: boolean;
   visitorCount: number;
   showVisitorCount: boolean;
+  heroImageUrl: string | null;
+  logoUrl: string | null;
 };
 
 const defaultSettings: SiteSettingsData = {
@@ -20,6 +22,8 @@ const defaultSettings: SiteSettingsData = {
   noticeActive: false,
   visitorCount: 0,
   showVisitorCount: true,
+  heroImageUrl: null,
+  logoUrl: null,
 };
 
 export function parseBusinessHours(raw: string): BusinessHour[] {
@@ -59,6 +63,8 @@ export async function getSiteSettings(): Promise<SiteSettingsData> {
     noticeActive: row.noticeActive,
     visitorCount: row.visitorCount,
     showVisitorCount: row.showVisitorCount,
+    heroImageUrl: row.heroImageUrl,
+    logoUrl: row.logoUrl,
   };
 }
 

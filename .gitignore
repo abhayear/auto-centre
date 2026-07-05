@@ -44,6 +44,16 @@ yarn-error.log*
 # vercel
 .vercel
 
+# uploaded images (local dev)
+/public/uploads/vehicles/*
+!/public/uploads/vehicles/.gitkeep
+/public/uploads/site/*
+!/public/uploads/site/.gitkeep
+/public/uploads/services/*
+!/public/uploads/services/.gitkeep
+/public/uploads/customers/*
+!/public/uploads/customers/.gitkeep
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

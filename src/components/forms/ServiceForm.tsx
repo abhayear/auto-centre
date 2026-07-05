@@ -4,6 +4,7 @@ import { Service } from "@prisma/client";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
+import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Textarea";
@@ -16,6 +17,7 @@ interface ServiceFormProps {
 
 export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) {
   const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(service?.imageUrl ?? null);
   const isEdit = !!service;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -28,6 +30,7 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
       description: formData.get("description"),
       estimatedPrice: Number(formData.get("estimatedPrice")),
       durationMinutes: Number(formData.get("durationMinutes")),
+      imageUrl,
       active: formData.get("active") === "on",
     };
 
@@ -96,6 +99,14 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             required
           />
         </div>
+        <SingleImageUploader
+          label="Service image"
+          emptyHint="No image — wrench icon shown on the website"
+          previewAspect="aspect-[4/3]"
+          category="services"
+          value={imageUrl}
+          onChange={setImageUrl}
+        />
         <label className="flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"
