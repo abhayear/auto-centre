@@ -171,7 +171,7 @@ function replyPerformance(context: AdvisorHealthContext): string {
   }
 
   const db = vitalById(context, "db-latency");
-  if (db?.status !== "ok") {
+  if (db && db.status !== "ok") {
     lines.push("");
     lines.push(
       `Database latency (${db.value}) is hurting TTFB. Fix Neon first — frontend optimizations alone will not fully help.`,
