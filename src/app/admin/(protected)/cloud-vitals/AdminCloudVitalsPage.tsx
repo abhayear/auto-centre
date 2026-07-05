@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { CloudVitalsAssistant } from "@/components/admin/CloudVitalsAssistant";
+import { getDynamicSuggestedPrompts } from "@/lib/cloud-vitals-advisor";
 import { statusLabel, type MetricStatus } from "@/lib/system-health";
 
 type VitalMetric = {
@@ -94,9 +96,19 @@ export default function AdminCloudVitalsPage() {
 
   const OverallIcon = overallIcon(report.overallStatus);
   const maxTraffic = Math.max(...report.hourlyTraffic.map((row) => row.count), 1);
+  const suggestedPrompts = getDynamicSuggestedPrompts({
+    generatedAt: report.generatedAt,
+    overallStatus: report.overallStatus,
+    environment: report.environment,
+    vitals: report.vitals,
+    hourlyTraffic: report.hourlyTraffic,
+    peakHour: null,
+    recommendations: report.recommendations,
+  });
 
   return (
-    <div>
+    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-6">
+      <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Cloud Vitals</h1>
@@ -272,6 +284,11 @@ export default function AdminCloudVitalsPage() {
             ))}
           </ul>
         </div>
+      </div>
+      </div>
+
+      <div className="mt-6 xl:sticky xl:top-6 xl:mt-0">
+        <CloudVitalsAssistant suggestedPrompts={suggestedPrompts} />
       </div>
     </div>
   );
