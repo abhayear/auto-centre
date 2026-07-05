@@ -1,4 +1,13 @@
-import { Briefcase, Car, Calendar, ClipboardList, MessageSquare, Wrench } from "lucide-react";
+import Link from "next/link";
+import {
+  Activity,
+  Briefcase,
+  Car,
+  Calendar,
+  ClipboardList,
+  MessageSquare,
+  Wrench,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
@@ -61,6 +70,23 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <h1 className="mb-8 text-2xl font-bold text-white">Dashboard</h1>
+
+      <Link
+        href="/admin/cloud-vitals"
+        className="mb-8 block rounded-xl border border-red-500/30 bg-red-950/20 p-5 transition-colors hover:border-red-500/50 hover:bg-red-950/30"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-red-600/20 p-3 text-red-400">
+            <Activity className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-semibold text-white">Cloud Vitals</p>
+            <p className="text-sm text-slate-400">
+              Site health, traffic load, and performance — scale before heavy visits cause issues.
+            </p>
+          </div>
+        </div>
+      </Link>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => {

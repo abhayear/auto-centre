@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import AdminCloudVitalsPage from "./AdminCloudVitalsPage";
-import { requireAdminRole } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,9 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CloudVitalsPage() {
-  const session = await requireAdminRole();
+  const session = await requireAdmin();
   if (!session) {
-    redirect("/admin");
+    redirect("/admin/login");
   }
 
   return <AdminCloudVitalsPage />;

@@ -28,12 +28,12 @@ import { Button } from "@/components/ui/Button";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/cloud-vitals", label: "Cloud Vitals", icon: Activity },
   { href: "/admin/vehicles", label: "Vehicles", icon: Car },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/esteemed-customers", label: "Esteemed Customers", icon: Star },
   { href: "/admin/site-analytics", label: "Site Analytics", icon: BarChart3 },
-  { href: "/admin/cloud-vitals", label: "Cloud Vitals", icon: Activity, adminOnly: true },
   { href: "/admin/services", label: "Services", icon: Wrench },
   { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/site-settings", label: "Site Settings", icon: Clock },

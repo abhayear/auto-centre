@@ -22,7 +22,8 @@ export default {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
-        session.user.role = token.role as StaffRole;
+        // Legacy sessions created before roles may omit role; those users were admins.
+        session.user.role = (token.role as StaffRole | undefined) ?? "admin";
       }
       return session;
     },
