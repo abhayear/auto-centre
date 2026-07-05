@@ -123,6 +123,18 @@ model SiteVisit {
   @@index([path])
 }
 
+model WebVitalsSample {
+  id        String   @id @default(cuid())
+  name      String
+  value     Float
+  rating    String
+  path      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([name, createdAt])
+}
+
 model Inquiry {
   id        String   @id @default(cuid())
   type      String

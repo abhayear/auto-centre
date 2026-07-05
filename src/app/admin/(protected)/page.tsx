@@ -1,18 +1,22 @@
 import { Briefcase, Car, Calendar, ClipboardList, MessageSquare, Wrench } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const [vehicleCount, pendingBookings, newInquiries, serviceCount, openJobs, newApplications] =
     await Promise.all([
-      prisma.vehicle.count({ where: { status: "available" } }),
-      prisma.serviceBooking.count({ where: { status: "pending" } }),
-      prisma.inquiry.count({ where: { status: "new" } }),
-      prisma.service.count({ where: { active: true } }),
-      prisma.jobPosting.count({ where: { status: "open", active: true } }),
-      prisma.jobApplication.count({ where: { status: "new" } }),
+      safeDbQuery(() => prisma.vehicle.count({ where: { status: "available" } }), 0),
+      safeDbQuery(() => prisma.serviceBooking.count({ where: { status: "pending" } }), 0),
+      safeDbQuery(() => prisma.inquiry.count({ where: { status: "new" } }), 0),
+      safeDbQuery(() => prisma.service.count({ where: { active: true } }), 0),
+      safeDbQuery(
+        () => prisma.jobPosting.count({ where: { status: "open", active: true } }),
+        0,
+      ),
+      safeDbQuery(() => prisma.jobApplication.count({ where: { status: "new" } }), 0),
     ]);
 
   const stats = [

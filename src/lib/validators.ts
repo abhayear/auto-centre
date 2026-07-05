@@ -188,6 +188,13 @@ export const serviceScheduleSchema = z.object({
   published: z.boolean(),
 });
 
+export const webVitalsSchema = z.object({
+  name: z.enum(["LCP", "INP", "CLS", "TTFB"]),
+  value: z.number().finite().nonnegative(),
+  rating: z.enum(["good", "needs-improvement", "poor"]),
+  path: z.string().max(200).optional(),
+});
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
