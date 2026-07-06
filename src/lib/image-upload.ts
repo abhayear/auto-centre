@@ -62,6 +62,12 @@ async function saveBlobImage(file: File, category: UploadCategory): Promise<stri
   return blob.url;
 }
 
+function hasBlobStorageConfigured(): boolean {
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN?.trim() || process.env.BLOB_STORE_ID?.trim(),
+  );
+}
+
 export async function saveUploadedImage(
   file: File,
   category: UploadCategory = "vehicles",
@@ -75,13 +81,13 @@ export async function saveUploadedImage(
     throw new Error("Invalid upload category.");
   }
 
-  if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.VERCEL && !hasBlobStorageConfigured()) {
     throw new Error(
-      "Production uploads need BLOB_READ_WRITE_TOKEN in Vercel environment variables.",
+      "Production uploads need a Vercel Blob store connected to this project. In Vercel → Storage, create or link a Blob store, then redeploy.",
     );
   }
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (hasBlobStorageConfigured()) {
     return saveBlobImage(file, category);
   }
 
