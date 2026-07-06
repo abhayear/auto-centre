@@ -34,7 +34,7 @@ Follow these steps in order. Your repo is already on GitHub and CI is passing.
 | `DATABASE_URL` | *(paste Neon URL from Step 1)* |
 | `NEXTAUTH_SECRET` | *(generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`)*
 | `AUTH_SECRET` | *(same value as NEXTAUTH_SECRET)*
-| `NEXTAUTH_URL` | `https://auto-centre.vercel.app` *(update after deploy if URL differs)*
+| `NEXTAUTH_URL` | `https://autogltp.info` *(update after deploy if URL differs)*
 | `ADMIN_EMAIL` | `admin@autogalaxy.in` |
 | `ADMIN_PASSWORD` | *(choose a strong password — used only for seeding)*
 

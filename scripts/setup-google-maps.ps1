@@ -16,7 +16,7 @@ if (-not $ApiKey) {
     Write-Host ""
     Write-Host "1. Create a key: https://console.cloud.google.com/google/maps-apis"
     Write-Host "2. Enable: Maps JavaScript API, Places API, Geocoding API"
-    Write-Host "3. Restrict key to your domains (localhost + auto-centre.vercel.app)"
+    Write-Host "3. Restrict key to your domains (localhost + autogltp.info)"
     Write-Host ""
     Write-Host "Run:"
     Write-Host '  .\scripts\setup-google-maps.ps1 -ApiKey "AIza..."'

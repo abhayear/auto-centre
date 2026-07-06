@@ -15,10 +15,10 @@ describe("getSiteUrl", () => {
   });
 
   it("prefers NEXTAUTH_URL without trailing slash", () => {
-    process.env.NEXTAUTH_URL = "https://auto-centre.vercel.app/";
+    process.env.NEXTAUTH_URL = "https://autogltp.info/";
     delete process.env.NEXT_PUBLIC_SITE_URL;
     delete process.env.VERCEL_URL;
-    expect(getSiteUrl()).toBe("https://auto-centre.vercel.app");
+    expect(getSiteUrl()).toBe("https://autogltp.info");
   });
 
   it("falls back to VERCEL_URL", () => {

@@ -12,7 +12,7 @@ const baseContext: AdvisorHealthContext = {
     nodeVersion: "v20.0.0",
     vercelRegion: "iad1",
     vercelEnv: "production",
-    siteUrl: "https://auto-centre.vercel.app",
+    siteUrl: "https://autogltp.info",
   },
   vitals: [
     {
