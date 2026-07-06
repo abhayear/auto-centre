@@ -1,19 +1,23 @@
 "use client";
 
 import { Vehicle } from "@prisma/client";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Camera, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { VehicleForm } from "@/components/forms/VehicleForm";
-import { formatPrice } from "@/lib/utils";
+import { VehiclePhotoForm } from "@/components/forms/VehiclePhotoForm";
+import { DEFAULT_VEHICLE_IMAGE } from "@/lib/image-constants";
+import { formatPrice, parseImages } from "@/lib/utils";
 
 export default function AdminVehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | undefined>();
+  const [photoVehicle, setPhotoVehicle] = useState<Vehicle | undefined>();
 
   useEffect(() => {
     let active = true;
@@ -78,6 +82,7 @@ export default function AdminVehiclesPage() {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-700 bg-slate-800/50">
             <tr>
+              <th className="px-4 py-3 font-medium text-slate-300">Photo</th>
               <th className="px-4 py-3 font-medium text-slate-300">Vehicle</th>
               <th className="px-4 py-3 font-medium text-slate-300">Price</th>
               <th className="px-4 py-3 font-medium text-slate-300">Status</th>
@@ -86,8 +91,24 @@ export default function AdminVehiclesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
-            {vehicles.map((vehicle) => (
+            {vehicles.map((vehicle) => {
+              const images = parseImages(vehicle.images);
+              const coverImage = images[0] ?? DEFAULT_VEHICLE_IMAGE;
+
+              return (
               <tr key={vehicle.id} className="hover:bg-slate-800/30">
+                <td className="px-4 py-3">
+                  <div className="relative h-12 w-16 overflow-hidden rounded-md border border-slate-700 bg-slate-900">
+                    <Image
+                      src={coverImage}
+                      alt={`${vehicle.make} ${vehicle.model}`}
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                      unoptimized={coverImage.startsWith("/uploads/")}
+                    />
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-white">
                   {vehicle.year} {vehicle.make} {vehicle.model}
                 </td>
@@ -107,6 +128,15 @@ export default function AdminVehiclesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Update photo"
+                      onClick={() => setPhotoVehicle(vehicle)}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit vehicle"
                       onClick={() => {
                         setEditingVehicle(vehicle);
                         setShowForm(true);
@@ -117,6 +147,7 @@ export default function AdminVehiclesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Delete vehicle"
                       onClick={() => handleDelete(vehicle.id)}
                     >
                       <Trash2 className="h-4 w-4 text-red-400" />
@@ -124,13 +155,25 @@ export default function AdminVehiclesPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
         {vehicles.length === 0 && (
           <p className="py-8 text-center text-slate-400">No vehicles yet.</p>
         )}
       </div>
+
+      {photoVehicle ? (
+        <VehiclePhotoForm
+          vehicle={photoVehicle}
+          onSuccess={() => {
+            setPhotoVehicle(undefined);
+            refreshVehicles();
+          }}
+          onCancel={() => setPhotoVehicle(undefined)}
+        />
+      ) : null}
 
       {showForm && (
         <VehicleForm
