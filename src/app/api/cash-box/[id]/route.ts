@@ -29,7 +29,11 @@ function serializeRecord(
     }[];
   },
 ) {
-  const totals = computeCashBoxTotals(record.openingBalance, record.takenHome, record.entries);
+  const totals = computeCashBoxTotals(record.openingBalance, record.takenHome, record.entries.map((entry) => ({
+    type: entry.type as "receipt" | "payment",
+    amount: entry.amount,
+    paymentMethod: entry.paymentMethod as "cash" | "phonepay" | "other" | null | undefined,
+  })));
   return {
     ...record,
     recordDate: record.recordDate.toISOString().slice(0, 10),
