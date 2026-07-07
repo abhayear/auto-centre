@@ -10,3 +10,7 @@ export function isAdminRole(role: string): role is typeof ADMIN_ROLE {
 export function isManagerRole(role: string): role is typeof MANAGER_ROLE {
   return role === MANAGER_ROLE;
 }
+
+export function canEditCashBox(role: StaffRole): boolean {
+  return role === ADMIN_ROLE;
+}

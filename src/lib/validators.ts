@@ -230,6 +230,29 @@ export const cloudVitalsAdviseSchema = z.object({
     .optional(),
 });
 
+export const cashBoxEntrySchema = z.object({
+  type: z.enum(["receipt", "payment"]),
+  category: z.enum(["sale", "service", "advance", "expense", "other"]),
+  business: z.enum(["ecomotive", "autogalaxy", "other"]).optional().nullable(),
+  paymentMethod: z.enum(["cash", "phonepay", "other"]).optional().nullable(),
+  description: z.string().min(1, "Description is required").max(200),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+});
+
+export const cashBoxRecordSchema = z.object({
+  recordDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date"),
+  sessionNumber: z.coerce.number().int().min(1).max(10).default(1),
+  openingBalance: z.coerce.number().min(0),
+  takenHome: z.coerce.number().min(0).default(0),
+  notes: z.string().max(500).optional().nullable(),
+  entries: z.array(cashBoxEntrySchema).default([]),
+});
+
+export const cashBoxRecordUpdateSchema = cashBoxRecordSchema.partial().extend({
+  id: z.string().min(1),
+});
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;

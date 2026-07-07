@@ -192,3 +192,32 @@ model JobApplication {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
+
+model CashBoxRecord {
+  id             String         @id @default(cuid())
+  recordDate     DateTime       @db.Date
+  sessionNumber  Int            @default(1)
+  openingBalance Float
+  takenHome      Float          @default(0)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  entries        CashBoxEntry[]
+
+  @@unique([recordDate, sessionNumber])
+  @@index([recordDate])
+}
+
+model CashBoxEntry {
+  id            String        @id @default(cuid())
+  recordId      String
+  record        CashBoxRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  type          String
+  category      String
+  business      String?
+  paymentMethod String?
+  description   String
+  amount        Float
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+}
