@@ -11,6 +11,7 @@ import {
   ELECTRIC_SCOOTER_MILESTONES,
   formatScheduleDate,
 } from "@/lib/electric-scooter-service-schedule";
+import { splitServiceScheduleContent } from "@/lib/service-schedule-content";
 
 type ServiceSchedulePageClientProps = {
   title: string;
@@ -66,6 +67,11 @@ export function ServiceSchedulePageClient({
         year: "numeric",
       }),
     [],
+  );
+
+  const { main: scheduleMainContent, bookSection } = useMemo(
+    () => splitServiceScheduleContent(content),
+    [content],
   );
 
   function handlePrint() {
@@ -190,8 +196,17 @@ export function ServiceSchedulePageClient({
           className="rounded-xl border border-slate-700/50 bg-slate-800/20 p-6 sm:p-8 print:mt-4 print:border-black print:bg-white print:p-0"
           data-print-section="maintenance-content"
         >
-          <MarkdownContent content={content} variant="print" />
+          <MarkdownContent content={scheduleMainContent} variant="print" />
         </div>
+
+        {bookSection ? (
+          <div
+            className="mt-6 rounded-xl border border-slate-700/50 bg-slate-800/20 p-6 sm:p-8 print:hidden"
+            data-print-hide
+          >
+            <MarkdownContent content={bookSection} />
+          </div>
+        ) : null}
 
         <div
           className="mt-10 rounded-xl border border-red-600/30 bg-gradient-to-r from-red-600/20 to-red-700/10 p-8 text-center print:hidden"
