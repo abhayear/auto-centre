@@ -1,100 +1,96 @@
 export const DEFAULT_SERVICE_SCHEDULE_TITLE =
-  "Low-Speed Electric Bike Service Schedule";
+  "Electric Scooter — Paid & Free Service Schedule";
 
 export const DEFAULT_SERVICE_SCHEDULE_SUMMARY =
-  "A time-based maintenance plan for low-speed electric bikes when the odometer or dashboard meter resets often. Track service by calendar and ride habit — not unreliable km readings.";
+  "Official periodical maintenance schedule for Lithium-Ion and VRLA battery electric scooters. Follow these day-based intervals from delivery to protect warranty, safety, and performance.";
 
-export const DEFAULT_SERVICE_SCHEDULE_CONTENT = `## Why not rely on the meter?
+export const DEFAULT_SERVICE_SCHEDULE_CONTENT = `## Paid Service & Periodical Maintenance Schedule
 
-On many **low-speed electric bikes** (typically ≤25 km/h), the dashboard often resets because of battery disconnect, weak cluster memory, wiring work, or firmware changes. Use **calendar time + ride habit + condition checks** instead of km-only planning.
+**Applies to:** Electric Scooters (Lithium-Ion & VRLA batteries)
 
-## How to track service without a working odometer
+Services are counted from your **delivery / purchase date**. Free Service (FS) and Paid Service (PS) must be completed **on or before** the day shown. Late service can **void warranty**.
 
-| Track this | How | Example |
+Use the **service due calculator** above with your delivery date, or note your job card date at each visit.
+
+---
+
+## Service intervals (from delivery date)
+
+| Service | Type | Due by (days) |
 | --- | --- | --- |
-| **Calendar** | Date of last service | Last service: 15 May 2026 |
-| **Ride days** | Days per week you ride | 5 days/week, ~15 km/day |
-| **Charge cycles** | Count full charges (optional) | ~1 charge per day |
-| **Conditions** | Noise, range drop, brake feel | Range dropped ~20% |
+| 1st FS | Free Service | 60 |
+| 2nd FS | Free Service | 180 |
+| 3rd PS | Paid Service | 300 |
+| 4th FS | Free Service | 420 |
+| 5th PS | Paid Service | 570 |
+| 6th PS | Paid Service | 720 |
+| 7th PS | Paid Service | 870 |
+| 8th PS | Paid Service | 990 |
+| 9th PS | Paid Service | 1080 |
 
-**Rule of thumb:** Daily riding (~10–20 km/day) → treat **1 month ≈ 300–600 km** for planning only.
+After the **9th PS (day 1080)**, the OEM warranty schedule ends. Book **general paid maintenance every 365 days** for brakes, tyres, battery health, and safety checks.
 
 ---
 
-## Standard service schedule (time-based)
+## Maintenance checklist by service visit
 
-### Every 30 days or ~300–500 km — Monthly health check
+Columns match the OEM maintenance annexure: **1st FS (60d)**, **2nd FS (180d)**, **4th FS (420d)**, **3rd PS (300d)**, then **5th–9th PS**.
 
-| Item | What we check |
+| Particulars | 1st FS | 2nd FS | 4th FS | 3rd PS | 5th PS | 6th PS | 7th PS | 8th PS | 9th PS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Both Brakes | C & A | C & A | C & A | C & A | C & A | C & A | C & A | C & A | C & A |
+| All Control Cables | I | I | I | I | I | I | I | I | I |
+| Operations of all Locks | I & L | I & L | I & L | I & L | I & L | I & L | I & L | I & L | I & L |
+| Operation of all Switches | I | I | I | I | I | I | I | I | I |
+| Operation of Horn | I | I | I | I | I | I | I | I | I |
+| Working of all Lights | I | I | I | I | I | I | I | I | I |
+| Wiring — intact insulation | I | I | I | I | I | I | I | I | I |
+| Control Cable free play & functions | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A |
+| **Road test — rear & front brakes** | I | I | I | I | I | I | I | I | I |
+| **Road test — throttle** | I | I | I | I | I | I | I | I | I |
+| **Road test — handle bar movement** | I | I | I | I | I | I | I | I | I |
+| **Road test — motor operation** | I | I | I | I | I | I | I | I | I |
+| **Road test — wheel free movement** | I | I | I | L/T | L/T | L/T | L/T | L/T | L/T |
+| Front fork play | — | — | — | I | I | I | I | I | I |
+| Front & rear suspension | — | — | — | I | I | I | I | I | I |
+| MCB connections | — | — | — | I | I | I | I | I | I |
+| Battery terminal connections | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C |
+| Battery rotation *(VRLA only)* | — | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R |
+| Tyre pressure | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A |
+| Tyre wear & rotation | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C |
+| Electrical couplers & joints | I & C | I & C | L | I | I & C | I & C | L | I | I |
+| Front & rear wheel bearing | — | — | — | — | L | L | — | L | L |
+
+At each visit, record **service date** and **job card number** on your maintenance log.
+
+---
+
+## Action code legend
+
+| Code | Meaning |
 | --- | --- |
-| Tyre pressure & tread | PSI, cuts, wear |
-| Brakes | Pad/shoe wear, cable tension |
-| Chain / belt | Tension, lubrication |
-| Lights & horn | Headlight, indicators, horn |
-| Bolts & fasteners | Handlebar, stand, wheel nuts |
-| Battery terminals | Clean, tight, no corrosion |
-| Dashboard / meter | Power, display errors |
-
-**Auto Galaxy:** General E-Scooter Service / quick check
-
-### Every 90 days or ~1,000–1,500 km — Standard service
-
-Monthly checks **plus** battery voltage & connectors, motor & controller diagnostic, charger output, wiring harness, suspension, wheel bearings.
-
-**Auto Galaxy:** Battery Health Check + Motor & Controller Diagnostic + Charger & Wiring Inspection
-
-### Every 6 months or ~2,500–3,500 km — Full service
-
-Standard service **plus** full brake service, tyre rotation/replacement, controller firmware (if supported), battery deep check, motor mount alignment, water ingress inspection.
-
-### Every 12 months or ~5,000 km — Annual overhaul
-
-Battery health report, tyre replacement if worn, brake cables/fluid, all consumables, full electrical audit.
+| **A** | Adjust |
+| **C** | Clean |
+| **R** | Replace |
+| **L** | Lubricate |
+| **I** | Inspect, correct & replace if required |
+| **T** | Tighten to specified torque |
+| **CDC** | Charge, Discharge & Charge |
+| **TR** | Tyre rotate |
 
 ---
 
-## When the meter resets
+## Important notes
 
-1. **Do not assume zero wear** — a reset is not a new bike.
-2. **Write today's date** and note "meter reset" in your log.
-3. **Use your last service date** from your log or Auto Galaxy job card.
-4. **Book service if** more than 30 days since last visit, or you notice range drop, noise, weak brakes, or charging issues.
-
-We keep job history by **phone number and chassis number** — even if the meter shows 0 km.
+- **Paid service labour:** Parts, incidentals, and consumables are chargeable under service labour.
+- **Battery rotation & CDC** are periodical maintenance for VRLA batteries — **not covered** under free service.
+- **Warranty:** Failure to complete scheduled services on time may **void warranty**. Timely service is essential for safety and performance.
 
 ---
 
-## Usage guide (when meter keeps resetting)
+## Book at Auto Galaxy
 
-| Your usage | Monthly check | Standard service | Full service |
-| --- | --- | --- | --- |
-| Light (2–3 days/week) | Every 6 weeks | Every 4 months | Every 9–12 months |
-| Normal (5 days/week) | Every 30 days | Every 3 months | Every 6 months |
-| Heavy (daily delivery) | Every 2–3 weeks | Every 2 months | Every 4 months |
-
----
-
-## Warning signs — book immediately
-
-- Sudden range drop
-- Burning smell or hot battery/controller
-- Grinding or clicking from motor
-- Weak or squealing brakes
-- Charger abnormal behaviour
-- Meter flickering or resetting repeatedly
-- Water exposure after rain or washing
-
----
-
-## Tips to reduce meter resets
-
-1. Avoid unnecessary battery plug/unplug.
-2. Fix loose dashboard connectors early.
-3. Use the **correct charger** (matching voltage/amp).
-4. Keep terminals clean and tight.
-5. Avoid regular deep discharge to 0%.
-
----
+We perform electric scooter and other electric 2-wheeler services in Lalitpur — doorstep service available.
 
 **Auto Galaxy** · Civil Line, Near Government ITI College, Siddhan Road, Lalitpur  
 Call **7985831851** or **8090953096** · [Book service online](/book-service)

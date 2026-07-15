@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarClock } from "lucide-react";
 import { MarkdownContent } from "@/components/content/MarkdownContent";
+import { ServiceDueCalculator } from "@/components/service-schedule/ServiceDueCalculator";
 import { SITE_NAME } from "@/lib/constants";
 import { getPublishedServiceSchedule } from "@/lib/service-schedule";
 import type { Metadata } from "next";
@@ -36,6 +37,8 @@ export default async function ServiceSchedulePage() {
           <p className="mt-4 text-lg leading-relaxed text-slate-300">{schedule.summary}</p>
         )}
       </div>
+
+      <ServiceDueCalculator />
 
       <div className="rounded-xl border border-slate-700/50 bg-slate-800/20 p-6 sm:p-8">
         <MarkdownContent content={schedule.content} />

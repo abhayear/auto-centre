@@ -29,8 +29,8 @@ describe("serviceScheduleSchema", () => {
 });
 
 describe("defaultSchedule", () => {
-  it("includes the low-speed electric bike title", () => {
-    expect(defaultSchedule.title).toContain("Low-Speed Electric Bike");
-    expect(defaultSchedule.content).toContain("Why not rely on the meter?");
+  it("includes the electric scooter service schedule title", () => {
+    expect(defaultSchedule.title).toContain("Electric Scooter");
+    expect(defaultSchedule.content).toContain("Paid Service & Periodical Maintenance");
   });
 });

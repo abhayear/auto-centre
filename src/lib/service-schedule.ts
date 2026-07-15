@@ -4,6 +4,7 @@ import {
   DEFAULT_SERVICE_SCHEDULE_TITLE,
 } from "@/lib/service-schedule-default";
 import { prisma } from "@/lib/prisma";
+import { safeDbQuery } from "@/lib/safe-db";
 
 export type ServiceScheduleData = {
   title: string;
@@ -20,9 +21,13 @@ const defaultSchedule: ServiceScheduleData = {
 };
 
 export async function getServiceSchedule(): Promise<ServiceScheduleData> {
-  const row = await prisma.serviceScheduleContent.findUnique({
-    where: { id: "default" },
-  });
+  const row = await safeDbQuery(
+    () =>
+      prisma.serviceScheduleContent.findUnique({
+        where: { id: "default" },
+      }),
+    null
+  );
 
   if (!row) return defaultSchedule;
 
