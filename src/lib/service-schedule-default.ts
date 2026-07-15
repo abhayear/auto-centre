@@ -20,7 +20,7 @@ Use the **service due calculator** above with your delivery date, or note your j
 | --- | --- | --- |
 | 1st FS | Free Service | 60 |
 | 2nd FS | Free Service | 180 |
-| 3rd PS | Paid Service | 300 |
+| 3rd FS | Free Service | 300 |
 | 4th FS | Free Service | 420 |
 | 5th PS | Paid Service | 570 |
 | 6th PS | Paid Service | 720 |
@@ -34,9 +34,9 @@ After the **9th PS (day 1080)**, the OEM warranty schedule ends. Book **general 
 
 ## Maintenance checklist by service visit
 
-Columns match the OEM maintenance annexure: **1st FS (60d)**, **2nd FS (180d)**, **4th FS (420d)**, **3rd PS (300d)**, then **5th–9th PS**.
+Columns match the OEM maintenance annexure: **1st FS (60d)**, **2nd FS (180d)**, **3rd FS (300d)**, **4th FS (420d)**, then **5th–9th PS**.
 
-| Particulars | 1st FS | 2nd FS | 4th FS | 3rd PS | 5th PS | 6th PS | 7th PS | 8th PS | 9th PS |
+| Particulars | 1st FS | 2nd FS | 3rd FS | 4th FS | 5th PS | 6th PS | 7th PS | 8th PS | 9th PS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Both Brakes | C & A | C & A | C & A | C & A | C & A | C & A | C & A | C & A | C & A |
 | All Control Cables | I | I | I | I | I | I | I | I | I |
@@ -50,15 +50,15 @@ Columns match the OEM maintenance annexure: **1st FS (60d)**, **2nd FS (180d)**,
 | **Road test — throttle** | I | I | I | I | I | I | I | I | I |
 | **Road test — handle bar movement** | I | I | I | I | I | I | I | I | I |
 | **Road test — motor operation** | I | I | I | I | I | I | I | I | I |
-| **Road test — wheel free movement** | I | I | I | L/T | L/T | L/T | L/T | L/T | L/T |
-| Front fork play | — | — | — | I | I | I | I | I | I |
-| Front & rear suspension | — | — | — | I | I | I | I | I | I |
-| MCB connections | — | — | — | I | I | I | I | I | I |
+| **Road test — wheel free movement** | I | I | L/T | I | L/T | L/T | L/T | L/T | L/T |
+| Front fork play | — | — | I | — | I | I | I | I | I |
+| Front & rear suspension | — | — | I | — | I | I | I | I | I |
+| MCB connections | — | — | I | — | I | I | I | I | I |
 | Battery terminal connections | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C |
 | Battery rotation *(VRLA only)* | — | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R | CDC & R |
 | Tyre pressure | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A | I & A |
 | Tyre wear & rotation | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C | I & C |
-| Electrical couplers & joints | I & C | I & C | L | I | I & C | I & C | L | I | I |
+| Electrical couplers & joints | I & C | I & C | I | L | I & C | I & C | L | I | I |
 | Front & rear wheel bearing | — | — | — | — | L | L | — | L | L |
 
 At each visit, record **service date** and **job card number** on your maintenance log.

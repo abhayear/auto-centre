@@ -22,7 +22,7 @@ describe("electric scooter service schedule", () => {
     const due = getMilestoneDueDates(delivery, new Date("2026-04-15T00:00:00.000Z"));
     expect(due[0]?.status).toBe("overdue");
     expect(due[0]?.dueDate.toISOString().slice(0, 10)).toBe("2026-03-02");
-    expect(due[2]?.id).toBe("3rd-ps");
+    expect(due[2]?.id).toBe("3rd-fs");
   });
 
   it("returns next due milestone after last completed", () => {
@@ -31,7 +31,7 @@ describe("electric scooter service schedule", () => {
       new Date("2026-04-01T00:00:00.000Z"),
       "2nd-fs",
     );
-    expect(next?.id).toBe("3rd-ps");
+    expect(next?.id).toBe("3rd-fs");
     expect(next?.days).toBe(300);
   });
 
@@ -77,7 +77,7 @@ describe("electric scooter service schedule", () => {
       new Date("2026-04-01T00:00:00.000Z"),
       "2nd-fs",
     );
-    expect(next?.id).toBe("3rd-ps");
+    expect(next?.id).toBe("3rd-fs");
   });
 
   it("falls back to annual reminder after OEM schedule ends", () => {
