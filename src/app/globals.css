@@ -73,4 +73,13 @@ body {
     color: inherit;
     text-decoration: none;
   }
+
+  .print-scope-due-dates [data-print-section="maintenance-title"],
+  .print-scope-due-dates [data-print-section="maintenance-content"] {
+    display: none !important;
+  }
+
+  .print-scope-maintenance-guide [data-print-section="due-dates"] {
+    display: none !important;
+  }
 }

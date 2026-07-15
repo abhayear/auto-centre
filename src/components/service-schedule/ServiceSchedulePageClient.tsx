@@ -18,6 +18,21 @@ type ServiceSchedulePageClientProps = {
   content: string;
 };
 
+type PrintScope = "due-dates" | "maintenance-guide";
+
+const printScopeOptions: { value: PrintScope; label: string; description: string }[] = [
+  {
+    value: "due-dates",
+    label: "Service due dates only",
+    description: "Customer details and personalized due-date table",
+  },
+  {
+    value: "maintenance-guide",
+    label: "Complete maintenance guide",
+    description: "Full paid/free service and periodical maintenance checklist",
+  },
+];
+
 function formatDeliveryDateInput(value: string): string {
   if (!value) return "—";
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -34,6 +49,7 @@ export function ServiceSchedulePageClient({
   const [billNo, setBillNo] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [lastCompleted, setLastCompleted] = useState("");
+  const [printScope, setPrintScope] = useState<PrintScope>("due-dates");
 
   const lastCompletedLabel = useMemo(() => {
     if (!lastCompleted) return "None completed yet";
@@ -85,6 +101,30 @@ export function ServiceSchedulePageClient({
             placeholder="e.g. AG-2026-0142"
           />
         </div>
+        <fieldset className="mt-4">
+          <legend className="mb-2 text-sm font-medium text-slate-300">What to print</legend>
+          <div className="space-y-2">
+            {printScopeOptions.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer gap-3 rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 has-[:checked]:border-red-600/50 has-[:checked]:bg-red-950/20"
+              >
+                <input
+                  type="radio"
+                  name="printScope"
+                  value={option.value}
+                  checked={printScope === option.value}
+                  onChange={() => setPrintScope(option.value)}
+                  className="mt-1 accent-red-600"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-white">{option.label}</span>
+                  <span className="block text-xs text-slate-400">{option.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="mt-4">
           <Button type="button" onClick={handlePrint} className="inline-flex items-center gap-2">
             <Printer className="h-4 w-4" />
@@ -93,7 +133,10 @@ export function ServiceSchedulePageClient({
         </div>
       </div>
 
-      <div id="service-schedule-print" className="print:text-black">
+      <div
+        id="service-schedule-print"
+        className={`print:text-black ${printScope === "due-dates" ? "print-scope-due-dates" : "print-scope-maintenance-guide"}`}
+      >
         <div className="mb-8 hidden border-b-2 border-black pb-4 print:block">
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div>
@@ -119,7 +162,7 @@ export function ServiceSchedulePageClient({
           </dl>
         </div>
 
-        <div className="mb-10 print:mb-6">
+        <div className="mb-10 print:mb-6" data-print-section="maintenance-title">
           <div className="mb-3 flex items-center gap-2 text-red-400 print:text-red-800">
             <CalendarClock className="h-6 w-6" />
             <span className="text-sm font-medium uppercase tracking-wider">Maintenance guide</span>
@@ -134,14 +177,19 @@ export function ServiceSchedulePageClient({
           ) : null}
         </div>
 
-        <ServiceDueCalculator
-          deliveryDate={deliveryDate}
-          onDeliveryDateChange={setDeliveryDate}
-          lastCompleted={lastCompleted}
-          onLastCompletedChange={setLastCompleted}
-        />
+        <div data-print-section="due-dates">
+          <ServiceDueCalculator
+            deliveryDate={deliveryDate}
+            onDeliveryDateChange={setDeliveryDate}
+            lastCompleted={lastCompleted}
+            onLastCompletedChange={setLastCompleted}
+          />
+        </div>
 
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/20 p-6 sm:p-8 print:mt-4 print:border-black print:bg-white print:p-0">
+        <div
+          className="rounded-xl border border-slate-700/50 bg-slate-800/20 p-6 sm:p-8 print:mt-4 print:border-black print:bg-white print:p-0"
+          data-print-section="maintenance-content"
+        >
           <MarkdownContent content={content} variant="print" />
         </div>
 
