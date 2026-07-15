@@ -10,7 +10,7 @@ export async function DevDbBanner() {
   }
 
   return (
-    <div className="border-b border-amber-700/50 bg-amber-950/90 px-4 py-2.5 text-center text-sm text-amber-100">
+    <div className="border-b border-amber-700/50 bg-amber-950/90 px-4 py-2.5 text-center text-sm text-amber-100 print:hidden">
       <strong>Database offline.</strong> Start Docker Desktop, then run{" "}
       <code className="rounded bg-amber-900/60 px-1.5 py-0.5">npm run db:up</code>
       . Listing and admin stats show placeholders until Postgres is running.

@@ -48,3 +48,29 @@ body {
     display: none;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: #0f172a !important;
+  }
+
+  body > header,
+  body > footer,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  #service-schedule-print {
+    color: #0f172a;
+  }
+
+  #service-schedule-print a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

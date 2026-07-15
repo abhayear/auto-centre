@@ -56,7 +56,7 @@ export function NoticeBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="border-b border-amber-600/30 bg-amber-950/90 py-2"
+      className="border-b border-amber-600/30 bg-amber-950/90 py-2 print:hidden"
     >
       <div className="flex items-center gap-3 overflow-hidden px-4">
         <Bell className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />

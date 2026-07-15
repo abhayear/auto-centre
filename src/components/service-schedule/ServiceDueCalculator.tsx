@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CalendarClock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,19 +22,24 @@ const statusStyles: Record<string, string> = {
   completed: "border-emerald-700/40 bg-emerald-950/20 text-emerald-300",
 };
 
-export function ServiceDueCalculator() {
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [lastCompleted, setLastCompleted] = useState("");
+type ServiceDueCalculatorProps = {
+  deliveryDate: string;
+  onDeliveryDateChange: (value: string) => void;
+  lastCompleted: string;
+  onLastCompletedChange: (value: string) => void;
+};
 
+export function ServiceDueCalculator({
+  deliveryDate,
+  onDeliveryDateChange,
+  lastCompleted,
+  onLastCompletedChange,
+}: ServiceDueCalculatorProps) {
   const milestones = useMemo(() => {
     if (!deliveryDate) return null;
     const parsed = new Date(`${deliveryDate}T00:00:00.000Z`);
     if (Number.isNaN(parsed.getTime())) return null;
-    return getMilestoneDueDates(
-      parsed,
-      new Date(),
-      lastCompleted || undefined,
-    );
+    return getMilestoneDueDates(parsed, new Date(), lastCompleted || undefined);
   }, [deliveryDate, lastCompleted]);
 
   const annualReminders = useMemo(() => {
@@ -59,30 +64,33 @@ export function ServiceDueCalculator() {
   }, [deliveryDate, lastCompleted]);
 
   return (
-    <section className="mb-10 rounded-xl border border-red-600/30 bg-slate-900/50 p-6">
-      <div className="mb-4 flex items-center gap-2 text-red-400">
+    <section className="mb-10 rounded-xl border border-red-600/30 bg-slate-900/50 p-6 print:mb-4 print:border-black print:bg-white print:p-0">
+      <div className="mb-4 flex items-center gap-2 text-red-400 print:hidden">
         <CalendarClock className="h-5 w-5" />
         <h2 className="text-lg font-semibold text-white">When is my next service due?</h2>
       </div>
-      <p className="mb-4 text-sm text-slate-400">
+      <h2 className="mb-3 hidden text-lg font-bold text-black print:block">
+        Service due dates for this customer
+      </h2>
+      <p className="mb-4 text-sm text-slate-400 print:hidden">
         Enter your electric scooter delivery date to see free & paid service milestones. Services
         must be done on time to keep warranty valid. After the 9th service (day 1080), annual
         maintenance reminders continue every 365 days.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 print:hidden">
         <Input
           id="deliveryDate"
           type="date"
           label="Delivery / purchase date"
           value={deliveryDate}
-          onChange={(e) => setDeliveryDate(e.target.value)}
+          onChange={(e) => onDeliveryDateChange(e.target.value)}
         />
         <Select
           id="lastCompleted"
           label="Last completed service (optional)"
           value={lastCompleted}
-          onChange={(e) => setLastCompleted(e.target.value)}
+          onChange={(e) => onLastCompletedChange(e.target.value)}
           options={[
             { value: "", label: "None completed yet" },
             ...ELECTRIC_SCOOTER_MILESTONES.map((m) => ({ value: m.id, label: m.label })),
@@ -92,13 +100,15 @@ export function ServiceDueCalculator() {
 
       {nextDue ? (
         <div
-          className={`mt-5 rounded-lg border p-4 ${statusStyles[nextDue.status] ?? statusStyles.upcoming}`}
+          className={`mt-5 rounded-lg border p-4 print:mt-3 print:border-black print:bg-white print:p-3 ${statusStyles[nextDue.status] ?? statusStyles.upcoming} print:text-black`}
         >
-          <p className="text-sm font-medium uppercase tracking-wide opacity-80">
+          <p className="text-sm font-medium uppercase tracking-wide opacity-80 print:text-black">
             {nextDue.type === "annual" ? "Next annual maintenance" : "Next service due"}
           </p>
-          <p className="mt-1 text-xl font-bold text-white">{nextDue.label}</p>
-          <p className="mt-1 text-sm">
+          <p className="mt-1 text-xl font-bold text-white print:text-base print:text-black">
+            {nextDue.label}
+          </p>
+          <p className="mt-1 text-sm print:text-black">
             Due by <strong>{formatScheduleDate(nextDue.dueDate)}</strong>
             {nextDue.status === "overdue"
               ? ` · ${Math.abs(nextDue.daysUntilDue)} days overdue`
@@ -107,46 +117,48 @@ export function ServiceDueCalculator() {
                 : ` · in ${nextDue.daysUntilDue} days`}
           </p>
           {nextDue.type === "annual" ? (
-            <p className="mt-2 text-sm opacity-90">
+            <p className="mt-2 text-sm opacity-90 print:text-xs print:text-black">
               OEM warranty schedule ends at 9th PS (day 1080). Book general paid maintenance yearly
               for brakes, tyres, battery health, and safety checks.
             </p>
           ) : null}
           {nextDue.status === "overdue" && nextDue.type !== "annual" ? (
-            <p className="mt-2 flex items-center gap-1 text-sm text-red-300">
+            <p className="mt-2 flex items-center gap-1 text-sm text-red-300 print:hidden">
               <AlertTriangle className="h-4 w-4" />
               Overdue service may affect warranty — book immediately.
             </p>
           ) : null}
-          <Link href="/book-service" className="mt-4 inline-block">
+          <Link href="/book-service" className="mt-4 inline-block print:hidden">
             <Button type="button">Book this service</Button>
           </Link>
         </div>
       ) : null}
 
       {milestones ? (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-slate-700/50">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-slate-700/50 print:mt-3 print:border-black">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-800/80 text-slate-200">
+            <thead className="bg-slate-800/80 text-slate-200 print:bg-white print:text-black">
               <tr>
-                <th className="px-3 py-2">Service</th>
-                <th className="px-3 py-2">Day</th>
-                <th className="px-3 py-2">Due date</th>
-                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2 print:border print:border-black">Service</th>
+                <th className="px-3 py-2 print:border print:border-black">Day</th>
+                <th className="px-3 py-2 print:border print:border-black">Due date</th>
+                <th className="px-3 py-2 print:border print:border-black">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-slate-700/50 print:divide-black">
               {milestones.map((m) => (
-                <tr key={m.id} className="text-slate-300">
-                  <td className="px-3 py-2">
+                <tr key={m.id} className="text-slate-300 print:text-black">
+                  <td className="px-3 py-2 print:border print:border-black">
                     {m.shortLabel}
-                    <span className="ml-1 text-xs text-slate-500">
+                    <span className="ml-1 text-xs text-slate-500 print:text-black">
                       ({m.type === "free" ? "Free" : "Paid"})
                     </span>
                   </td>
-                  <td className="px-3 py-2">{m.days}</td>
-                  <td className="px-3 py-2">{formatScheduleDate(m.dueDate)}</td>
-                  <td className="px-3 py-2 capitalize">
+                  <td className="px-3 py-2 print:border print:border-black">{m.days}</td>
+                  <td className="px-3 py-2 print:border print:border-black">
+                    {formatScheduleDate(m.dueDate)}
+                  </td>
+                  <td className="px-3 py-2 capitalize print:border print:border-black">
                     {m.status === "due-soon" ? "Due soon" : m.status}
                   </td>
                 </tr>
@@ -157,28 +169,30 @@ export function ServiceDueCalculator() {
       ) : null}
 
       {oemComplete && annualReminders && annualReminders.length > 0 ? (
-        <div className="mt-6">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+        <div className="mt-6 print:mt-3">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400 print:text-black">
             Annual maintenance (after 9th PS)
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-slate-700/50">
+          <div className="overflow-x-auto rounded-lg border border-slate-700/50 print:border-black">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-800/80 text-slate-200">
+              <thead className="bg-slate-800/80 text-slate-200 print:bg-white print:text-black">
                 <tr>
-                  <th className="px-3 py-2">Service</th>
-                  <th className="px-3 py-2">Due date</th>
-                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2 print:border print:border-black">Service</th>
+                  <th className="px-3 py-2 print:border print:border-black">Due date</th>
+                  <th className="px-3 py-2 print:border print:border-black">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-slate-700/50 print:divide-black">
                 {annualReminders.map((a) => (
-                  <tr key={a.id} className="text-slate-300">
-                    <td className="px-3 py-2">
+                  <tr key={a.id} className="text-slate-300 print:text-black">
+                    <td className="px-3 py-2 print:border print:border-black">
                       {a.shortLabel}
-                      <span className="ml-1 text-xs text-slate-500">(Paid)</span>
+                      <span className="ml-1 text-xs text-slate-500 print:text-black">(Paid)</span>
                     </td>
-                    <td className="px-3 py-2">{formatScheduleDate(a.dueDate)}</td>
-                    <td className="px-3 py-2 capitalize">
+                    <td className="px-3 py-2 print:border print:border-black">
+                      {formatScheduleDate(a.dueDate)}
+                    </td>
+                    <td className="px-3 py-2 capitalize print:border print:border-black">
                       {a.status === "due-soon" ? "Due soon" : a.status}
                     </td>
                   </tr>
