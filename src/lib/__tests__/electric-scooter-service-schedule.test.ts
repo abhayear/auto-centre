@@ -60,7 +60,7 @@ describe("electric scooter service schedule", () => {
     expect(getNextDueMilestone(oldDelivery, new Date("2026-07-15T00:00:00.000Z"))).toBeNull();
   });
 
-  it("returns first annual reminder 365 days after 10th PS due date", () => {
+  it("returns first general maintenance reminder 120 days after 10th PS due date", () => {
     const annual = getNextAnnualServiceReminder(
       delivery,
       new Date("2029-01-01T00:00:00.000Z"),
@@ -68,17 +68,17 @@ describe("electric scooter service schedule", () => {
     );
     expect(annual?.type).toBe("annual");
     expect(annual?.yearNumber).toBe(1);
-    expect(annual?.dueDate.toISOString().slice(0, 10)).toBe("2029-12-16");
+    expect(annual?.dueDate.toISOString().slice(0, 10)).toBe("2029-04-15");
   });
 
-  it("advances to the next annual year once the prior year is fully past", () => {
+  it("advances to the next general maintenance visit once the prior visit is fully past", () => {
     const annual = getNextAnnualServiceReminder(
       delivery,
-      new Date("2031-01-01T00:00:00.000Z"),
+      new Date("2029-09-01T00:00:00.000Z"),
       "10th-ps",
     );
     expect(annual?.yearNumber).toBe(2);
-    expect(annual?.dueDate.toISOString().slice(0, 10)).toBe("2030-12-16");
+    expect(annual?.dueDate.toISOString().slice(0, 10)).toBe("2029-08-13");
   });
 
   it("prefers OEM milestones before annual reminders", () => {
@@ -100,7 +100,7 @@ describe("electric scooter service schedule", () => {
     expect(next?.yearNumber).toBe(1);
   });
 
-  it("lists three upcoming annual reminders", () => {
+  it("lists three upcoming general maintenance reminders", () => {
     const reminders = getAnnualServiceReminders(
       delivery,
       new Date("2029-01-01T00:00:00.000Z"),

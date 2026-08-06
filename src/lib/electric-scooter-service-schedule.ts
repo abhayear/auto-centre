@@ -23,7 +23,10 @@ export const ELECTRIC_SCOOTER_MILESTONES: ElectricScooterMilestone[] = [
 export const LAST_OEM_MILESTONE_ID = "10th-ps";
 export const PAID_SERVICE_INTERVAL_DAYS = 120;
 export const OEM_SCHEDULE_DAYS = ELECTRIC_SCOOTER_MILESTONES.at(-1)?.days ?? 1080;
-export const ANNUAL_SERVICE_INTERVAL_DAYS = 365;
+/** General paid maintenance (brakes, tyres, etc.) after the OEM schedule ends. */
+export const GENERAL_MAINTENANCE_INTERVAL_DAYS = PAID_SERVICE_INTERVAL_DAYS;
+/** @deprecated Use GENERAL_MAINTENANCE_INTERVAL_DAYS */
+export const ANNUAL_SERVICE_INTERVAL_DAYS = GENERAL_MAINTENANCE_INTERVAL_DAYS;
 
 export const SERVICE_ACTION_CODES = [
   { code: "A", meaning: "Adjust" },
@@ -101,9 +104,9 @@ function buildAnnualServiceDue(
 ): AnnualServiceDue {
   const daysUntilDue = daysBetween(startOfDayUtc(today), dueDate);
   return {
-    id: `annual-${yearNumber}`,
-    label: `Annual maintenance — Year ${yearNumber}`,
-    shortLabel: `Annual ${yearNumber}`,
+    id: `general-${yearNumber}`,
+    label: `General paid maintenance — Visit ${yearNumber}`,
+    shortLabel: `General ${yearNumber}`,
     yearNumber,
     dueDate,
     status: statusFromDaysUntilDue(daysUntilDue),
@@ -125,10 +128,10 @@ export function getAnnualServiceReminders(
   const ninthPsDue = getNinthPsDueDate(deliveryDate);
   const now = startOfDayUtc(today);
   let yearNumber = 1;
-  let dueDate = addDays(ninthPsDue, ANNUAL_SERVICE_INTERVAL_DAYS);
+  let dueDate = addDays(ninthPsDue, GENERAL_MAINTENANCE_INTERVAL_DAYS);
 
   while (yearNumber < 100) {
-    const nextDueDate = addDays(ninthPsDue, ANNUAL_SERVICE_INTERVAL_DAYS * (yearNumber + 1));
+    const nextDueDate = addDays(ninthPsDue, GENERAL_MAINTENANCE_INTERVAL_DAYS * (yearNumber + 1));
     if (now >= dueDate && now >= nextDueDate) {
       yearNumber += 1;
       dueDate = nextDueDate;
@@ -143,7 +146,7 @@ export function getAnnualServiceReminders(
     reminders.push(
       buildAnnualServiceDue(
         annualYear,
-        addDays(ninthPsDue, ANNUAL_SERVICE_INTERVAL_DAYS * annualYear),
+        addDays(ninthPsDue, GENERAL_MAINTENANCE_INTERVAL_DAYS * annualYear),
         today,
       ),
     );

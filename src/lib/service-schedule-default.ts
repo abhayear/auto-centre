@@ -29,7 +29,7 @@ Use the **service due calculator** above with your delivery date, or note your j
 | 9th PS | Paid Service | 960 |
 | 10th PS | Paid Service | 1080 |
 
-After the **4th FS (day 360)**, each **paid service** is due every **120 days**. After the **10th PS (day 1080)**, the OEM warranty schedule ends. Book **general paid maintenance every 365 days** for brakes, tyres, battery health, and safety checks.
+After the **4th FS (day 360)**, each **paid service** is due every **120 days**. After the **10th PS (day 1080)**, the OEM warranty schedule ends. Book **general paid maintenance every 120 days** for brakes, tyres, battery health, and safety checks.
 
 ---
 

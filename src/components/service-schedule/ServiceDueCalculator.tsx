@@ -12,6 +12,7 @@ import {
   getAnnualServiceReminders,
   getMilestoneDueDates,
   getNextServiceDue,
+  GENERAL_MAINTENANCE_INTERVAL_DAYS,
   isOemScheduleComplete,
   OEM_SCHEDULE_DAYS,
 } from "@/lib/electric-scooter-service-schedule";
@@ -75,8 +76,8 @@ export function ServiceDueCalculator({
       </h2>
       <p className="mb-4 text-sm text-slate-400 print:hidden">
         Enter your electric scooter delivery date to see free & paid service milestones. Services
-        must be done on time to keep warranty valid. After the 10th service (day {OEM_SCHEDULE_DAYS}), annual
-        maintenance reminders continue every 365 days.
+        must be done on time to keep warranty valid. After the 10th service (day {OEM_SCHEDULE_DAYS}), general
+        paid maintenance reminders continue every {GENERAL_MAINTENANCE_INTERVAL_DAYS} days.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 print:hidden">
@@ -104,7 +105,7 @@ export function ServiceDueCalculator({
           className={`mt-5 rounded-lg border p-4 print:mt-3 print:border-black print:bg-white print:p-3 ${statusStyles[nextDue.status] ?? statusStyles.upcoming} print:text-black`}
         >
           <p className="text-sm font-medium uppercase tracking-wide opacity-80 print:text-black">
-            {nextDue.type === "annual" ? "Next annual maintenance" : "Next service due"}
+            {nextDue.type === "annual" ? "Next general paid maintenance" : "Next service due"}
           </p>
           <p className="mt-1 text-xl font-bold text-white print:text-base print:text-black">
             {nextDue.label}
@@ -119,8 +120,8 @@ export function ServiceDueCalculator({
           </p>
           {nextDue.type === "annual" ? (
             <p className="mt-2 text-sm opacity-90 print:text-xs print:text-black">
-              OEM warranty schedule ends at 10th PS (day {OEM_SCHEDULE_DAYS}). Book general paid maintenance yearly
-              for brakes, tyres, battery health, and safety checks.
+              OEM warranty schedule ends at 10th PS (day {OEM_SCHEDULE_DAYS}). Book general paid maintenance every{" "}
+              {GENERAL_MAINTENANCE_INTERVAL_DAYS} days for brakes, tyres, battery health, and safety checks.
             </p>
           ) : null}
           {nextDue.status === "overdue" && nextDue.type !== "annual" ? (
@@ -172,7 +173,7 @@ export function ServiceDueCalculator({
       {oemComplete && annualReminders && annualReminders.length > 0 ? (
         <div className="mt-6 print:mt-3">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400 print:text-black">
-            Annual maintenance (after 10th PS)
+            General paid maintenance (every {GENERAL_MAINTENANCE_INTERVAL_DAYS} days after 10th PS)
           </h3>
           <div className="overflow-x-auto rounded-lg border border-slate-700/50 print:border-black">
             <table className="min-w-full text-left text-sm">
