@@ -32,7 +32,7 @@ describe("electric scooter service schedule", () => {
       "2nd-fs",
     );
     expect(next?.id).toBe("3rd-fs");
-    expect(next?.days).toBe(300);
+    expect(next?.days).toBe(270);
   });
 
   it("treats OEM schedule as complete after 9th PS is marked done", () => {

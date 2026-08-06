@@ -10,8 +10,8 @@ export type ElectricScooterMilestone = {
 export const ELECTRIC_SCOOTER_MILESTONES: ElectricScooterMilestone[] = [
   { id: "1st-fs", label: "1st FS — Free Service", shortLabel: "1st FS", days: 60, type: "free" },
   { id: "2nd-fs", label: "2nd FS — Free Service", shortLabel: "2nd FS", days: 180, type: "free" },
-  { id: "3rd-fs", label: "3rd FS — Free Service", shortLabel: "3rd FS", days: 300, type: "free" },
-  { id: "4th-fs", label: "4th FS — Free Service", shortLabel: "4th FS", days: 420, type: "free" },
+  { id: "3rd-fs", label: "3rd FS — Free Service", shortLabel: "3rd FS", days: 270, type: "free" },
+  { id: "4th-fs", label: "4th FS — Free Service", shortLabel: "4th FS", days: 360, type: "free" },
   { id: "5th-ps", label: "5th PS — Paid Service", shortLabel: "5th PS", days: 570, type: "paid" },
   { id: "6th-ps", label: "6th PS — Paid Service", shortLabel: "6th PS", days: 720, type: "paid" },
   { id: "7th-ps", label: "7th PS — Paid Service", shortLabel: "7th PS", days: 870, type: "paid" },
