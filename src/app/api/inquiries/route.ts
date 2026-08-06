@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { inquirySchema, inquiryStatusSchema } from "@/lib/validators";
+import { inquirySchema, inquiryStatusSchema, resolveVisitorBookingReward } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
@@ -30,6 +30,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = inquirySchema.parse(body);
 
+    let rewardAmountAtBooking: number | null = null;
+
+    if (data.type === "test_drive" && data.vehicleId) {
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id: data.vehicleId },
+        select: { visitorBookingReward: true },
+      });
+      rewardAmountAtBooking = resolveVisitorBookingReward(
+        data.type,
+        data.vehicleId,
+        vehicle?.visitorBookingReward,
+      );
+    }
+
     const inquiry = await prisma.inquiry.create({
       data: {
         type: data.type,
@@ -38,7 +52,9 @@ export async function POST(request: NextRequest) {
         phone: data.phone ?? null,
         message: data.message,
         vehicleId: data.vehicleId ?? null,
+        rewardAmountAtBooking,
       },
+      include: { vehicle: true },
     });
 
     return NextResponse.json(inquiry, { status: 201 });

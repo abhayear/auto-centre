@@ -5,14 +5,16 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { formatPrice } from "@/lib/utils";
 
 interface InquiryFormProps {
   type: "test_drive" | "contact" | "general";
   vehicleId?: string;
   vehicleLabel?: string;
+  bookingReward?: number | null;
 }
 
-export function InquiryForm({ type, vehicleId, vehicleLabel }: InquiryFormProps) {
+export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: InquiryFormProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -39,7 +41,10 @@ export function InquiryForm({ type, vehicleId, vehicleLabel }: InquiryFormProps)
       }
 
       const messages = {
-        test_drive: "Test drive request submitted! We'll be in touch shortly.",
+        test_drive:
+          bookingReward != null && bookingReward > 0
+            ? `Test drive request submitted! You're eligible for a ${formatPrice(bookingReward)} cash reward from Auto Galaxy. We'll be in touch shortly.`
+            : "Test drive request submitted! We'll be in touch shortly.",
         contact: "Message sent! We'll respond within 24 hours.",
         general: "Inquiry submitted successfully!",
       };
@@ -54,6 +59,16 @@ export function InquiryForm({ type, vehicleId, vehicleLabel }: InquiryFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {type === "test_drive" && bookingReward != null && bookingReward > 0 && (
+        <div className="rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
+          <p className="font-medium text-green-300">
+            Earn {formatPrice(bookingReward)} cash reward when you book this test drive
+          </p>
+          <p className="mt-1 text-xs text-green-400/80">
+            Paid by Auto Galaxy upon booking confirmation
+          </p>
+        </div>
+      )}
       {vehicleLabel && (
         <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3">
           <p className="text-sm text-slate-400">Vehicle</p>

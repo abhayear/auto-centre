@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatPrice } from "@/lib/utils";
 
 type InquiryWithVehicle = Inquiry & { vehicle: Vehicle | null };
 
@@ -124,6 +124,12 @@ export default function AdminInquiriesPage() {
                     {inquiry.vehicle.model}
                   </p>
                 )}
+                {inquiry.rewardAmountAtBooking != null &&
+                  inquiry.rewardAmountAtBooking > 0 && (
+                    <p className="text-sm text-green-400">
+                      Visitor reward: {formatPrice(inquiry.rewardAmountAtBooking)}
+                    </p>
+                  )}
               </div>
               <div className="w-36">
                 <Select

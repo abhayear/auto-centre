@@ -28,6 +28,13 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               <Badge variant="danger">Featured</Badge>
             </div>
           )}
+          {vehicle.visitorBookingReward != null && vehicle.visitorBookingReward > 0 && (
+            <div className="absolute right-3 top-3">
+              <Badge variant="success">
+                Book & earn {formatPrice(vehicle.visitorBookingReward)} reward
+              </Badge>
+            </div>
+          )}
         </div>
         <div className="p-4">
           <div className="mb-2 flex items-start justify-between gap-2">

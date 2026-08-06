@@ -36,6 +36,8 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
 
     const formData = new FormData(e.currentTarget);
 
+    const rewardRaw = formData.get("visitorBookingReward");
+
     const data = {
       make: formData.get("make"),
       model: formData.get("model"),
@@ -48,6 +50,8 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
       status: formData.get("status"),
       description: formData.get("description"),
       featured: formData.get("featured") === "on",
+      visitorBookingReward:
+        rewardRaw === "" || rewardRaw === null ? null : Number(rewardRaw),
       images,
     };
 
@@ -150,6 +154,21 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
           defaultValue={vehicle?.description}
           required
         />
+        <div>
+          <Input
+            id="visitorBookingReward"
+            name="visitorBookingReward"
+            type="number"
+            label="Visitor booking reward (₹)"
+            min={0}
+            step={1}
+            defaultValue={vehicle?.visitorBookingReward ?? ""}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Auto Galaxy pays this cash reward when a visitor books a test drive for this
+            vehicle. Leave blank for no reward.
+          </p>
+        </div>
         <ImageUploader
           value={images}
           onChange={setImages}

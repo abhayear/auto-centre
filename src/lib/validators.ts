@@ -38,7 +38,25 @@ export const vehicleSchema = z.object({
     .default([]),
   description: z.string().min(10, "Description must be at least 10 characters"),
   featured: z.boolean().default(false),
+  visitorBookingReward: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : val),
+    z.coerce
+      .number()
+      .nonnegative("Reward must be zero or positive")
+      .nullable()
+      .optional(),
+  ),
 });
+
+export function resolveVisitorBookingReward(
+  type: string,
+  vehicleId: string | undefined | null,
+  visitorBookingReward: number | null | undefined,
+): number | null {
+  if (type !== "test_drive" || !vehicleId) return null;
+  if (visitorBookingReward == null || visitorBookingReward <= 0) return null;
+  return visitorBookingReward;
+}
 
 export const serviceSchema = z.object({
   name: z.string().min(1, "Name is required"),
