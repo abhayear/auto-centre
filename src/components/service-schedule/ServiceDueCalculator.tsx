@@ -13,6 +13,7 @@ import {
   getMilestoneDueDates,
   getNextServiceDue,
   isOemScheduleComplete,
+  OEM_SCHEDULE_DAYS,
 } from "@/lib/electric-scooter-service-schedule";
 
 const statusStyles: Record<string, string> = {
@@ -74,7 +75,7 @@ export function ServiceDueCalculator({
       </h2>
       <p className="mb-4 text-sm text-slate-400 print:hidden">
         Enter your electric scooter delivery date to see free & paid service milestones. Services
-        must be done on time to keep warranty valid. After the 9th service (day 1080), annual
+        must be done on time to keep warranty valid. After the 10th service (day {OEM_SCHEDULE_DAYS}), annual
         maintenance reminders continue every 365 days.
       </p>
 
@@ -118,7 +119,7 @@ export function ServiceDueCalculator({
           </p>
           {nextDue.type === "annual" ? (
             <p className="mt-2 text-sm opacity-90 print:text-xs print:text-black">
-              OEM warranty schedule ends at 9th PS (day 1080). Book general paid maintenance yearly
+              OEM warranty schedule ends at 10th PS (day {OEM_SCHEDULE_DAYS}). Book general paid maintenance yearly
               for brakes, tyres, battery health, and safety checks.
             </p>
           ) : null}
@@ -171,7 +172,7 @@ export function ServiceDueCalculator({
       {oemComplete && annualReminders && annualReminders.length > 0 ? (
         <div className="mt-6 print:mt-3">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400 print:text-black">
-            Annual maintenance (after 9th PS)
+            Annual maintenance (after 10th PS)
           </h3>
           <div className="overflow-x-auto rounded-lg border border-slate-700/50 print:border-black">
             <table className="min-w-full text-left text-sm">
