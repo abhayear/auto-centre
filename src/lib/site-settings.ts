@@ -54,18 +54,22 @@ export function serializeBusinessHours(hours: BusinessHour[]): string {
 }
 
 export async function getSiteSettings(): Promise<SiteSettingsData> {
-  const row = await prisma.siteSettings.findUnique({ where: { id: "default" } });
-  if (!row) return defaultSettings;
+  try {
+    const row = await prisma.siteSettings.findUnique({ where: { id: "default" } });
+    if (!row) return defaultSettings;
 
-  return {
-    businessHours: parseBusinessHours(row.businessHours),
-    noticeText: row.noticeText,
-    noticeActive: row.noticeActive,
-    visitorCount: row.visitorCount,
-    showVisitorCount: row.showVisitorCount,
-    heroImageUrl: row.heroImageUrl,
-    logoUrl: row.logoUrl,
-  };
+    return {
+      businessHours: parseBusinessHours(row.businessHours),
+      noticeText: row.noticeText,
+      noticeActive: row.noticeActive,
+      visitorCount: row.visitorCount,
+      showVisitorCount: row.showVisitorCount,
+      heroImageUrl: row.heroImageUrl,
+      logoUrl: row.logoUrl,
+    };
+  } catch {
+    return defaultSettings;
+  }
 }
 
 export function getActiveNotice(settings: SiteSettingsData): string | null {

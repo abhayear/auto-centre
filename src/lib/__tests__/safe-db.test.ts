@@ -38,19 +38,28 @@ describe("safeDbQuery", () => {
     vi.unstubAllEnvs();
   });
 
-  it("rethrows in production", async () => {
+  it("returns fallback in production when database is unreachable", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
-    await expect(
-      safeDbQuery(
-        () =>
-          Promise.reject(
-            new Prisma.PrismaClientInitializationError("Can't reach database server", "P1001")
-          ),
-        []
-      )
-    ).rejects.toBeInstanceOf(Prisma.PrismaClientInitializationError);
+    const result = await safeDbQuery(
+      () =>
+        Promise.reject(
+          new Prisma.PrismaClientInitializationError("Can't reach database server", "P1001")
+        ),
+      []
+    );
 
+    expect(result).toEqual([]);
     vi.unstubAllEnvs();
+  });
+
+  it("returns fallback when a column is missing", async () => {
+    const error = new Prisma.PrismaClientKnownRequestError("Column not found", {
+      code: "P2022",
+      clientVersion: "6.19.3",
+    });
+
+    const result = await safeDbQuery(() => Promise.reject(error), []);
+    expect(result).toEqual([]);
   });
 });

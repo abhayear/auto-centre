@@ -14,7 +14,22 @@ export function isDbConnectionError(error: unknown): boolean {
   return false;
 }
 
-/** Run a Prisma query; in development, return fallback when Postgres is offline. */
+function isRecoverableDbQueryError(error: unknown): boolean {
+  if (isDbConnectionError(error)) return true;
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2022: column/table missing (schema drift), P2021: table does not exist
+    return error.code === "P2022" || error.code === "P2021";
+  }
+  if (error instanceof Error) {
+    return (
+      error.message.includes("does not exist") ||
+      error.message.includes("column") && error.message.includes("not exist")
+    );
+  }
+  return false;
+}
+
+/** Run a Prisma query; return fallback when DB is offline or schema is out of sync. */
 export async function safeDbQuery<T>(
   query: () => Promise<T>,
   fallback: T
@@ -22,7 +37,7 @@ export async function safeDbQuery<T>(
   try {
     return await query();
   } catch (error) {
-    if (process.env.NODE_ENV === "development" && isDbConnectionError(error)) {
+    if (isRecoverableDbQueryError(error)) {
       return fallback;
     }
     throw error;
