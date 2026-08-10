@@ -1,7 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import {
+  resolveOnlineBookingAmount,
+  requiresOnlineBookingPayment,
+  verifyRazorpayPaymentSignature,
+} from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
+import { getRazorpayClient } from "@/lib/razorpay-client";
 import { inquirySchema, inquiryStatusSchema, resolveOnlineBookingRefund } from "@/lib/validators";
+
+async function resolveVehicleBookingFields(vehicleId: string | undefined, type: string) {
+  if (!vehicleId || type !== "test_drive") {
+    return {
+      refundAmountAtBooking: null,
+      bookingAmountAtBooking: null,
+      paymentRequired: false,
+    };
+  }
+
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: { onlineBookingRefund: true, onlineBookingAmount: true },
+  });
+
+  return {
+    refundAmountAtBooking: resolveOnlineBookingRefund(
+      type,
+      vehicleId,
+      vehicle?.onlineBookingRefund,
+    ),
+    bookingAmountAtBooking: resolveOnlineBookingAmount(
+      type,
+      vehicleId,
+      vehicle?.onlineBookingAmount,
+    ),
+    paymentRequired: requiresOnlineBookingPayment(
+      resolveOnlineBookingAmount(type, vehicleId, vehicle?.onlineBookingAmount),
+    ),
+  };
+}
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
@@ -30,18 +67,58 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = inquirySchema.parse(body);
 
-    let refundAmountAtBooking: number | null = null;
+    const { refundAmountAtBooking, bookingAmountAtBooking, paymentRequired } =
+      await resolveVehicleBookingFields(data.vehicleId, data.type);
 
-    if (data.type === "test_drive" && data.vehicleId) {
-      const vehicle = await prisma.vehicle.findUnique({
-        where: { id: data.vehicleId },
-        select: { onlineBookingRefund: true },
-      });
-      refundAmountAtBooking = resolveOnlineBookingRefund(
-        data.type,
-        data.vehicleId,
-        vehicle?.onlineBookingRefund,
+    let paymentStatus: "not_required" | "paid" = "not_required";
+    let paymentOrderId: string | null = null;
+    let paymentId: string | null = null;
+
+    if (paymentRequired) {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = data;
+
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return NextResponse.json(
+          { error: "Payment is required to complete this booking" },
+          { status: 400 },
+        );
+      }
+
+      const secret = process.env.RAZORPAY_KEY_SECRET;
+      if (!secret) {
+        return NextResponse.json({ error: "Payment verification unavailable" }, { status: 503 });
+      }
+
+      const signatureValid = verifyRazorpayPaymentSignature(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        secret,
       );
+
+      if (!signatureValid) {
+        return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+      }
+
+      const existing = await prisma.inquiry.findUnique({
+        where: { paymentOrderId: razorpay_order_id },
+      });
+      if (existing) {
+        return NextResponse.json({ error: "This payment was already used for a booking" }, { status: 409 });
+      }
+
+      const razorpay = getRazorpayClient();
+      if (razorpay) {
+        const order = await razorpay.orders.fetch(razorpay_order_id);
+        const expectedPaise = Math.round((bookingAmountAtBooking ?? 0) * 100);
+        if (Number(order.amount) !== expectedPaise || order.status !== "paid") {
+          return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 });
+        }
+      }
+
+      paymentStatus = "paid";
+      paymentOrderId = razorpay_order_id;
+      paymentId = razorpay_payment_id;
     }
 
     const inquiry = await prisma.inquiry.create({
@@ -53,6 +130,10 @@ export async function POST(request: NextRequest) {
         message: data.message,
         vehicleId: data.vehicleId ?? null,
         refundAmountAtBooking,
+        bookingAmountAtBooking,
+        paymentStatus,
+        paymentOrderId,
+        paymentId,
       },
       include: { vehicle: true },
     });

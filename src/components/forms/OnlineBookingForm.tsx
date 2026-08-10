@@ -9,6 +9,7 @@ export type BookableVehicle = {
   id: string;
   label: string;
   onlineBookingRefund: number | null;
+  onlineBookingAmount: number | null;
 };
 
 interface OnlineBookingFormProps {
@@ -51,6 +52,14 @@ export function OnlineBookingForm({ vehicles, initialVehicleId }: OnlineBookingF
         }))}
       />
 
+      {selected?.onlineBookingAmount != null && selected.onlineBookingAmount > 0 && (
+        <div className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3">
+          <p className="font-medium text-amber-200">
+            Booking payment required: {formatPrice(selected.onlineBookingAmount)}
+          </p>
+        </div>
+      )}
+
       {selected?.onlineBookingRefund != null && selected.onlineBookingRefund > 0 && (
         <div className="rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
           <p className="font-medium text-green-300">
@@ -65,6 +74,7 @@ export function OnlineBookingForm({ vehicles, initialVehicleId }: OnlineBookingF
         vehicleId={selected?.id}
         vehicleLabel={selected?.label}
         onlineBookingRefund={selected?.onlineBookingRefund}
+        onlineBookingAmount={selected?.onlineBookingAmount}
       />
     </div>
   );

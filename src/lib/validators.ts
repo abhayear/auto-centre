@@ -46,6 +46,14 @@ export const vehicleSchema = z.object({
       .nullable()
       .optional(),
   ),
+  onlineBookingAmount: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : val),
+    z.coerce
+      .number()
+      .nonnegative("Booking amount must be zero or positive")
+      .nullable()
+      .optional(),
+  ),
 });
 
 export function resolveOnlineBookingRefund(
@@ -132,6 +140,17 @@ export const inquirySchema = z.object({
   phone: z.string().optional(),
   message: z.string().min(10, "Message must be at least 10 characters"),
   vehicleId: z.string().optional(),
+  razorpay_order_id: z.string().optional(),
+  razorpay_payment_id: z.string().optional(),
+  razorpay_signature: z.string().optional(),
+});
+
+export const bookingOrderSchema = z.object({
+  vehicleId: z.string().min(1, "Vehicle is required"),
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().min(7, "Phone is required"),
+  message: z.string().min(10, "Message must be at least 10 characters"),
 });
 
 export const loginSchema = z.object({

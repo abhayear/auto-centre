@@ -12,6 +12,20 @@ interface InquiryFormProps {
   vehicleId?: string;
   vehicleLabel?: string;
   onlineBookingRefund?: number | null;
+  onlineBookingAmount?: number | null;
+}
+
+function loadRazorpayScript(): Promise<void> {
+  if (window.Razorpay) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load payment gateway"));
+    document.body.appendChild(script);
+  });
 }
 
 export function InquiryForm({
@@ -19,42 +33,139 @@ export function InquiryForm({
   vehicleId,
   vehicleLabel,
   onlineBookingRefund,
+  onlineBookingAmount,
 }: InquiryFormProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const paymentRequired =
+    type === "test_drive" &&
+    onlineBookingAmount != null &&
+    onlineBookingAmount > 0;
+
+  async function submitInquiry(
+    payload: Record<string, unknown>,
+    successMessage: string,
+    form?: HTMLFormElement,
+  ) {
+    const res = await fetch("/api/inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast.error(result.error ?? "Failed to submit booking");
+      return false;
+    }
+
+    toast.success(successMessage);
+    form?.reset();
+    return true;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setErrors({});
 
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+
+    const basePayload = {
+      ...data,
+      type,
+      vehicleId,
+    };
+
+    const successMessage =
+      onlineBookingRefund != null && onlineBookingRefund > 0
+        ? `Booking confirmed! Payment received. You are eligible for a ${formatPrice(onlineBookingRefund)} cash refund from Auto Galaxy.`
+        : paymentRequired
+          ? "Booking confirmed! Payment received. We will contact you shortly."
+          : "Online booking submitted! We will contact you shortly.";
 
     try {
-      const res = await fetch("/api/inquiries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, type, vehicleId }),
-      });
+      if (type === "test_drive" && vehicleId && paymentRequired) {
+        const orderRes = await fetch("/api/payments/booking-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicleId,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            message: data.message,
+          }),
+        });
 
-      const result = await res.json();
+        const orderData = await orderRes.json();
 
-      if (!res.ok) {
-        toast.error(result.error ?? "Failed to submit booking");
+        if (!orderRes.ok) {
+          toast.error(orderData.error ?? "Could not start payment");
+          return;
+        }
+
+        if (!orderData.paymentRequired) {
+          await submitInquiry(basePayload, successMessage, form);
+          return;
+        }
+
+        await loadRazorpayScript();
+
+        if (!window.Razorpay) {
+          toast.error("Payment gateway failed to load");
+          return;
+        }
+
+        await new Promise<void>((resolve) => {
+          const checkout = new window.Razorpay!({
+            key: orderData.keyId,
+            amount: Math.round(orderData.bookingAmount * 100),
+            currency: "INR",
+            name: "Auto Galaxy",
+            description: `Online booking — ${orderData.vehicleLabel ?? vehicleLabel ?? "E-scooter"}`,
+            order_id: orderData.orderId,
+            prefill: {
+              name: data.name,
+              email: data.email,
+              contact: data.phone,
+            },
+            theme: { color: "#dc2626" },
+            handler: async (response) => {
+              await submitInquiry(
+                {
+                  ...basePayload,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+                successMessage,
+                form,
+              );
+              resolve();
+            },
+            modal: {
+              ondismiss: () => {
+                toast.error("Payment cancelled");
+                resolve();
+              },
+            },
+          });
+
+          checkout.open();
+        });
         return;
       }
 
-      const messages = {
-        test_drive:
-          onlineBookingRefund != null && onlineBookingRefund > 0
-            ? `Online booking submitted! You are eligible for a ${formatPrice(onlineBookingRefund)} cash refund from Auto Galaxy. We will contact you shortly.`
-            : "Online booking submitted! We will contact you shortly.",
-        contact: "Message sent! We'll respond within 24 hours.",
-        general: "Inquiry submitted successfully!",
-      };
-      toast.success(messages[type]);
-      (e.target as HTMLFormElement).reset();
+      await submitInquiry(
+        basePayload,
+        type === "test_drive" ? successMessage : "Message sent! We'll respond within 24 hours.",
+        form,
+      );
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -64,6 +175,17 @@ export function InquiryForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {type === "test_drive" && paymentRequired && (
+        <div className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3">
+          <p className="font-medium text-amber-200">
+            Booking payment: {formatPrice(onlineBookingAmount!)}
+          </p>
+          <p className="mt-1 text-xs text-amber-300/80">
+            Pay online to confirm your e-scooter booking. Amount is set by Auto Galaxy for this
+            model.
+          </p>
+        </div>
+      )}
       {type === "test_drive" &&
         onlineBookingRefund != null &&
         onlineBookingRefund > 0 &&
@@ -89,13 +211,7 @@ export function InquiryForm({
         <input type="hidden" name="vehicleId" value={vehicleId} />
       ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input
-          id="name"
-          name="name"
-          label="Full Name"
-          required
-          error={errors.name}
-        />
+        <Input id="name" name="name" label="Full Name" required error={errors.name} />
         <Input
           id="email"
           name="email"
@@ -127,7 +243,11 @@ export function InquiryForm({
         error={errors.message}
       />
       <Button type="submit" loading={loading} className="w-full sm:w-auto">
-        {type === "test_drive" ? "Book Online" : "Send Message"}
+        {type === "test_drive"
+          ? paymentRequired
+            ? `Pay ${formatPrice(onlineBookingAmount!)} & Book`
+            : "Book Online"
+          : "Send Message"}
       </Button>
     </form>
   );

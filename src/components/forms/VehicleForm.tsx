@@ -37,6 +37,7 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
     const formData = new FormData(e.currentTarget);
 
     const refundRaw = formData.get("onlineBookingRefund");
+    const amountRaw = formData.get("onlineBookingAmount");
 
     const data = {
       make: formData.get("make"),
@@ -52,6 +53,8 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
       featured: formData.get("featured") === "on",
       onlineBookingRefund:
         refundRaw === "" || refundRaw === null ? null : Number(refundRaw),
+      onlineBookingAmount:
+        amountRaw === "" || amountRaw === null ? null : Number(amountRaw),
       images,
     };
 
@@ -167,6 +170,21 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
           <p className="mt-1 text-xs text-slate-500">
             Cash refund Auto Galaxy pays when a customer books this e-scooter model online.
             Leave blank for no refund. Different models can have different amounts.
+          </p>
+        </div>
+        <div>
+          <Input
+            id="onlineBookingAmount"
+            name="onlineBookingAmount"
+            type="number"
+            label="Online booking payment (₹)"
+            min={0}
+            step={1}
+            defaultValue={vehicle?.onlineBookingAmount ?? ""}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Amount the customer pays online to confirm a booking for this model. Leave blank
+            for free booking (no online payment).
           </p>
         </div>
         <ImageUploader

@@ -28,7 +28,16 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               <Badge variant="danger">Featured</Badge>
             </div>
           )}
-          {vehicle.onlineBookingRefund != null && vehicle.onlineBookingRefund > 0 && (
+          {vehicle.onlineBookingAmount != null && vehicle.onlineBookingAmount > 0 && (
+            <div className="absolute right-3 top-3 max-w-[11rem]">
+              <Badge variant="warning">
+                Book online — pay {formatPrice(vehicle.onlineBookingAmount)}
+              </Badge>
+            </div>
+          )}
+          {vehicle.onlineBookingRefund != null &&
+            vehicle.onlineBookingRefund > 0 &&
+            (vehicle.onlineBookingAmount == null || vehicle.onlineBookingAmount <= 0) && (
             <div className="absolute right-3 top-3">
               <Badge variant="success">
                 Book online — {formatPrice(vehicle.onlineBookingRefund)} refund

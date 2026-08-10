@@ -86,6 +86,7 @@ export default function AdminVehiclesPage() {
               <th className="px-4 py-3 font-medium text-slate-300">Vehicle</th>
               <th className="px-4 py-3 font-medium text-slate-300">Price</th>
               <th className="px-4 py-3 font-medium text-slate-300">Online refund</th>
+              <th className="px-4 py-3 font-medium text-slate-300">Booking payment</th>
               <th className="px-4 py-3 font-medium text-slate-300">Status</th>
               <th className="px-4 py-3 font-medium text-slate-300">Featured</th>
               <th className="px-4 py-3 font-medium text-slate-300">Actions</th>
@@ -119,6 +120,11 @@ export default function AdminVehiclesPage() {
                 <td className="px-4 py-3 text-slate-300">
                   {vehicle.onlineBookingRefund != null && vehicle.onlineBookingRefund > 0
                     ? formatPrice(vehicle.onlineBookingRefund)
+                    : "—"}
+                </td>
+                <td className="px-4 py-3 text-slate-300">
+                  {vehicle.onlineBookingAmount != null && vehicle.onlineBookingAmount > 0
+                    ? formatPrice(vehicle.onlineBookingAmount)
                     : "—"}
                 </td>
                 <td className="px-4 py-3">

@@ -124,6 +124,16 @@ export default function AdminInquiriesPage() {
                     {inquiry.vehicle.model}
                   </p>
                 )}
+                {inquiry.bookingAmountAtBooking != null &&
+                  inquiry.bookingAmountAtBooking > 0 && (
+                    <p className="text-sm text-amber-300">
+                      Booking payment: {formatPrice(inquiry.bookingAmountAtBooking)}
+                      {inquiry.paymentStatus === "paid" ? " · Paid" : ` · ${inquiry.paymentStatus}`}
+                    </p>
+                  )}
+                {inquiry.paymentId && (
+                  <p className="text-xs text-slate-500">Payment ID: {inquiry.paymentId}</p>
+                )}
                 {inquiry.refundAmountAtBooking != null &&
                   inquiry.refundAmountAtBooking > 0 && (
                     <p className="text-sm text-green-400">

@@ -31,6 +31,7 @@ export default async function TestDrivePage({ searchParams }: PageProps) {
     id: vehicle.id,
     label: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     onlineBookingRefund: vehicle.onlineBookingRefund,
+    onlineBookingAmount: vehicle.onlineBookingAmount,
   }));
 
   return (

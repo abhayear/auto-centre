@@ -114,6 +114,13 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
           {vehicle.status === "available" && (
             <div className="mt-8 rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
+              {vehicle.onlineBookingAmount != null && vehicle.onlineBookingAmount > 0 && (
+                <div className="mb-4 rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3">
+                  <p className="font-medium text-amber-200">
+                    Online booking payment: {formatPrice(vehicle.onlineBookingAmount)}
+                  </p>
+                </div>
+              )}
               {vehicle.onlineBookingRefund != null && vehicle.onlineBookingRefund > 0 && (
                 <div className="mb-4 rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
                   <p className="font-medium text-green-300">
@@ -128,6 +135,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 vehicleId={vehicle.id}
                 vehicleLabel={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 onlineBookingRefund={vehicle.onlineBookingRefund}
+                onlineBookingAmount={vehicle.onlineBookingAmount}
               />
             </div>
           )}
