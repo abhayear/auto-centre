@@ -66,7 +66,7 @@ export function Navbar() {
             href="/test-drive"
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
           >
-            Test Ride
+            Book Online
           </Link>
         </div>
 
@@ -121,7 +121,7 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="mt-2 rounded-lg bg-red-600 px-3 py-2 text-center text-sm font-medium text-white"
             >
-              Test Ride
+              Book Online
             </Link>
           </div>
         </nav>

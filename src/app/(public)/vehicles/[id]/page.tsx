@@ -114,22 +114,20 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
           {vehicle.status === "available" && (
             <div className="mt-8 rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
-              {vehicle.visitorBookingReward != null && vehicle.visitorBookingReward > 0 && (
+              {vehicle.onlineBookingRefund != null && vehicle.onlineBookingRefund > 0 && (
                 <div className="mb-4 rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
                   <p className="font-medium text-green-300">
-                    Book a test drive & earn {formatPrice(vehicle.visitorBookingReward)} cash
-                    reward from Auto Galaxy
+                    Book this e-scooter online & get {formatPrice(vehicle.onlineBookingRefund)}{" "}
+                    cash refund from Auto Galaxy
                   </p>
                 </div>
               )}
-              <h2 className="mb-4 text-lg font-semibold text-white">
-                Request a Test Drive
-              </h2>
+              <h2 className="mb-4 text-lg font-semibold text-white">Book Online</h2>
               <InquiryForm
                 type="test_drive"
                 vehicleId={vehicle.id}
                 vehicleLabel={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                bookingReward={vehicle.visitorBookingReward}
+                onlineBookingRefund={vehicle.onlineBookingRefund}
               />
             </div>
           )}

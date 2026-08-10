@@ -187,16 +187,16 @@ export default async function HomePage() {
       <section className="bg-gradient-to-r from-red-600 to-red-700">
         <div className="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white">
-            Ready for a Test Ride?
+            Ready to Book Online?
           </h2>
           <p className="mt-2 text-red-100">
-            Experience your next e-scooter on the road. Book a ride today.
+            Choose your e-scooter and get the cash refund set for that model.
           </p>
           <Link
             href="/test-drive"
             className="mt-6 inline-block rounded-lg bg-white px-6 py-3 font-medium text-red-600 transition-colors hover:bg-red-50"
           >
-            Request Test Ride
+            Book E-Scooter Online
           </Link>
         </div>
       </section>

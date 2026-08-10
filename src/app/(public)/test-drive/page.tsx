@@ -1,11 +1,11 @@
-import { InquiryForm } from "@/components/forms/InquiryForm";
+import { OnlineBookingForm } from "@/components/forms/OnlineBookingForm";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Test Ride",
-  description: "Request a test ride for any e-scooter in our inventory.",
+  title: "Book Online",
+  description: "Book an electric scooter online and get a cash refund from Auto Galaxy.",
 };
 
 type PageProps = {
@@ -15,31 +15,38 @@ type PageProps = {
 export default async function TestDrivePage({ searchParams }: PageProps) {
   const { vehicleId } = await searchParams;
 
-  let vehicleLabel: string | undefined;
-  if (vehicleId) {
-    const vehicle = await safeDbQuery(
-      () => prisma.vehicle.findUnique({ where: { id: vehicleId } }),
-      null
-    );
-    if (vehicle) {
-      vehicleLabel = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
-    }
-  }
+  const vehicles = await safeDbQuery(
+    () =>
+      prisma.vehicle.findMany({
+        where: {
+          status: "available",
+          fuelType: "Electric",
+        },
+        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      }),
+    [],
+  );
+
+  const bookableVehicles = vehicles.map((vehicle) => ({
+    id: vehicle.id,
+    label: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    onlineBookingRefund: vehicle.onlineBookingRefund,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Request a Test Ride</h1>
+        <h1 className="text-3xl font-bold text-white">Book E-Scooter Online</h1>
         <p className="mt-2 text-slate-400">
-          Experience the e-scooter before you buy. We&apos;ll arrange a convenient time for you.
+          Choose a model uploaded by our team, submit your booking, and receive the cash refund
+          amount set for that e-scooter.
         </p>
       </div>
 
       <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
-        <InquiryForm
-          type="test_drive"
-          vehicleId={vehicleId}
-          vehicleLabel={vehicleLabel}
+        <OnlineBookingForm
+          vehicles={bookableVehicles}
+          initialVehicleId={vehicleId}
         />
       </div>
     </div>

@@ -11,10 +11,15 @@ interface InquiryFormProps {
   type: "test_drive" | "contact" | "general";
   vehicleId?: string;
   vehicleLabel?: string;
-  bookingReward?: number | null;
+  onlineBookingRefund?: number | null;
 }
 
-export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: InquiryFormProps) {
+export function InquiryForm({
+  type,
+  vehicleId,
+  vehicleLabel,
+  onlineBookingRefund,
+}: InquiryFormProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -36,15 +41,15 @@ export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: In
       const result = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error ?? "Failed to submit inquiry");
+        toast.error(result.error ?? "Failed to submit booking");
         return;
       }
 
       const messages = {
         test_drive:
-          bookingReward != null && bookingReward > 0
-            ? `Test drive request submitted! You're eligible for a ${formatPrice(bookingReward)} cash reward from Auto Galaxy. We'll be in touch shortly.`
-            : "Test drive request submitted! We'll be in touch shortly.",
+          onlineBookingRefund != null && onlineBookingRefund > 0
+            ? `Online booking submitted! You are eligible for a ${formatPrice(onlineBookingRefund)} cash refund from Auto Galaxy. We will contact you shortly.`
+            : "Online booking submitted! We will contact you shortly.",
         contact: "Message sent! We'll respond within 24 hours.",
         general: "Inquiry submitted successfully!",
       };
@@ -59,23 +64,30 @@ export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: In
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {type === "test_drive" && bookingReward != null && bookingReward > 0 && (
-        <div className="rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
-          <p className="font-medium text-green-300">
-            Earn {formatPrice(bookingReward)} cash reward when you book this test drive
-          </p>
-          <p className="mt-1 text-xs text-green-400/80">
-            Paid by Auto Galaxy upon booking confirmation
-          </p>
-        </div>
-      )}
+      {type === "test_drive" &&
+        onlineBookingRefund != null &&
+        onlineBookingRefund > 0 &&
+        vehicleLabel && (
+          <div className="rounded-lg border border-green-700/50 bg-green-900/20 px-4 py-3">
+            <p className="font-medium text-green-300">
+              Get {formatPrice(onlineBookingRefund)} cash refund when you book this e-scooter
+              online
+            </p>
+            <p className="mt-1 text-xs text-green-400/80">
+              Refund amount set by Auto Galaxy — paid after booking confirmation
+            </p>
+          </div>
+        )}
       {vehicleLabel && (
         <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3">
-          <p className="text-sm text-slate-400">Vehicle</p>
+          <p className="text-sm text-slate-400">Selected model</p>
           <p className="font-medium text-white">{vehicleLabel}</p>
           <input type="hidden" name="vehicleId" value={vehicleId} />
         </div>
       )}
+      {!vehicleLabel && vehicleId ? (
+        <input type="hidden" name="vehicleId" value={vehicleId} />
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           id="name"
@@ -97,7 +109,8 @@ export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: In
         id="phone"
         name="phone"
         type="tel"
-        label="Phone (optional)"
+        label="Phone"
+        required={type === "test_drive"}
         error={errors.phone}
       />
       <Textarea
@@ -108,13 +121,13 @@ export function InquiryForm({ type, vehicleId, vehicleLabel, bookingReward }: In
         required
         placeholder={
           type === "test_drive"
-            ? "Let us know your preferred date/time and any questions..."
+            ? "Preferred date/time, delivery or pickup preference, questions..."
             : "How can we help you?"
         }
         error={errors.message}
       />
       <Button type="submit" loading={loading} className="w-full sm:w-auto">
-        {type === "test_drive" ? "Request Test Ride" : "Send Message"}
+        {type === "test_drive" ? "Book Online" : "Send Message"}
       </Button>
     </form>
   );

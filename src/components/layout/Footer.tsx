@@ -64,7 +64,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/test-drive" className="hover:text-red-400">
-                  Request Test Ride
+                  Book Online
                 </Link>
               </li>
               <li>

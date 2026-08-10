@@ -21,7 +21,7 @@ model Vehicle {
   images       String    @default("[]")
   description           String
   featured              Boolean   @default(false)
-  visitorBookingReward  Float?
+  onlineBookingRefund   Float?
   createdAt             DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   inquiries    Inquiry[]
@@ -149,7 +149,7 @@ model Inquiry {
   message   String
   vehicleId              String?
   vehicle                Vehicle? @relation(fields: [vehicleId], references: [id])
-  rewardAmountAtBooking  Float?
+  refundAmountAtBooking  Float?
   status                 String   @default("new")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

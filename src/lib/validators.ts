@@ -38,24 +38,24 @@ export const vehicleSchema = z.object({
     .default([]),
   description: z.string().min(10, "Description must be at least 10 characters"),
   featured: z.boolean().default(false),
-  visitorBookingReward: z.preprocess(
+  onlineBookingRefund: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? null : val),
     z.coerce
       .number()
-      .nonnegative("Reward must be zero or positive")
+      .nonnegative("Refund must be zero or positive")
       .nullable()
       .optional(),
   ),
 });
 
-export function resolveVisitorBookingReward(
+export function resolveOnlineBookingRefund(
   type: string,
   vehicleId: string | undefined | null,
-  visitorBookingReward: number | null | undefined,
+  onlineBookingRefund: number | null | undefined,
 ): number | null {
   if (type !== "test_drive" || !vehicleId) return null;
-  if (visitorBookingReward == null || visitorBookingReward <= 0) return null;
-  return visitorBookingReward;
+  if (onlineBookingRefund == null || onlineBookingRefund <= 0) return null;
+  return onlineBookingRefund;
 }
 
 export const serviceSchema = z.object({

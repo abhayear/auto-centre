@@ -77,7 +77,7 @@ export default function AdminInquiriesPage() {
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               options={[
-                { value: "test_drive", label: "Test Drive" },
+                { value: "test_drive", label: "Online Booking" },
                 { value: "contact", label: "Contact" },
                 { value: "general", label: "General" },
               ]}
@@ -124,10 +124,10 @@ export default function AdminInquiriesPage() {
                     {inquiry.vehicle.model}
                   </p>
                 )}
-                {inquiry.rewardAmountAtBooking != null &&
-                  inquiry.rewardAmountAtBooking > 0 && (
+                {inquiry.refundAmountAtBooking != null &&
+                  inquiry.refundAmountAtBooking > 0 && (
                     <p className="text-sm text-green-400">
-                      Visitor reward: {formatPrice(inquiry.rewardAmountAtBooking)}
+                      Online booking refund: {formatPrice(inquiry.refundAmountAtBooking)}
                     </p>
                   )}
               </div>

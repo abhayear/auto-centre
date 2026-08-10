@@ -36,7 +36,7 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
 
     const formData = new FormData(e.currentTarget);
 
-    const rewardRaw = formData.get("visitorBookingReward");
+    const refundRaw = formData.get("onlineBookingRefund");
 
     const data = {
       make: formData.get("make"),
@@ -50,8 +50,8 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
       status: formData.get("status"),
       description: formData.get("description"),
       featured: formData.get("featured") === "on",
-      visitorBookingReward:
-        rewardRaw === "" || rewardRaw === null ? null : Number(rewardRaw),
+      onlineBookingRefund:
+        refundRaw === "" || refundRaw === null ? null : Number(refundRaw),
       images,
     };
 
@@ -156,17 +156,17 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
         />
         <div>
           <Input
-            id="visitorBookingReward"
-            name="visitorBookingReward"
+            id="onlineBookingRefund"
+            name="onlineBookingRefund"
             type="number"
-            label="Visitor booking reward (₹)"
+            label="Online booking refund (₹)"
             min={0}
             step={1}
-            defaultValue={vehicle?.visitorBookingReward ?? ""}
+            defaultValue={vehicle?.onlineBookingRefund ?? ""}
           />
           <p className="mt-1 text-xs text-slate-500">
-            Auto Galaxy pays this cash reward when a visitor books a test drive for this
-            vehicle. Leave blank for no reward.
+            Cash refund Auto Galaxy pays when a customer books this e-scooter model online.
+            Leave blank for no refund. Different models can have different amounts.
           </p>
         </div>
         <ImageUploader

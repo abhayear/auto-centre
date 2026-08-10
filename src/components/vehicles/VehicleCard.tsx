@@ -28,10 +28,10 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               <Badge variant="danger">Featured</Badge>
             </div>
           )}
-          {vehicle.visitorBookingReward != null && vehicle.visitorBookingReward > 0 && (
+          {vehicle.onlineBookingRefund != null && vehicle.onlineBookingRefund > 0 && (
             <div className="absolute right-3 top-3">
               <Badge variant="success">
-                Book & earn {formatPrice(vehicle.visitorBookingReward)} reward
+                Book online — {formatPrice(vehicle.onlineBookingRefund)} refund
               </Badge>
             </div>
           )}

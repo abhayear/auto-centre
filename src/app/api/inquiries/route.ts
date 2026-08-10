@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { inquirySchema, inquiryStatusSchema, resolveVisitorBookingReward } from "@/lib/validators";
+import { inquirySchema, inquiryStatusSchema, resolveOnlineBookingRefund } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
@@ -30,17 +30,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = inquirySchema.parse(body);
 
-    let rewardAmountAtBooking: number | null = null;
+    let refundAmountAtBooking: number | null = null;
 
     if (data.type === "test_drive" && data.vehicleId) {
       const vehicle = await prisma.vehicle.findUnique({
         where: { id: data.vehicleId },
-        select: { visitorBookingReward: true },
+        select: { onlineBookingRefund: true },
       });
-      rewardAmountAtBooking = resolveVisitorBookingReward(
+      refundAmountAtBooking = resolveOnlineBookingRefund(
         data.type,
         data.vehicleId,
-        vehicle?.visitorBookingReward,
+        vehicle?.onlineBookingRefund,
       );
     }
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         phone: data.phone ?? null,
         message: data.message,
         vehicleId: data.vehicleId ?? null,
-        rewardAmountAtBooking,
+        refundAmountAtBooking,
       },
       include: { vehicle: true },
     });
