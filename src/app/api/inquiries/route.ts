@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import {
@@ -7,7 +8,12 @@ import {
 } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
 import { getRazorpayClient } from "@/lib/razorpay-client";
-import { inquirySchema, inquiryStatusSchema, resolveOnlineBookingRefund } from "@/lib/validators";
+import {
+  formatZodErrors,
+  inquirySchema,
+  inquiryStatusSchema,
+  resolveOnlineBookingRefund,
+} from "@/lib/validators";
 
 async function resolveVehicleBookingFields(vehicleId: string | undefined, type: string) {
   if (!vehicleId || type !== "test_drive") {
@@ -140,8 +146,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(inquiry, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(error) },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: "Failed to create inquiry" }, { status: 500 });
   }
@@ -171,8 +180,11 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(inquiry);
   } catch (error) {
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(error) },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: "Failed to update inquiry" }, { status: 500 });
   }

@@ -57,13 +57,53 @@ export function InquiryForm({
     const result = await res.json();
 
     if (!res.ok) {
-      toast.error(result.error ?? "Failed to submit booking");
+      if (Array.isArray(result.details)) {
+        const fieldErrors: Record<string, string> = {};
+        for (const detail of result.details as { field: string; message: string }[]) {
+          fieldErrors[detail.field] = detail.message;
+        }
+        setErrors(fieldErrors);
+        toast.error(
+          (result.details as { message: string }[]).map((d) => d.message).join(" "),
+        );
+      } else {
+        toast.error(result.error ?? "Failed to submit booking");
+      }
       return false;
     }
 
     toast.success(successMessage);
     form?.reset();
     return true;
+  }
+
+  function validateClientForm(data: Record<string, string>): Record<string, string> {
+    const nextErrors: Record<string, string> = {};
+    if (data.name.trim().length < 2) nextErrors.name = "Name is required";
+    if (!data.email.trim().includes("@")) nextErrors.email = "Valid email is required";
+    if (type === "test_drive" && data.phone.trim().length < 7) {
+      nextErrors.phone = "Phone number must be at least 7 digits";
+    }
+    if (data.message.trim().length < 10) {
+      nextErrors.message = "Please enter at least 10 characters (date, time, or questions)";
+    }
+    return nextErrors;
+  }
+
+  function showOrderErrors(orderData: {
+    error?: string;
+    details?: { field: string; message: string }[];
+  }) {
+    if (Array.isArray(orderData.details)) {
+      const fieldErrors: Record<string, string> = {};
+      for (const detail of orderData.details) {
+        fieldErrors[detail.field] = detail.message;
+      }
+      setErrors(fieldErrors);
+      toast.error(orderData.details.map((d) => d.message).join(" "));
+      return;
+    }
+    toast.error(orderData.error ?? "Could not start payment");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -74,11 +114,26 @@ export function InquiryForm({
     const form = e.currentTarget;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const trimmed = {
+      name: data.name?.trim() ?? "",
+      email: data.email?.trim() ?? "",
+      phone: data.phone?.trim() ?? "",
+      message: data.message?.trim() ?? "",
+      vehicleId: data.vehicleId?.trim() ?? vehicleId,
+    };
+
+    const clientErrors = validateClientForm(trimmed);
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      toast.error(Object.values(clientErrors).join(" "));
+      setLoading(false);
+      return;
+    }
 
     const basePayload = {
-      ...data,
+      ...trimmed,
       type,
-      vehicleId,
+      vehicleId: trimmed.vehicleId || vehicleId,
     };
 
     const successMessage =
@@ -94,18 +149,18 @@ export function InquiryForm({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            vehicleId,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            message: data.message,
+            vehicleId: trimmed.vehicleId || vehicleId,
+            name: trimmed.name,
+            email: trimmed.email,
+            phone: trimmed.phone,
+            message: trimmed.message,
           }),
         });
 
         const orderData = await orderRes.json();
 
         if (!orderRes.ok) {
-          toast.error(orderData.error ?? "Could not start payment");
+          showOrderErrors(orderData);
           return;
         }
 
@@ -130,9 +185,9 @@ export function InquiryForm({
             description: `Online booking — ${orderData.vehicleLabel ?? vehicleLabel ?? "E-scooter"}`,
             order_id: orderData.orderId,
             prefill: {
-              name: data.name,
-              email: data.email,
-              contact: data.phone,
+              name: trimmed.name,
+              email: trimmed.email,
+              contact: trimmed.phone,
             },
             theme: { color: "#dc2626" },
             handler: async (response) => {
@@ -242,6 +297,9 @@ export function InquiryForm({
         }
         error={errors.message}
       />
+      {type === "test_drive" && !errors.message && (
+        <p className="text-xs text-slate-500">Minimum 10 characters — include preferred date/time.</p>
+      )}
       <Button type="submit" loading={loading} className="w-full sm:w-auto">
         {type === "test_drive"
           ? paymentRequired

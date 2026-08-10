@@ -114,6 +114,7 @@ describe("inquirySchema", () => {
       type: "test_drive",
       name: "John Smith",
       email: "john@example.com",
+      phone: "9876543210",
       message: "I would like to schedule a test drive this weekend.",
       vehicleId: "vehicle-123",
     });

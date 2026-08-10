@@ -133,24 +133,36 @@ export const esteemedCustomerSchema = z.object({
   active: z.boolean().default(true),
 });
 
-export const inquirySchema = z.object({
-  type: z.enum(["test_drive", "contact", "general"]),
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().optional(),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-  vehicleId: z.string().optional(),
-  razorpay_order_id: z.string().optional(),
-  razorpay_payment_id: z.string().optional(),
-  razorpay_signature: z.string().optional(),
-});
+export const inquirySchema = z
+  .object({
+    type: z.enum(["test_drive", "contact", "general"]),
+    name: z.string().trim().min(2, "Name is required"),
+    email: z.string().trim().email("Valid email is required"),
+    phone: z.string().trim().optional(),
+    message: z.string().trim().min(10, "Please enter at least 10 characters in notes"),
+    vehicleId: z.string().trim().optional(),
+    razorpay_order_id: z.string().trim().optional(),
+    razorpay_payment_id: z.string().trim().optional(),
+    razorpay_signature: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "test_drive") {
+      if (!data.phone || data.phone.length < 7) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["phone"],
+          message: "Phone number must be at least 7 digits",
+        });
+      }
+    }
+  });
 
 export const bookingOrderSchema = z.object({
-  vehicleId: z.string().min(1, "Vehicle is required"),
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().min(7, "Phone is required"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  vehicleId: z.string().trim().min(1, "Vehicle is required"),
+  name: z.string().trim().min(2, "Name is required"),
+  email: z.string().trim().email("Valid email is required"),
+  phone: z.string().trim().min(7, "Phone number must be at least 7 digits"),
+  message: z.string().trim().min(10, "Please enter at least 10 characters in notes"),
 });
 
 export const loginSchema = z.object({
