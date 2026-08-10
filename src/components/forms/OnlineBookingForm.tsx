@@ -75,6 +75,7 @@ export function OnlineBookingForm({ vehicles, initialVehicleId }: OnlineBookingF
         vehicleLabel={selected?.label}
         onlineBookingRefund={selected?.onlineBookingRefund}
         onlineBookingAmount={selected?.onlineBookingAmount}
+        showBookingSteps
       />
     </div>
   );

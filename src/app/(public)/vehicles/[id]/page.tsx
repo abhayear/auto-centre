@@ -136,6 +136,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 vehicleLabel={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 onlineBookingRefund={vehicle.onlineBookingRefund}
                 onlineBookingAmount={vehicle.onlineBookingAmount}
+                showBookingSteps
               />
             </div>
           )}

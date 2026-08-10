@@ -84,10 +84,22 @@ export async function POST(request: NextRequest) {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = data;
 
       if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return NextResponse.json(
-          { error: "Payment is required to complete this booking" },
-          { status: 400 },
-        );
+        const inquiry = await prisma.inquiry.create({
+          data: {
+            type: data.type,
+            name: data.name,
+            email: data.email,
+            phone: data.phone ?? null,
+            message: data.message,
+            vehicleId: data.vehicleId ?? null,
+            refundAmountAtBooking,
+            bookingAmountAtBooking,
+            paymentStatus: "pending",
+          },
+          include: { vehicle: true },
+        });
+
+        return NextResponse.json(inquiry, { status: 201 });
       }
 
       const secret = process.env.RAZORPAY_KEY_SECRET;

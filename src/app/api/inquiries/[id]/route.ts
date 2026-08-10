@@ -5,6 +5,46 @@ import { inquiryStatusSchema } from "@/lib/validators";
 
 type Params = { params: Promise<{ id: string }> };
 
+export async function GET(_request: Request, { params }: Params) {
+  const { id } = await params;
+
+  const inquiry = await prisma.inquiry.findUnique({
+    where: { id },
+    include: {
+      vehicle: {
+        select: {
+          year: true,
+          make: true,
+          model: true,
+        },
+      },
+    },
+  });
+
+  if (!inquiry || inquiry.type !== "test_drive") {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  }
+
+  if (inquiry.paymentStatus !== "pending" && inquiry.paymentStatus !== "paid" && inquiry.paymentStatus !== "not_required") {
+    return NextResponse.json({ error: "Booking not available" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: inquiry.id,
+    name: inquiry.name,
+    email: inquiry.email,
+    phone: inquiry.phone,
+    message: inquiry.message,
+    paymentStatus: inquiry.paymentStatus,
+    bookingAmountAtBooking: inquiry.bookingAmountAtBooking,
+    refundAmountAtBooking: inquiry.refundAmountAtBooking,
+    vehicleLabel: inquiry.vehicle
+      ? `${inquiry.vehicle.year} ${inquiry.vehicle.make} ${inquiry.vehicle.model}`
+      : null,
+    createdAt: inquiry.createdAt,
+  });
+}
+
 export async function PATCH(request: Request, { params }: Params) {
   const session = await requireAdmin();
   if (!session) {
