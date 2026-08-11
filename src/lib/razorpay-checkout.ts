@@ -1,12 +1,19 @@
 import { SITE_NAME } from "@/lib/constants";
 import { getSiteUrl } from "@/lib/site-url";
 
-/** Strip to last 10 digits for Razorpay/UPI prefill. */
+/** Strip to last 10 digits from an Indian phone number. */
 export function normalizeIndianPhone(contact: string | null | undefined): string | undefined {
   if (!contact) return undefined;
   const digits = contact.replace(/\D/g, "");
   if (digits.length < 10) return undefined;
   return digits.slice(-10);
+}
+
+/** Razorpay expects +{country}{number}; defaults to US (+1) if missing. */
+export function formatRazorpayContact(contact: string | null | undefined): string | undefined {
+  const local = normalizeIndianPhone(contact);
+  if (!local) return undefined;
+  return `+91${local}`;
 }
 
 export function isRazorpayTestKey(keyId: string | null | undefined): boolean {

@@ -112,7 +112,8 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
       }
 
       await new Promise<void>((resolve) => {
-        if (orderData.isTestMode) setIsTestMode(true);
+        const testMode = Boolean(orderData.isTestMode);
+        if (testMode) setIsTestMode(true);
 
         const checkout = new window.Razorpay!({
           key: orderData.keyId,
@@ -125,19 +126,7 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
             email: orderData.customerEmail,
             contact: orderData.customerPhone ?? undefined,
           },
-          method: {
-            upi: true,
-            card: true,
-            netbanking: true,
-            wallet: true,
-          },
-          config: {
-            display: {
-              preferences: {
-                show_default_blocks: true,
-              },
-            },
-          },
+          ...(testMode ? { method: "card" as const } : {}),
           theme: { color: "#dc2626" },
           handler: async (response) => {
             const payRes = await fetch(`/api/inquiries/${bookingId}/pay`, {
@@ -257,16 +246,20 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
           <div className="mt-4 rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
             <p className="font-medium">Test payment mode</p>
             <p className="mt-1 text-amber-300/90">
-              UPI QR scan from another phone often fails in test mode (bank name will not load).
-              Instead, choose <strong>UPI</strong> in Razorpay and enter{" "}
-              <strong>success@razorpay</strong>, or tap a UPI app button on the same phone.
+              Easiest: pay with test card <strong>4111 1111 1111 1111</strong> (any future expiry,
+              any CVV). Razorpay opens on Card by default.
+            </p>
+            <p className="mt-2 text-amber-300/90">
+              For UPI test only, type exactly <strong>success@razorpay</strong> — your real UPI ID
+              will show as invalid in test mode.
             </p>
           </div>
         ) : (
           <div className="mt-4 rounded-lg border border-slate-700/50 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
             <p>
-              For UPI, tap <strong>PhonePe / Google Pay / Paytm</strong> inside Razorpay on your
-              phone. If QR scan shows a bank error, use the app button instead — it is more reliable.
+              For UPI, tap <strong>PhonePe / Google Pay / Paytm</strong> inside Razorpay, or enter
+              your real UPI ID (e.g. <strong>name@paytm</strong>). Test IDs like{" "}
+              <strong>success@razorpay</strong> do not work in live mode.
             </p>
           </div>
         )}

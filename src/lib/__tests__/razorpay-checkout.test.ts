@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatRazorpayContact,
   isRazorpayTestKey,
   normalizeIndianPhone,
   resolveRazorpayMerchantImage,
@@ -12,6 +13,17 @@ describe("normalizeIndianPhone", () => {
 
   it("returns undefined for short numbers", () => {
     expect(normalizeIndianPhone("12345")).toBeUndefined();
+  });
+});
+
+describe("formatRazorpayContact", () => {
+  it("prefixes Indian numbers with +91", () => {
+    expect(formatRazorpayContact("7985831851")).toBe("+917985831851");
+    expect(formatRazorpayContact("+91 79858 31851")).toBe("+917985831851");
+  });
+
+  it("returns undefined for invalid numbers", () => {
+    expect(formatRazorpayContact("123")).toBeUndefined();
   });
 });
 

@@ -9,9 +9,9 @@ import {
 } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
 import {
+  formatRazorpayContact,
   getRazorpayMerchantName,
   isRazorpayTestKey,
-  normalizeIndianPhone,
   resolveRazorpayMerchantImage,
 } from "@/lib/razorpay-checkout";
 import { getRazorpayClient } from "@/lib/razorpay-client";
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         vehicleLabel: `${inquiry.vehicle.year} ${inquiry.vehicle.make} ${inquiry.vehicle.model}`,
         customerName: inquiry.name,
         customerEmail: inquiry.email,
-        customerPhone: normalizeIndianPhone(inquiry.phone),
+        customerPhone: formatRazorpayContact(inquiry.phone),
       });
     }
 
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       vehicleLabel: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
       customerName: data.name,
       customerEmail: data.email,
-      customerPhone: normalizeIndianPhone(data.phone),
+      customerPhone: formatRazorpayContact(data.phone),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

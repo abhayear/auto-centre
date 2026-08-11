@@ -17,7 +17,8 @@ interface RazorpayOptions {
     email?: string;
     contact?: string;
   };
-  method?: {
+  /** Pre-select payment method when contact + email are prefilled. */
+  method?: string | {
     upi?: boolean;
     card?: boolean;
     netbanking?: boolean;
