@@ -8,6 +8,12 @@ import {
   requiresOnlineBookingPayment,
 } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
+import {
+  getRazorpayMerchantName,
+  isRazorpayTestKey,
+  normalizeIndianPhone,
+  resolveRazorpayMerchantImage,
+} from "@/lib/razorpay-checkout";
 import { getRazorpayClient } from "@/lib/razorpay-client";
 import { bookingOrderSchema, formatZodErrors } from "@/lib/validators";
 
@@ -68,6 +74,7 @@ export async function POST(request: NextRequest) {
         amount: amountToPaise(bookingAmount!),
         currency: "INR",
         receipt: `booking-${inquiry.id.slice(-8)}-${Date.now()}`,
+        payment_capture: true,
         notes: {
           inquiryId: inquiry.id,
           vehicleId: inquiry.vehicle.id,
@@ -76,16 +83,26 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      const keyId = getRazorpayKeyId();
+      const siteSettings = await prisma.siteSettings.findUnique({
+        where: { id: "default" },
+        select: { logoUrl: true },
+      });
+
       return NextResponse.json({
         paymentRequired: true,
         bookingAmount,
+        amountPaise: Number(order.amount),
         orderId: order.id,
-        keyId: getRazorpayKeyId(),
+        keyId,
+        isTestMode: isRazorpayTestKey(keyId),
+        merchantName: getRazorpayMerchantName(),
+        merchantImage: resolveRazorpayMerchantImage(siteSettings?.logoUrl),
         inquiryId: inquiry.id,
         vehicleLabel: `${inquiry.vehicle.year} ${inquiry.vehicle.make} ${inquiry.vehicle.model}`,
         customerName: inquiry.name,
         customerEmail: inquiry.email,
-        customerPhone: inquiry.phone,
+        customerPhone: normalizeIndianPhone(inquiry.phone),
       });
     }
 
@@ -141,6 +158,7 @@ export async function POST(request: NextRequest) {
       amount: amountToPaise(bookingAmount!),
       currency: "INR",
       receipt: `booking-${vehicle.id.slice(-8)}-${Date.now()}`,
+      payment_capture: true,
       notes: {
         vehicleId: vehicle.id,
         customerName: data.name,
@@ -149,12 +167,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const keyId = getRazorpayKeyId();
+
     return NextResponse.json({
       paymentRequired: true,
       bookingAmount,
+      amountPaise: Number(order.amount),
       orderId: order.id,
-      keyId: getRazorpayKeyId(),
+      keyId,
+      isTestMode: isRazorpayTestKey(keyId),
+      merchantName: getRazorpayMerchantName(),
+      merchantImage: resolveRazorpayMerchantImage(siteSettings?.logoUrl),
       vehicleLabel: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+      customerName: data.name,
+      customerEmail: data.email,
+      customerPhone: normalizeIndianPhone(data.phone),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

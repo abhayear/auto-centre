@@ -6,15 +6,29 @@ interface RazorpaySuccessResponse {
 
 interface RazorpayOptions {
   key: string;
-  amount: number;
-  currency: string;
+  amount?: number;
+  currency?: string;
   name: string;
   description: string;
+  image?: string;
   order_id: string;
   prefill?: {
     name?: string;
     email?: string;
     contact?: string;
+  };
+  method?: {
+    upi?: boolean;
+    card?: boolean;
+    netbanking?: boolean;
+    wallet?: boolean;
+  };
+  config?: {
+    display?: {
+      preferences?: {
+        show_default_blocks?: boolean;
+      };
+    };
   };
   theme?: {
     color?: string;

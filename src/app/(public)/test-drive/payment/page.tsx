@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BookingPaymentClient } from "@/components/booking/BookingPaymentClient";
+import { getRazorpayKeyId } from "@/lib/booking-payment";
+import { isRazorpayTestKey } from "@/lib/razorpay-checkout";
 
 export const metadata: Metadata = {
   title: "Payment — Book Online",
@@ -8,6 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default function BookingPaymentPage() {
+  const isTestMode = isRazorpayTestKey(getRazorpayKeyId());
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
       <Suspense
@@ -17,7 +21,7 @@ export default function BookingPaymentPage() {
           </div>
         }
       >
-        <BookingPaymentClient />
+        <BookingPaymentClient initialTestMode={isTestMode} />
       </Suspense>
     </div>
   );

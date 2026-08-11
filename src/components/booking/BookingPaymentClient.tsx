@@ -20,6 +20,10 @@ type BookingSummary = {
   vehicleLabel: string | null;
 };
 
+type BookingPaymentClientProps = {
+  initialTestMode?: boolean;
+};
+
 function loadRazorpayScript(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
 
@@ -33,7 +37,7 @@ function loadRazorpayScript(): Promise<void> {
   });
 }
 
-export function BookingPaymentClient() {
+export function BookingPaymentClient({ initialTestMode = false }: BookingPaymentClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("id");
@@ -41,6 +45,7 @@ export function BookingPaymentClient() {
   const [booking, setBooking] = useState<BookingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(initialTestMode);
 
   useEffect(() => {
     if (!bookingId) {
@@ -107,17 +112,31 @@ export function BookingPaymentClient() {
       }
 
       await new Promise<void>((resolve) => {
+        if (orderData.isTestMode) setIsTestMode(true);
+
         const checkout = new window.Razorpay!({
           key: orderData.keyId,
-          amount: Math.round(orderData.bookingAmount * 100),
-          currency: "INR",
-          name: "Auto Galaxy",
-          description: `Online booking — ${orderData.vehicleLabel ?? "E-scooter"}`,
           order_id: orderData.orderId,
+          name: orderData.merchantName ?? "Auto Galaxy",
+          description: `Online booking — ${orderData.vehicleLabel ?? "E-scooter"}`,
+          ...(orderData.merchantImage ? { image: orderData.merchantImage } : {}),
           prefill: {
             name: orderData.customerName,
             email: orderData.customerEmail,
             contact: orderData.customerPhone ?? undefined,
+          },
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true,
+          },
+          config: {
+            display: {
+              preferences: {
+                show_default_blocks: true,
+              },
+            },
           },
           theme: { color: "#dc2626" },
           handler: async (response) => {
@@ -233,6 +252,24 @@ export function BookingPaymentClient() {
             Pay {formatPrice(booking.bookingAmountAtBooking ?? 0)} Now
           </Button>
         </div>
+
+        {isTestMode ? (
+          <div className="mt-4 rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
+            <p className="font-medium">Test payment mode</p>
+            <p className="mt-1 text-amber-300/90">
+              UPI QR scan from another phone often fails in test mode (bank name will not load).
+              Instead, choose <strong>UPI</strong> in Razorpay and enter{" "}
+              <strong>success@razorpay</strong>, or tap a UPI app button on the same phone.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-lg border border-slate-700/50 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
+            <p>
+              For UPI, tap <strong>PhonePe / Google Pay / Paytm</strong> inside Razorpay on your
+              phone. If QR scan shows a bank error, use the app button instead — it is more reliable.
+            </p>
+          </div>
+        )}
 
         <p className="mt-4 text-xs text-slate-500">
           Secure payment via Razorpay — UPI, cards, and net banking accepted.
