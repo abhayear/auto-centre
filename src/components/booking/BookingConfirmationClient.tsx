@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { BookingStepNav, BookingSteps } from "@/components/booking/BookingSteps";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,7 @@ type BookingSummary = {
 };
 
 export function BookingConfirmationClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("id");
 
@@ -45,7 +46,13 @@ export function BookingConfirmationClient() {
     void load();
   }, [bookingId]);
 
-  if (loading) {
+  useEffect(() => {
+    if (booking?.paymentStatus === "pending" && bookingId) {
+      router.replace(`/test-drive/payment?id=${bookingId}`);
+    }
+  }, [booking, bookingId, router]);
+
+  if (loading || booking?.paymentStatus === "pending") {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-red-500" />
@@ -54,7 +61,6 @@ export function BookingConfirmationClient() {
   }
 
   const paid = booking?.paymentStatus === "paid";
-  const pending = booking?.paymentStatus === "pending";
 
   return (
     <>
@@ -65,16 +71,12 @@ export function BookingConfirmationClient() {
           <CheckCircle2 className="h-8 w-8 text-green-400" />
         </div>
 
-        <h1 className="text-2xl font-bold text-white">
-          {pending ? "Booking Saved — Payment Pending" : "Booking Confirmed!"}
-        </h1>
+        <h1 className="text-2xl font-bold text-white">Booking Confirmed!</h1>
 
         <p className="mx-auto mt-3 max-w-lg text-slate-300">
-          {pending
-            ? "Your booking details are saved. Please complete payment to confirm your e-scooter booking."
-            : paid
-              ? "Thank you! Your payment was received and your online e-scooter booking is confirmed. Our team will contact you shortly."
-              : "Thank you! Your online e-scooter booking has been submitted. Our team will contact you shortly."}
+          {paid
+            ? "Thank you! Your payment was received and your online e-scooter booking is confirmed. Our team will contact you shortly."
+            : "Thank you! Your online e-scooter booking has been submitted. Our team will contact you shortly."}
         </p>
 
         {booking && (
@@ -108,13 +110,8 @@ export function BookingConfirmationClient() {
         )}
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {pending && bookingId && (
-            <Link href={`/test-drive/payment?id=${bookingId}`}>
-              <Button>Continue to Payment</Button>
-            </Link>
-          )}
           <Link href="/vehicles">
-            <Button variant={pending ? "outline" : "primary"}>Browse E-Scooters</Button>
+            <Button>Browse E-Scooters</Button>
           </Link>
           <Link href="/">
             <Button variant="outline">Back to Home</Button>
@@ -122,9 +119,7 @@ export function BookingConfirmationClient() {
         </div>
       </div>
 
-      {!pending && (
-        <BookingStepNav backHref="/test-drive" backLabel="Book another e-scooter" />
-      )}
+      <BookingStepNav backHref="/test-drive" backLabel="Book another e-scooter" />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, Clock, Eye, ImageIcon, Plus, Trash2 } from "lucide-react";
+import { CreditCard, Bell, Clock, Eye, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
@@ -16,6 +16,7 @@ type SiteSettingsFormData = {
   showVisitorCount: boolean;
   heroImageUrl: string | null;
   logoUrl: string | null;
+  defaultOnlineBookingAmount: number | null;
 };
 
 export function SiteSettingsForm() {
@@ -35,6 +36,10 @@ export function SiteSettingsForm() {
           showVisitorCount: Boolean(data.showVisitorCount ?? true),
           heroImageUrl: data.heroImageUrl ?? null,
           logoUrl: data.logoUrl ?? null,
+          defaultOnlineBookingAmount:
+            data.defaultOnlineBookingAmount != null && data.defaultOnlineBookingAmount > 0
+              ? Number(data.defaultOnlineBookingAmount)
+              : null,
         });
         setLoading(false);
       })
@@ -82,6 +87,7 @@ export function SiteSettingsForm() {
           showVisitorCount: settings.showVisitorCount,
           heroImageUrl: settings.heroImageUrl,
           logoUrl: settings.logoUrl,
+          defaultOnlineBookingAmount: settings.defaultOnlineBookingAmount,
         }),
       });
       const result = await res.json();
@@ -100,6 +106,10 @@ export function SiteSettingsForm() {
         showVisitorCount: Boolean(result.showVisitorCount ?? true),
         heroImageUrl: result.heroImageUrl ?? null,
         logoUrl: result.logoUrl ?? null,
+        defaultOnlineBookingAmount:
+          result.defaultOnlineBookingAmount != null && result.defaultOnlineBookingAmount > 0
+            ? Number(result.defaultOnlineBookingAmount)
+            : null,
       });
       window.dispatchEvent(new CustomEvent("site-settings-updated"));
       toast.success("Site settings updated");
@@ -235,6 +245,38 @@ export function SiteSettingsForm() {
           className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         />
         <p className="mt-1 text-xs text-slate-500">{settings.noticeText.length}/500 characters</p>
+      </section>
+
+      <section className="rounded-xl border border-amber-600/20 bg-slate-800/30 p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-amber-400" />
+          <h2 className="text-lg font-semibold text-white">Online booking payment</h2>
+        </div>
+        <p className="mb-4 text-sm text-slate-400">
+          Default Razorpay booking amount for e-scooters when a model does not have its own payment
+          set. Customers must pay before booking is confirmed.
+        </p>
+
+        <Input
+          id="defaultOnlineBookingAmount"
+          type="number"
+          label="Default booking payment (₹)"
+          min={1}
+          step={1}
+          value={settings.defaultOnlineBookingAmount ?? ""}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              defaultOnlineBookingAmount:
+                e.target.value === "" ? null : Math.max(1, Number(e.target.value) || 0),
+            })
+          }
+          placeholder="e.g. 499"
+        />
+        <p className="mt-2 text-xs text-slate-500">
+          Per-model amounts in Vehicles override this default. Leave empty to skip payment when no
+          model amount is set.
+        </p>
       </section>
 
       <section className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">

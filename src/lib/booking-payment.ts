@@ -12,6 +12,19 @@ export function resolveOnlineBookingAmount(
   return onlineBookingAmount;
 }
 
+/** Per-model amount overrides site default; null on vehicle uses default. */
+export function getEffectiveOnlineBookingAmount(
+  vehicleAmount: number | null | undefined,
+  defaultAmount: number | null | undefined,
+): number | null {
+  if (vehicleAmount != null) {
+    if (vehicleAmount <= 0) return null;
+    return vehicleAmount;
+  }
+  if (defaultAmount != null && defaultAmount > 0) return defaultAmount;
+  return null;
+}
+
 export function requiresOnlineBookingPayment(amount: number | null | undefined): boolean {
   return amount != null && amount > 0;
 }

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { describe, expect, it } from "vitest";
 import {
   amountToPaise,
+  getEffectiveOnlineBookingAmount,
   requiresOnlineBookingPayment,
   resolveOnlineBookingAmount,
   verifyRazorpayPaymentSignature,
@@ -14,6 +15,25 @@ describe("resolveOnlineBookingAmount", () => {
 
   it("returns null when amount is missing", () => {
     expect(resolveOnlineBookingAmount("test_drive", "vehicle-1", null)).toBeNull();
+  });
+});
+
+describe("getEffectiveOnlineBookingAmount", () => {
+  it("prefers per-vehicle amount over site default", () => {
+    expect(getEffectiveOnlineBookingAmount(799, 499)).toBe(799);
+  });
+
+  it("falls back to site default when vehicle amount is null", () => {
+    expect(getEffectiveOnlineBookingAmount(null, 499)).toBe(499);
+  });
+
+  it("returns null when neither amount is set", () => {
+    expect(getEffectiveOnlineBookingAmount(null, null)).toBeNull();
+  });
+
+  it("ignores zero or negative amounts", () => {
+    expect(getEffectiveOnlineBookingAmount(0, 499)).toBeNull();
+    expect(getEffectiveOnlineBookingAmount(null, 0)).toBeNull();
   });
 });
 

@@ -2,10 +2,10 @@ import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import {
   amountToPaise,
+  getEffectiveOnlineBookingAmount,
   getRazorpayKeyId,
   isRazorpayConfigured,
   requiresOnlineBookingPayment,
-  resolveOnlineBookingAmount,
 } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
 import { getRazorpayClient } from "@/lib/razorpay-client";
@@ -91,26 +91,31 @@ export async function POST(request: NextRequest) {
 
     const data = bookingOrderSchema.parse(body);
 
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: data.vehicleId },
-      select: {
-        id: true,
-        make: true,
-        model: true,
-        year: true,
-        onlineBookingAmount: true,
-        status: true,
-      },
-    });
+    const [vehicle, siteSettings] = await Promise.all([
+      prisma.vehicle.findUnique({
+        where: { id: data.vehicleId },
+        select: {
+          id: true,
+          make: true,
+          model: true,
+          year: true,
+          onlineBookingAmount: true,
+          status: true,
+        },
+      }),
+      prisma.siteSettings.findUnique({
+        where: { id: "default" },
+        select: { defaultOnlineBookingAmount: true },
+      }),
+    ]);
 
     if (!vehicle || vehicle.status !== "available") {
       return NextResponse.json({ error: "Vehicle not available for booking" }, { status: 404 });
     }
 
-    const bookingAmount = resolveOnlineBookingAmount(
-      "test_drive",
-      vehicle.id,
+    const bookingAmount = getEffectiveOnlineBookingAmount(
       vehicle.onlineBookingAmount,
+      siteSettings?.defaultOnlineBookingAmount,
     );
 
     if (!requiresOnlineBookingPayment(bookingAmount)) {

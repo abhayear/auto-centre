@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import {
-  resolveOnlineBookingAmount,
+  getEffectiveOnlineBookingAmount,
   requiresOnlineBookingPayment,
   verifyRazorpayPaymentSignature,
 } from "@/lib/booking-payment";
@@ -24,10 +24,21 @@ async function resolveVehicleBookingFields(vehicleId: string | undefined, type: 
     };
   }
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { onlineBookingRefund: true, onlineBookingAmount: true },
-  });
+  const [vehicle, siteSettings] = await Promise.all([
+    prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { onlineBookingRefund: true, onlineBookingAmount: true },
+    }),
+    prisma.siteSettings.findUnique({
+      where: { id: "default" },
+      select: { defaultOnlineBookingAmount: true },
+    }),
+  ]);
+
+  const effectiveBookingAmount = getEffectiveOnlineBookingAmount(
+    vehicle?.onlineBookingAmount,
+    siteSettings?.defaultOnlineBookingAmount,
+  );
 
   return {
     refundAmountAtBooking: resolveOnlineBookingRefund(
@@ -35,14 +46,8 @@ async function resolveVehicleBookingFields(vehicleId: string | undefined, type: 
       vehicleId,
       vehicle?.onlineBookingRefund,
     ),
-    bookingAmountAtBooking: resolveOnlineBookingAmount(
-      type,
-      vehicleId,
-      vehicle?.onlineBookingAmount,
-    ),
-    paymentRequired: requiresOnlineBookingPayment(
-      resolveOnlineBookingAmount(type, vehicleId, vehicle?.onlineBookingAmount),
-    ),
+    bookingAmountAtBooking: effectiveBookingAmount,
+    paymentRequired: requiresOnlineBookingPayment(effectiveBookingAmount),
   };
 }
 

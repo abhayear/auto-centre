@@ -1,6 +1,8 @@
 import { OnlineBookingForm } from "@/components/forms/OnlineBookingForm";
+import { getEffectiveOnlineBookingAmount } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
+import { getSiteSettings } from "@/lib/site-settings";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,23 +17,29 @@ type PageProps = {
 export default async function TestDrivePage({ searchParams }: PageProps) {
   const { vehicleId } = await searchParams;
 
-  const vehicles = await safeDbQuery(
-    () =>
-      prisma.vehicle.findMany({
-        where: {
-          status: "available",
-          fuelType: "Electric",
-        },
-        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-      }),
-    [],
-  );
+  const [vehicles, siteSettings] = await Promise.all([
+    safeDbQuery(
+      () =>
+        prisma.vehicle.findMany({
+          where: {
+            status: "available",
+            fuelType: "Electric",
+          },
+          orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+        }),
+      [],
+    ),
+    getSiteSettings(),
+  ]);
 
   const bookableVehicles = vehicles.map((vehicle) => ({
     id: vehicle.id,
     label: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     onlineBookingRefund: vehicle.onlineBookingRefund,
-    onlineBookingAmount: vehicle.onlineBookingAmount,
+    onlineBookingAmount: getEffectiveOnlineBookingAmount(
+      vehicle.onlineBookingAmount,
+      siteSettings.defaultOnlineBookingAmount,
+    ),
   }));
 
   return (

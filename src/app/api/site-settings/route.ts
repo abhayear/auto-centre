@@ -39,6 +39,7 @@ export async function PATCH(request: NextRequest) {
         showVisitorCount: data.showVisitorCount,
         heroImageUrl: data.heroImageUrl ?? null,
         logoUrl: data.logoUrl ?? null,
+        defaultOnlineBookingAmount: data.defaultOnlineBookingAmount ?? null,
       },
       create: {
         id: "default",
@@ -49,6 +50,7 @@ export async function PATCH(request: NextRequest) {
         showVisitorCount: data.showVisitorCount,
         heroImageUrl: data.heroImageUrl ?? null,
         logoUrl: data.logoUrl ?? null,
+        defaultOnlineBookingAmount: data.defaultOnlineBookingAmount ?? null,
       },
     });
 
@@ -62,6 +64,7 @@ export async function PATCH(request: NextRequest) {
       showVisitorCount: row.showVisitorCount,
       heroImageUrl: row.heroImageUrl,
       logoUrl: row.logoUrl,
+      defaultOnlineBookingAmount: row.defaultOnlineBookingAmount,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

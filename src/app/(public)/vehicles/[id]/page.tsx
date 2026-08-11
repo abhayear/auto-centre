@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
 import { InquiryForm } from "@/components/forms/InquiryForm";
+import { getEffectiveOnlineBookingAmount } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_VEHICLE_IMAGE } from "@/lib/image-constants";
 import { safeDbQuery } from "@/lib/safe-db";
+import { getSiteSettings } from "@/lib/site-settings";
 import { formatPrice, parseImages } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -26,12 +28,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function VehicleDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const vehicle = await safeDbQuery(
-    () => prisma.vehicle.findUnique({ where: { id } }),
-    null
-  );
+  const [vehicle, siteSettings] = await Promise.all([
+    safeDbQuery(() => prisma.vehicle.findUnique({ where: { id } }), null),
+    getSiteSettings(),
+  ]);
 
   if (!vehicle) notFound();
+
+  const effectiveBookingAmount = getEffectiveOnlineBookingAmount(
+    vehicle.onlineBookingAmount,
+    siteSettings.defaultOnlineBookingAmount,
+  );
 
   const images = parseImages(vehicle.images);
   const mainImage = images[0] ?? DEFAULT_VEHICLE_IMAGE;
@@ -114,10 +121,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
           {vehicle.status === "available" && (
             <div className="mt-8 rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
-              {vehicle.onlineBookingAmount != null && vehicle.onlineBookingAmount > 0 && (
+              {effectiveBookingAmount != null && effectiveBookingAmount > 0 && (
                 <div className="mb-4 rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3">
                   <p className="font-medium text-amber-200">
-                    Online booking payment: {formatPrice(vehicle.onlineBookingAmount)}
+                    Online booking payment: {formatPrice(effectiveBookingAmount)}
                   </p>
                 </div>
               )}
@@ -135,7 +142,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 vehicleId={vehicle.id}
                 vehicleLabel={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 onlineBookingRefund={vehicle.onlineBookingRefund}
-                onlineBookingAmount={vehicle.onlineBookingAmount}
+                onlineBookingAmount={effectiveBookingAmount}
                 showBookingSteps
               />
             </div>

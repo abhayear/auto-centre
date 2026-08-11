@@ -24,6 +24,28 @@ const statusStyles: Record<string, string> = {
   completed: "border-emerald-700/40 bg-emerald-950/20 text-emerald-300",
 };
 
+const dealerStampColumnClass =
+  "min-w-[10rem] px-3 py-2 print:border print:border-black";
+
+function DealerStampHeader() {
+  return (
+    <th className={dealerStampColumnClass}>Dealer stamp / signature</th>
+  );
+}
+
+function DealerStampCell() {
+  return (
+    <td className={`${dealerStampColumnClass} align-bottom`}>
+      <div
+        className="flex min-h-12 flex-col justify-end print:min-h-16"
+        aria-hidden="true"
+      >
+        <div className="border-b border-slate-600 print:border-black" />
+      </div>
+    </td>
+  );
+}
+
 type ServiceDueCalculatorProps = {
   deliveryDate: string;
   onDeliveryDateChange: (value: string) => void;
@@ -144,7 +166,7 @@ export function ServiceDueCalculator({
                 <th className="px-3 py-2 print:border print:border-black">Service</th>
                 <th className="px-3 py-2 print:border print:border-black">Day</th>
                 <th className="px-3 py-2 print:border print:border-black">Due date</th>
-                <th className="px-3 py-2 print:border print:border-black">Status</th>
+                <DealerStampHeader />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50 print:divide-black">
@@ -160,9 +182,7 @@ export function ServiceDueCalculator({
                   <td className="px-3 py-2 print:border print:border-black">
                     {formatScheduleDate(m.dueDate)}
                   </td>
-                  <td className="px-3 py-2 capitalize print:border print:border-black">
-                    {m.status === "due-soon" ? "Due soon" : m.status}
-                  </td>
+                  <DealerStampCell />
                 </tr>
               ))}
             </tbody>
@@ -181,7 +201,7 @@ export function ServiceDueCalculator({
                 <tr>
                   <th className="px-3 py-2 print:border print:border-black">Service</th>
                   <th className="px-3 py-2 print:border print:border-black">Due date</th>
-                  <th className="px-3 py-2 print:border print:border-black">Status</th>
+                  <DealerStampHeader />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 print:divide-black">
@@ -194,9 +214,7 @@ export function ServiceDueCalculator({
                     <td className="px-3 py-2 print:border print:border-black">
                       {formatScheduleDate(a.dueDate)}
                     </td>
-                    <td className="px-3 py-2 capitalize print:border print:border-black">
-                      {a.status === "due-soon" ? "Due soon" : a.status}
-                    </td>
+                    <DealerStampCell />
                   </tr>
                 ))}
               </tbody>

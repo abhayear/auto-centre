@@ -243,6 +243,10 @@ export const siteSettingsSchema = z
     showVisitorCount: z.boolean(),
     heroImageUrl: optionalUploadedImageUrlSchema,
     logoUrl: optionalUploadedImageUrlSchema,
+    defaultOnlineBookingAmount: z.preprocess(
+      (val) => (val === "" || val == null ? null : Number(val)),
+      z.number().positive("Amount must be greater than zero").nullable().optional(),
+    ),
   })
   .refine(
     (data) => !data.noticeActive || Boolean(data.noticeText?.trim()),

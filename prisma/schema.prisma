@@ -89,6 +89,7 @@ model SiteSettings {
   showVisitorCount  Boolean  @default(true)
   heroImageUrl      String?
   logoUrl           String?
+  defaultOnlineBookingAmount Float?
   updatedAt         DateTime @updatedAt
 }
 
