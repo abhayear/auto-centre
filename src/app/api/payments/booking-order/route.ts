@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       }),
       prisma.siteSettings.findUnique({
         where: { id: "default" },
-        select: { defaultOnlineBookingAmount: true },
+        select: { defaultOnlineBookingAmount: true, logoUrl: true },
       }),
     ]);
 
