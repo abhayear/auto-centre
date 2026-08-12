@@ -188,17 +188,33 @@ model JobPosting {
 }
 
 model JobApplication {
-  id          String     @id @default(cuid())
-  jobId       String
-  job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  name        String
-  email       String
-  phone       String?
-  resumeUrl   String?
-  coverLetter String?
-  status      String     @default("new")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String                 @id @default(cuid())
+  jobId        String
+  job          JobPosting             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  phone        String?
+  resumeUrl    String?
+  coverLetter  String?
+  status       String                 @default("new")
+  trackingCode String                 @unique
+  adminNotes   String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  activities   ApplicationActivity[]
+}
+
+model ApplicationActivity {
+  id            String         @id @default(cuid())
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          String
+  message       String
+  status        String?
+  createdBy     String?
+  createdAt     DateTime       @default(now())
+
+  @@index([applicationId, createdAt])
 }
 
 model CashBoxRecord {

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -11,8 +13,14 @@ interface JobApplicationFormProps {
   jobTitle: string;
 }
 
+type SubmitSuccess = {
+  trackingCode: string;
+  email: string;
+};
+
 export function JobApplicationForm({ jobId, jobTitle }: JobApplicationFormProps) {
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<SubmitSuccess | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,13 +43,39 @@ export function JobApplicationForm({ jobId, jobTitle }: JobApplicationFormProps)
         return;
       }
 
-      toast.success("Application submitted! We'll review your profile soon.");
-      (e.target as HTMLFormElement).reset();
+      setSuccess({
+        trackingCode: result.trackingCode,
+        email: result.email,
+      });
+      toast.success("Application submitted successfully!");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    const trackHref = `/careers/track?code=${encodeURIComponent(success.trackingCode)}&email=${encodeURIComponent(success.email)}`;
+
+    return (
+      <div className="rounded-lg border border-green-700/40 bg-green-950/20 p-6 text-center">
+        <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-green-400" />
+        <h3 className="text-lg font-semibold text-white">Application submitted!</h3>
+        <p className="mt-2 text-sm text-slate-400">
+          Save your tracking code to check your application status anytime.
+        </p>
+        <p className="mt-4 font-mono text-2xl font-bold tracking-wider text-amber-300">
+          {success.trackingCode}
+        </p>
+        <Link
+          href={trackHref}
+          className="mt-4 inline-block text-sm font-medium text-red-400 hover:text-red-300"
+        >
+          Track your application →
+        </Link>
+      </div>
+    );
   }
 
   return (

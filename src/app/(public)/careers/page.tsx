@@ -27,12 +27,20 @@ export default async function CareersPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold text-white">Careers</h1>
-        <p className="mt-2 max-w-2xl text-slate-400">
-          Build your career with a team that values expertise, customer service, and growth.
-          Explore our current openings below.
-        </p>
+      <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Careers</h1>
+          <p className="mt-2 max-w-2xl text-slate-400">
+            Build your career with a team that values expertise, customer service, and growth.
+            Explore our current openings below.
+          </p>
+        </div>
+        <Link
+          href="/careers/track"
+          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-red-600/50 hover:text-red-400"
+        >
+          Track Application
+        </Link>
       </div>
 
       {jobs.length === 0 ? (

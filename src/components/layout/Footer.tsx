@@ -63,6 +63,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/careers/track" className="hover:text-red-400">
+                  Track Application
+                </Link>
+              </li>
+              <li>
                 <Link href="/test-drive" className="hover:text-red-400">
                   Book Online
                 </Link>

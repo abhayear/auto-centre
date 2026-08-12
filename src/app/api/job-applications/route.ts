@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import {
+  APPLICATION_STATUS_LABELS,
+  generateTrackingCode,
+} from "@/lib/applicant-tracking";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -7,6 +11,19 @@ import {
   jobApplicationSchema,
   jobApplicationStatusSchema,
 } from "@/lib/validators";
+import { notifyJobApplication } from "@/lib/whatsapp-notify";
+
+async function createUniqueTrackingCode(): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const trackingCode = generateTrackingCode();
+    const existing = await prisma.jobApplication.findUnique({
+      where: { trackingCode },
+      select: { id: true },
+    });
+    if (!existing) return trackingCode;
+  }
+  throw new Error("Failed to generate tracking code");
+}
 
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
@@ -17,12 +34,22 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
   const jobId = searchParams.get("jobId");
+  const q = searchParams.get("q")?.trim();
 
   try {
     const applications = await prisma.jobApplication.findMany({
       where: {
         ...(status ? { status } : {}),
         ...(jobId ? { jobId } : {}),
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+                { trackingCode: { contains: q.toUpperCase(), mode: "insensitive" } },
+              ],
+            }
+          : {}),
       },
       include: { job: true },
       orderBy: { createdAt: "desc" },
@@ -48,6 +75,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "This position is no longer available" }, { status: 400 });
     }
 
+    const trackingCode = await createUniqueTrackingCode();
+
     const application = await prisma.jobApplication.create({
       data: {
         jobId: data.jobId,
@@ -56,8 +85,20 @@ export async function POST(request: NextRequest) {
         phone: data.phone ?? null,
         resumeUrl: data.resumeUrl || null,
         coverLetter: data.coverLetter ?? null,
+        trackingCode,
+        activities: {
+          create: {
+            type: "status_change",
+            message: APPLICATION_STATUS_LABELS.new,
+            status: "new",
+          },
+        },
       },
       include: { job: true },
+    });
+
+    notifyJobApplication(application).catch((error) => {
+      console.error("WhatsApp job application notification failed:", error);
     });
 
     return NextResponse.json(application, { status: 201 });

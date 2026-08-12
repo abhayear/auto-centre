@@ -41,7 +41,7 @@ const navItems = [
   { href: "/admin/site-settings", label: "Site Settings", icon: Clock },
   { href: "/admin/service-schedule", label: "Service Schedule", icon: CalendarClock },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
-  { href: "/admin/job-applications", label: "Applications", icon: ClipboardList },
+  { href: "/admin/job-applications", label: "Applicant Tracking", icon: ClipboardList },
   { href: "/admin/managers", label: "Managers", icon: UserCog, adminOnly: true },
 ];
 

@@ -229,6 +229,17 @@ export const jobApplicationStatusSchema = z.object({
   status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]),
 });
 
+export const jobApplicationUpdateSchema = z.object({
+  status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]).optional(),
+  adminNotes: z.string().max(5000).nullable().optional(),
+  note: z.string().trim().min(1).max(2000).optional(),
+});
+
+export const applicationTrackSchema = z.object({
+  trackingCode: z.string().trim().min(1),
+  email: z.string().trim().email(),
+});
+
 export const businessHourSchema = z.object({
   day: z.string().min(1, "Day label is required"),
   hours: z.string().min(1, "Hours are required"),
