@@ -304,6 +304,7 @@ async function main() {
         location: "Lalitpur, UP",
         employmentType: "full_time",
         salaryRange: "₹15,000 - ₹25,000 + commission",
+        roleTemplate: "sales_executive",
         description:
           "Help customers choose the right electric 2-wheeler. Conduct test rides, explain features and financing, and deliver a smooth buying experience at our Civil Line showroom.",
         requirements:
@@ -312,15 +313,16 @@ async function main() {
     }),
     prisma.jobPosting.create({
       data: {
-        title: "Electric Vehicle Service Technician",
-        department: "Service",
+        title: "Two-Wheeler EV Service Mechanic",
+        department: "EV Service & Maintenance",
         location: "Lalitpur, UP",
         employmentType: "full_time",
         salaryRange: "₹18,000 - ₹28,000",
+        roleTemplate: "ev_mechanic",
         description:
-          "Diagnose and repair electric scooters — battery systems, motors, controllers, brakes, and general maintenance in our Lalitpur service bay.",
+          "Diagnose and service electric two-wheelers (scooters, bikes, mopeds) at our Lalitpur workshop.\n\nKey responsibilities:\n• EV diagnostics — battery, motor, and controller systems\n• Battery management — lithium-ion pack inspection, repair, and replacement\n• Motor & controller service — BLDC motors, inverters, controllers\n• Charging systems — onboard chargers and external stations\n• Routine maintenance — brakes, suspension, tyres\n• Firmware updates for smart dashboards and IoT-enabled EVs\n• High-voltage safety compliance\n• Customer education on charging and battery care",
         requirements:
-          "ITI or diploma in automobile/electrical trade.\n2+ years two-wheeler or EV repair experience.\nAbility to read wiring diagrams and use diagnostic tools.\nSafety-conscious team player.",
+          "ITI or diploma in automobile/electrical trade preferred.\n2+ years two-wheeler or EV repair experience.\nExperience with lithium-ion batteries and EV diagnostic tools.\nHigh-voltage safety training.\nValid two-wheeler driving licence.\nWilling to work at Civil Line, Lalitpur.",
       },
     }),
     prisma.jobPosting.create({
@@ -330,6 +332,7 @@ async function main() {
         location: "Lalitpur, UP",
         employmentType: "part_time",
         salaryRange: "₹12,000 - ₹18,000/month",
+        roleTemplate: "service_advisor",
         description:
           "Greet service customers, schedule appointments, explain recommended work, and keep customers updated on repair status.",
         requirements:

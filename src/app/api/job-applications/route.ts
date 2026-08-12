@@ -4,6 +4,7 @@ import {
   APPLICATION_STATUS_LABELS,
   generateTrackingCode,
 } from "@/lib/applicant-tracking";
+import { validateScreeningResponses } from "@/lib/job-role-evaluation";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -77,6 +78,18 @@ export async function POST(request: NextRequest) {
 
     const trackingCode = await createUniqueTrackingCode();
 
+    let screeningResponses = null;
+    try {
+      screeningResponses = validateScreeningResponses(
+        job.roleTemplate,
+        data.screeningResponses,
+      );
+    } catch (validationError) {
+      const message =
+        validationError instanceof Error ? validationError.message : "Invalid screening responses";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
     const application = await prisma.jobApplication.create({
       data: {
         jobId: data.jobId,
@@ -85,6 +98,7 @@ export async function POST(request: NextRequest) {
         phone: data.phone ?? null,
         resumeUrl: data.resumeUrl || null,
         coverLetter: data.coverLetter ?? null,
+        screeningResponses: screeningResponses ?? undefined,
         trackingCode,
         activities: {
           create: {

@@ -10,9 +10,17 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { APPLICATION_STATUS_LABELS } from "@/lib/applicant-tracking";
+import {
+  EvaluationScores,
+  formatEvaluationAverage,
+  hasRoleScreening,
+} from "@/lib/job-role-evaluation";
 import { formatDate } from "@/lib/utils";
 
-type ApplicationWithJob = JobApplication & { job: JobPosting };
+type ApplicationWithJob = JobApplication & {
+  job: JobPosting;
+  evaluationScores?: EvaluationScores | null;
+};
 
 type PipelineStats = {
   total: number;
@@ -178,6 +186,15 @@ export default function AdminJobApplicationsPage() {
                 </p>
                 <p className="text-sm text-red-400">Applied for: {app.job.title}</p>
                 <p className="mt-1 font-mono text-xs text-amber-300">{app.trackingCode}</p>
+                {hasRoleScreening(app.job.roleTemplate) && (
+                  <p className="mt-1 text-xs text-green-400">
+                    ATS score:{" "}
+                    {formatEvaluationAverage(
+                      app.job.roleTemplate,
+                      app.evaluationScores as EvaluationScores | null,
+                    ) ?? "Not rated"}
+                  </p>
+                )}
               </div>
               <p className="text-xs text-slate-500">{formatDate(app.createdAt)}</p>
             </div>

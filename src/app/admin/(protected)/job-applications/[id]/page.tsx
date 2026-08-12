@@ -10,6 +10,17 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { formatStatusLabel } from "@/lib/applicant-tracking";
+import {
+  EVALUATION_RATING_OPTIONS,
+  EvaluationScores,
+  ScreeningResponses,
+  formatEvaluationAverage,
+  formatScreeningAnswer,
+  getEvaluationCriteria,
+  getRoleTemplateConfig,
+  getScreeningQuestions,
+  hasRoleScreening,
+} from "@/lib/job-role-evaluation";
 import { formatDate } from "@/lib/utils";
 
 type Activity = {
@@ -31,8 +42,10 @@ type ApplicationDetail = {
   coverLetter: string | null;
   status: string;
   adminNotes: string | null;
+  screeningResponses: ScreeningResponses | null;
+  evaluationScores: EvaluationScores | null;
   createdAt: string;
-  job: { title: string; department: string; location: string };
+  job: { title: string; department: string; location: string; roleTemplate: string };
   activities: Activity[];
 };
 
@@ -46,6 +59,7 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
   const [status, setStatus] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [note, setNote] = useState("");
+  const [evaluationScores, setEvaluationScores] = useState<EvaluationScores>({});
 
   useEffect(() => {
     let active = true;
@@ -66,6 +80,7 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
       setApplication(data);
       setStatus(data.status);
       setAdminNotes(data.adminNotes ?? "");
+      setEvaluationScores((data.evaluationScores as EvaluationScores | null) ?? {});
       setLoading(false);
     }
 
@@ -86,6 +101,7 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
         body: JSON.stringify({
           status,
           adminNotes: adminNotes.trim() || null,
+          evaluationScores,
           ...(note.trim() ? { note: note.trim() } : {}),
         }),
       });
@@ -97,6 +113,7 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
       setApplication(data);
       setStatus(data.status);
       setAdminNotes(data.adminNotes ?? "");
+      setEvaluationScores((data.evaluationScores as EvaluationScores | null) ?? {});
       setNote("");
       toast.success("Application updated");
     } finally {
@@ -123,6 +140,13 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
     );
   }
 
+  const roleTemplate = application.job.roleTemplate;
+  const roleConfig = getRoleTemplateConfig(roleTemplate);
+  const showScreening = hasRoleScreening(roleTemplate);
+  const screeningQuestions = getScreeningQuestions(roleTemplate);
+  const evaluationCriteria = getEvaluationCriteria(roleTemplate);
+  const overallScore = formatEvaluationAverage(roleTemplate, application.evaluationScores);
+
   return (
     <div>
       <Link
@@ -147,6 +171,9 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
           <p className="mt-1 font-mono text-sm text-amber-300">
             Tracking: {application.trackingCode}
           </p>
+          {overallScore && (
+            <p className="mt-1 text-sm font-medium text-green-400">ATS score: {overallScore}</p>
+          )}
         </div>
         {application.resumeUrl && (
           <a
@@ -159,6 +186,74 @@ export default function AdminApplicationDetailPage({ params }: PageProps) {
           </a>
         )}
       </div>
+
+      {showScreening && application.screeningResponses && (
+        <div className="mb-6 rounded-xl border border-amber-700/30 bg-amber-950/10 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-white">
+            {roleConfig?.screeningTitle ?? "Screening responses"}
+          </h2>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {screeningQuestions.map((question) => (
+              <div key={question.id}>
+                <dt className="text-xs text-slate-500">{question.label}</dt>
+                <dd className="text-sm text-slate-200">
+                  {formatScreeningAnswer(
+                    question,
+                    application.screeningResponses?.[question.id],
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {showScreening && (
+        <div className="mb-6 rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-white">
+              {roleConfig?.evaluationTitle ?? "Candidate evaluation (1–5)"}
+            </h2>
+            {formatEvaluationAverage(roleTemplate, evaluationScores) && (
+              <span className="rounded-full bg-green-900/40 px-3 py-1 text-sm font-medium text-green-300">
+                Overall: {formatEvaluationAverage(roleTemplate, evaluationScores)}
+              </span>
+            )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {evaluationCriteria.map((criterion) => (
+              <div key={criterion.id}>
+                <Select
+                  id={`eval-${criterion.id}`}
+                  label={criterion.label}
+                  value={evaluationScores[criterion.id]?.toString() ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setEvaluationScores((current) => {
+                      const next = { ...current };
+                      if (!value) {
+                        delete next[criterion.id];
+                      } else {
+                        next[criterion.id] = Number(value);
+                      }
+                      return next;
+                    });
+                  }}
+                  placeholder="Rate 1–5..."
+                  options={[...EVALUATION_RATING_OPTIONS]}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {criterion.description} ({criterion.lowLabel} → {criterion.highLabel})
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Rate each criterion after interview or practical assessment. Scores save with Update
+            applicant below.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <form

@@ -214,6 +214,9 @@ export const jobPostingSchema = z.object({
   salaryRange: z.string().optional(),
   status: z.enum(["open", "closed"]).default("open"),
   active: z.boolean().default(true),
+  roleTemplate: z
+    .enum(["general", "ev_mechanic", "sales_executive", "service_advisor"])
+    .default("general"),
 });
 
 export const jobApplicationSchema = z.object({
@@ -223,7 +226,15 @@ export const jobApplicationSchema = z.object({
   phone: z.string().optional(),
   resumeUrl: z.string().optional(),
   coverLetter: z.string().optional(),
+  screeningResponses: z.record(z.string(), z.string()).optional(),
 });
+
+const evaluationScoreValue = z.coerce.number().int().min(1).max(5);
+
+export const evaluationScoresSchema = z
+  .record(z.string(), evaluationScoreValue)
+  .optional()
+  .nullable();
 
 export const jobApplicationStatusSchema = z.object({
   status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]),
@@ -233,6 +244,7 @@ export const jobApplicationUpdateSchema = z.object({
   status: z.enum(["new", "reviewing", "interviewed", "rejected", "hired"]).optional(),
   adminNotes: z.string().max(5000).nullable().optional(),
   note: z.string().trim().min(1).max(2000).optional(),
+  evaluationScores: evaluationScoresSchema,
 });
 
 export const applicationTrackSchema = z.object({

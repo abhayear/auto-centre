@@ -84,7 +84,11 @@ export default async function CareerDetailPage({ params }: PageProps) {
 
         <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6 lg:sticky lg:top-24 lg:self-start">
           <h2 className="mb-4 text-lg font-semibold text-white">Apply for this Position</h2>
-          <JobApplicationForm jobId={job.id} jobTitle={job.title} />
+          <JobApplicationForm
+            jobId={job.id}
+            jobTitle={job.title}
+            roleTemplate={job.roleTemplate}
+          />
         </div>
       </div>
     </div>

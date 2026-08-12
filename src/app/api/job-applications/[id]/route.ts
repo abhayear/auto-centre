@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { statusChangeMessage } from "@/lib/applicant-tracking";
+import { parseEvaluationScores } from "@/lib/job-role-evaluation";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, jobApplicationUpdateSchema } from "@/lib/validators";
@@ -47,7 +48,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const body = await request.json();
     const data = jobApplicationUpdateSchema.parse(body);
 
-    const existing = await prisma.jobApplication.findUnique({ where: { id } });
+    const existing = await prisma.jobApplication.findUnique({
+      where: { id },
+      include: { job: true },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
@@ -76,11 +80,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       });
     }
 
+    const evaluationScores =
+      data.evaluationScores !== undefined
+        ? parseEvaluationScores(existing.job.roleTemplate, data.evaluationScores)
+        : undefined;
+
+    if (data.evaluationScores !== undefined && data.evaluationScores && !evaluationScores) {
+      return NextResponse.json({ error: "Invalid evaluation scores" }, { status: 400 });
+    }
+
     const application = await prisma.jobApplication.update({
       where: { id },
       data: {
         ...(data.status ? { status: data.status } : {}),
         ...(data.adminNotes !== undefined ? { adminNotes: data.adminNotes } : {}),
+        ...(evaluationScores !== undefined
+          ? { evaluationScores: evaluationScores ?? undefined }
+          : {}),
         ...(activities.length
           ? {
               activities: {

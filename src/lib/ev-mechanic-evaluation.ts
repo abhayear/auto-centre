@@ -1,0 +1,23 @@
+/** @deprecated Import from @/lib/job-role-evaluation instead */
+export {
+  EV_MECHANIC_EVALUATION_CRITERIA,
+  EV_MECHANIC_ROLE_TEMPLATE,
+  EV_MECHANIC_SCREENING_QUESTIONS,
+  EVALUATION_RATING_OPTIONS,
+  GENERAL_ROLE_TEMPLATE,
+  JOB_ROLE_TEMPLATES,
+  computeEvaluationAverage,
+  formatEvaluationAverage,
+  formatScreeningAnswer,
+  formatYesNo,
+  hasRoleScreening,
+  isEvMechanicRole,
+  isJobRoleTemplate,
+  parseEvaluationScores,
+  validateScreeningResponses,
+  type EvaluationCriterion,
+  type EvaluationScores,
+  type JobRoleTemplate,
+  type ScreeningQuestion,
+  type ScreeningResponses,
+} from "@/lib/job-role-evaluation";

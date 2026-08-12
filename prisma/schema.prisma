@@ -182,26 +182,29 @@ model JobPosting {
   salaryRange    String?
   status         String           @default("open")
   active         Boolean          @default(true)
+  roleTemplate   String           @default("general")
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   applications   JobApplication[]
 }
 
 model JobApplication {
-  id           String                 @id @default(cuid())
-  jobId        String
-  job          JobPosting             @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  name         String
-  email        String
-  phone        String?
-  resumeUrl    String?
-  coverLetter  String?
-  status       String                 @default("new")
-  trackingCode String                 @unique
-  adminNotes   String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
-  activities   ApplicationActivity[]
+  id                  String                 @id @default(cuid())
+  jobId               String
+  job                 JobPosting             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name                String
+  email               String
+  phone               String?
+  resumeUrl           String?
+  coverLetter         String?
+  status              String                 @default("new")
+  trackingCode        String                 @unique
+  adminNotes          String?
+  screeningResponses  Json?
+  evaluationScores    Json?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  activities          ApplicationActivity[]
 }
 
 model ApplicationActivity {

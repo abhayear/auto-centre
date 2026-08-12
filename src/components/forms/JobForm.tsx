@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import {
+  GENERAL_ROLE_TEMPLATE,
+  ROLE_TEMPLATE_OPTIONS,
+} from "@/lib/job-role-evaluation";
 
 interface JobFormProps {
   job?: JobPosting;
@@ -26,8 +30,14 @@ const statusOptions = [
   { value: "closed", label: "Closed" },
 ];
 
+const roleTemplateOptions = [
+  { value: GENERAL_ROLE_TEMPLATE, label: "General role (no screening)" },
+  ...ROLE_TEMPLATE_OPTIONS,
+];
+
 export function JobForm({ job, onSuccess, onCancel }: JobFormProps) {
   const [loading, setLoading] = useState(false);
+  const [roleTemplate, setRoleTemplate] = useState(job?.roleTemplate ?? "general");
   const isEdit = !!job;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -44,6 +54,7 @@ export function JobForm({ job, onSuccess, onCancel }: JobFormProps) {
       requirements: formData.get("requirements"),
       salaryRange: formData.get("salaryRange") || undefined,
       status: formData.get("status"),
+      roleTemplate: formData.get("roleTemplate"),
       active: formData.get("active") === "on",
     };
 
@@ -115,6 +126,20 @@ export function JobForm({ job, onSuccess, onCancel }: JobFormProps) {
             options={statusOptions}
           />
         </div>
+        <Select
+          id="roleTemplate"
+          name="roleTemplate"
+          label="Application template"
+          value={roleTemplate}
+          onChange={(e) => setRoleTemplate(e.target.value)}
+          options={roleTemplateOptions}
+        />
+        {roleTemplate !== GENERAL_ROLE_TEMPLATE && (
+          <p className="text-xs text-amber-300/90">
+            Applicants will see role-specific screening questions (yes/no, dropdowns, text). Rate
+            candidates on the matching 8-point scale in Applicant Tracking.
+          </p>
+        )}
         <Input
           id="salaryRange"
           name="salaryRange"
