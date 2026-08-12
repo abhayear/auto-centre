@@ -11,6 +11,8 @@ const STATIC_PATHS = [
   { path: "/service-schedule", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/about", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/contact", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/refund-policy", changeFrequency: "yearly" as const, priority: 0.4 },
   { path: "/careers", changeFrequency: "weekly" as const, priority: 0.7 },
   { path: "/investment", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/sitemap", changeFrequency: "monthly" as const, priority: 0.3 },

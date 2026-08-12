@@ -20,6 +20,8 @@ const mainPages = [
   { href: "/service-schedule", label: "Service Schedule" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/refund-policy", label: "Cancellation & Refund Policy" },
   { href: "/careers", label: "Careers" },
   { href: "/investment", label: "Investment Proposal" },
 ];
