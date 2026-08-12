@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Zap, Menu, X } from "lucide-react";
-import { ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/vehicles", label: "E-Scooters" },
-  { href: ONLINE_STORE_URL, label: "Online Store", external: true },
   { href: "/services", label: "Services" },
   { href: "/careers", label: "Careers" },
   { href: "/book-service", label: "Book Service" },

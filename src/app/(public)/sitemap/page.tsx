@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
 import type { Metadata } from "next";
@@ -72,16 +72,6 @@ export default async function SitemapPage() {
                 </Link>
               </li>
             ))}
-            <li>
-              <a
-                href={ONLINE_STORE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-red-400"
-              >
-                Online Store
-              </a>
-            </li>
           </ul>
         </section>
 

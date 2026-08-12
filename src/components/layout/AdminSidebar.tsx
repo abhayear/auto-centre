@@ -19,11 +19,12 @@ import {
   MapPin,
   MessageSquare,
   Star,
+  Store,
   UserCog,
   Wrench,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { SITE_NAME } from "@/lib/constants";
+import { ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/admin/services", label: "Services", icon: Wrench },
   { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/site-settings", label: "Site Settings", icon: Clock },
+  { href: ONLINE_STORE_URL, label: "Online Store", icon: Store, external: true },
   { href: "/admin/service-schedule", label: "Service Schedule", icon: CalendarClock },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
   { href: "/admin/job-applications", label: "Applicant Tracking", icon: ClipboardList },
@@ -73,17 +75,30 @@ export function AdminSidebar() {
               ? pathname === "/admin"
               : pathname.startsWith(item.href);
 
+          const className = cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+            isActive
+              ? "bg-red-600/20 text-red-400"
+              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+          );
+
+          if ("external" in item && item.external) {
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </a>
+            );
+          }
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-red-600/20 text-red-400"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              )}
-            >
+            <Link key={item.href} href={item.href} className={className}>
               <Icon className="h-4 w-4" />
               {item.label}
             </Link>
