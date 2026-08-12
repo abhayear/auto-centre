@@ -7,6 +7,7 @@ import { CreditCard, Loader2 } from "lucide-react";
 import { BookingStepNav, BookingSteps } from "@/components/booking/BookingSteps";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
+import { buildRazorpayMethodConfig } from "@/lib/razorpay-checkout";
 
 type BookingSummary = {
   id: string;
@@ -114,6 +115,7 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
       await new Promise<void>((resolve) => {
         const testMode = Boolean(orderData.isTestMode);
         if (testMode) setIsTestMode(true);
+        const methodConfig = buildRazorpayMethodConfig(testMode);
 
         const checkout = new window.Razorpay!({
           key: orderData.keyId,
@@ -126,7 +128,7 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
             email: orderData.customerEmail,
             contact: orderData.customerPhone ?? undefined,
           },
-          ...(testMode ? { method: "card" as const } : {}),
+          ...methodConfig,
           theme: { color: "#dc2626" },
           handler: async (response) => {
             const payRes = await fetch(`/api/inquiries/${bookingId}/pay`, {
@@ -244,22 +246,25 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
 
         {isTestMode ? (
           <div className="mt-4 rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
-            <p className="font-medium">Test payment mode</p>
+            <p className="font-medium">Test payment mode — UPI is turned off</p>
             <p className="mt-1 text-amber-300/90">
-              Easiest: pay with test card <strong>4111 1111 1111 1111</strong> (any future expiry,
-              any CVV). Razorpay opens on Card by default.
+              Pay with test card <strong>4111 1111 1111 1111</strong> (any future expiry, any CVV)
+              or choose <strong>Netbanking</strong> and pick any bank.
             </p>
-            <p className="mt-2 text-amber-300/90">
-              For UPI test only, type exactly <strong>success@razorpay</strong> — your real UPI ID
-              will show as invalid in test mode.
+            <p className="mt-2 text-amber-300/80">
+              Real UPI IDs always show as invalid while test keys are active. Switch to live Razorpay
+              keys after UPI is activated in your dashboard.
             </p>
           </div>
         ) : (
           <div className="mt-4 rounded-lg border border-slate-700/50 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
             <p>
-              For UPI, tap <strong>PhonePe / Google Pay / Paytm</strong> inside Razorpay, or enter
-              your real UPI ID (e.g. <strong>name@paytm</strong>). Test IDs like{" "}
-              <strong>success@razorpay</strong> do not work in live mode.
+              For UPI, tap <strong>PhonePe / Google Pay / Paytm</strong> inside Razorpay — do not type
+              a UPI ID unless you use your real one (e.g. <strong>name@paytm</strong>).
+            </p>
+            <p className="mt-2">
+              If UPI still fails, UPI may not be activated on your Razorpay live account yet — use
+              card or netbanking, or complete UPI setup in Razorpay Dashboard.
             </p>
           </div>
         )}

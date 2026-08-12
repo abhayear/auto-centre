@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRazorpayMethodConfig,
   formatRazorpayContact,
   isRazorpayTestKey,
   normalizeIndianPhone,
@@ -24,6 +25,19 @@ describe("formatRazorpayContact", () => {
 
   it("returns undefined for invalid numbers", () => {
     expect(formatRazorpayContact("123")).toBeUndefined();
+  });
+});
+
+describe("buildRazorpayMethodConfig", () => {
+  it("hides UPI in test mode and defaults to card", () => {
+    const config = buildRazorpayMethodConfig(true);
+    expect(config.method).toBe("card");
+    expect(config.config?.display?.hide).toEqual([{ method: "upi" }]);
+  });
+
+  it("prioritizes UPI in live mode", () => {
+    const config = buildRazorpayMethodConfig(false);
+    expect(config.config?.display?.sequence?.[0]).toBe("upi");
   });
 });
 

@@ -34,3 +34,47 @@ export function resolveRazorpayMerchantImage(logoUrl: string | null | undefined)
 export function getRazorpayMerchantName(): string {
   return SITE_NAME;
 }
+
+type RazorpayCheckoutMethodConfig = {
+  method?: string | {
+    upi?: boolean;
+    card?: boolean;
+    netbanking?: boolean;
+    wallet?: boolean;
+  };
+  config?: {
+    display?: {
+      hide?: Array<{ method: string }>;
+      sequence?: string[];
+      preferences?: {
+        show_default_blocks?: boolean;
+      };
+    };
+  };
+};
+
+/** Test keys cannot validate real UPI IDs — hide UPI and default to card. */
+export function buildRazorpayMethodConfig(testMode: boolean): RazorpayCheckoutMethodConfig {
+  if (testMode) {
+    return {
+      method: "card",
+      config: {
+        display: {
+          hide: [{ method: "upi" }],
+          preferences: { show_default_blocks: true },
+        },
+      },
+    };
+  }
+
+  return {
+    config: {
+      display: {
+        sequence: ["upi", "card", "netbanking", "wallet"],
+        preferences: { show_default_blocks: true },
+      },
+    },
+  };
+}
+
+export type { RazorpayCheckoutMethodConfig };

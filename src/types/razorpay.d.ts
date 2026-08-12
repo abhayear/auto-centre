@@ -26,6 +26,8 @@ interface RazorpayOptions {
   };
   config?: {
     display?: {
+      hide?: Array<{ method: string }>;
+      sequence?: string[];
       preferences?: {
         show_default_blocks?: boolean;
       };
