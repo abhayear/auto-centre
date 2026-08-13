@@ -7,6 +7,7 @@ import {
   verifyRazorpayPaymentSignature,
 } from "@/lib/booking-payment";
 import { prisma } from "@/lib/prisma";
+import { parseShowroomDateInput } from "@/lib/showroom-walk-ins";
 import { getRazorpayClient } from "@/lib/razorpay-client";
 import {
   formatZodErrors,
@@ -51,6 +52,20 @@ async function resolveVehicleBookingFields(vehicleId: string | undefined, type: 
   };
 }
 
+function buildInquiryDateFilter(from?: string | null, to?: string | null) {
+  if (!from && !to) return undefined;
+
+  const createdAt: { gte?: Date; lte?: Date } = {};
+  if (from) createdAt.gte = parseShowroomDateInput(from);
+  if (to) {
+    const end = parseShowroomDateInput(to);
+    end.setUTCHours(23, 59, 59, 999);
+    createdAt.lte = end;
+  }
+
+  return { createdAt };
+}
+
 export async function GET(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
@@ -60,11 +75,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
   const type = searchParams.get("type");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   const inquiries = await prisma.inquiry.findMany({
     where: {
       ...(status ? { status } : {}),
       ...(type ? { type } : {}),
+      ...buildInquiryDateFilter(from, to),
     },
     include: { vehicle: true },
     orderBy: { createdAt: "desc" },
@@ -204,5 +222,31 @@ export async function PATCH(request: NextRequest) {
       );
     }
     return NextResponse.json({ error: "Failed to update inquiry" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await requireAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const idsParam = request.nextUrl.searchParams.get("ids");
+  if (!idsParam) {
+    return NextResponse.json({ error: "Inquiry IDs required" }, { status: 400 });
+  }
+
+  const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
+  if (ids.length === 0) {
+    return NextResponse.json({ error: "No inquiry IDs provided" }, { status: 400 });
+  }
+
+  try {
+    const result = await prisma.inquiry.deleteMany({
+      where: { id: { in: ids } },
+    });
+    return NextResponse.json({ success: true, deleted: result.count });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete inquiries" }, { status: 500 });
   }
 }

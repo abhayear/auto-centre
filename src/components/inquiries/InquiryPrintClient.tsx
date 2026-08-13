@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE_NAME } from "@/lib/constants";
 import { formatDate, formatPrice } from "@/lib/utils";
+import { formatShowroomDate } from "@/lib/showroom-walk-ins";
 
 export type InquiryPrintRow = {
   id: string;
@@ -24,6 +25,8 @@ type InquiryPrintClientProps = {
   inquiries: InquiryPrintRow[];
   statusFilter?: string;
   typeFilter?: string;
+  from?: string;
+  to?: string;
   autoPrint?: boolean;
 };
 
@@ -35,6 +38,8 @@ export function InquiryPrintClient({
   inquiries,
   statusFilter,
   typeFilter,
+  from,
+  to,
   autoPrint = false,
 }: InquiryPrintClientProps) {
   const printedOn = new Intl.DateTimeFormat("en-IN", {
@@ -42,7 +47,17 @@ export function InquiryPrintClient({
     timeStyle: "short",
   }).format(new Date());
 
+  const dateRangeLabel =
+    from && to
+      ? `${formatShowroomDate(from)} – ${formatShowroomDate(to)}`
+      : from
+        ? `From ${formatShowroomDate(from)}`
+        : to
+          ? `Up to ${formatShowroomDate(to)}`
+          : null;
+
   const filterLabel = [
+    dateRangeLabel ? `Dates: ${dateRangeLabel}` : null,
     typeFilter ? `Type: ${formatInquiryType(typeFilter)}` : null,
     statusFilter ? `Status: ${statusFilter}` : null,
   ]

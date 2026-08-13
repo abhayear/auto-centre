@@ -127,6 +127,23 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const idsParam = request.nextUrl.searchParams.get("ids");
+  if (idsParam) {
+    const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "No enquiry IDs provided" }, { status: 400 });
+    }
+
+    try {
+      const result = await prisma.showroomWalkIn.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return NextResponse.json({ success: true, deleted: result.count });
+    } catch {
+      return NextResponse.json({ error: "Failed to delete walk-in enquiries" }, { status: 500 });
+    }
+  }
+
   const id = request.nextUrl.searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 });
@@ -134,7 +151,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await prisma.showroomWalkIn.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deleted: 1 });
   } catch {
     return NextResponse.json({ error: "Failed to delete walk-in enquiry" }, { status: 500 });
   }

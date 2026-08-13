@@ -1,18 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileDown, Pencil, Plus, Store, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
 import {
   ShowroomWalkInForm,
   type ShowroomWalkInView,
 } from "@/components/forms/ShowroomWalkInForm";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import {
   formatShowroomDate,
   formatShowroomPaymentMode,
 } from "@/lib/showroom-walk-ins";
+
+function buildListParams(fromDate: string, toDate: string) {
+  const params = new URLSearchParams();
+  if (fromDate) params.set("from", fromDate);
+  if (toDate) params.set("to", toDate);
+  return params;
+}
 
 export default function AdminShowroomWalkInsPage() {
   const [enquiries, setEnquiries] = useState<ShowroomWalkInView[]>([]);
@@ -21,19 +28,20 @@ export default function AdminShowroomWalkInsPage() {
   const [editingEnquiry, setEditingEnquiry] = useState<ShowroomWalkInView | undefined>();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
 
     async function load() {
-      const params = new URLSearchParams();
-      if (fromDate) params.set("from", fromDate);
-      if (toDate) params.set("to", toDate);
-
+      setLoading(true);
+      const params = buildListParams(fromDate, toDate);
       const res = await fetch(`/api/showroom-walk-ins?${params}`);
       const data = await res.json();
       if (active) {
         setEnquiries(Array.isArray(data) ? data : []);
+        setSelectedIds([]);
         setLoading(false);
       }
     }
@@ -45,11 +53,29 @@ export default function AdminShowroomWalkInsPage() {
   }, [fromDate, toDate]);
 
   async function refreshEnquiries() {
-    const params = new URLSearchParams();
-    if (fromDate) params.set("from", fromDate);
-    if (toDate) params.set("to", toDate);
+    const params = buildListParams(fromDate, toDate);
     const res = await fetch(`/api/showroom-walk-ins?${params}`);
     setEnquiries(await res.json());
+    setSelectedIds([]);
+  }
+
+  const allVisibleSelected = useMemo(
+    () => enquiries.length > 0 && enquiries.every((item) => selectedIds.includes(item.id)),
+    [enquiries, selectedIds],
+  );
+
+  function toggleSelectAllVisible() {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(enquiries.map((item) => item.id));
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
   }
 
   async function handleDelete(id: string) {
@@ -64,10 +90,31 @@ export default function AdminShowroomWalkInsPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Delete ${selectedIds.length} selected walk-in enquiry(ies)?`)) return;
+
+    setBulkDeleting(true);
+    try {
+      const res = await fetch(`/api/showroom-walk-ins?ids=${selectedIds.join(",")}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Deleted ${data.deleted ?? selectedIds.length} enquiry(ies)`);
+        refreshEnquiries();
+      } else {
+        toast.error(data.error ?? "Failed to delete enquiries");
+      }
+    } catch {
+      toast.error("Failed to delete enquiries");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   function handleExportPdf() {
-    const params = new URLSearchParams();
-    if (fromDate) params.set("from", fromDate);
-    if (toDate) params.set("to", toDate);
+    const params = buildListParams(fromDate, toDate);
     params.set("auto", "1");
     window.open(`/admin/showroom-walk-ins/print?${params}`, "_blank");
   }
@@ -86,7 +133,7 @@ export default function AdminShowroomWalkInsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Showroom walk-in enquiries</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Vehicle sales walk-ins from the contact page and showroom desk.
+            Filter by date, select entries, and delete in bulk.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -106,48 +153,42 @@ export default function AdminShowroomWalkInsPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
-        <div className="w-44">
-          <Input
-            id="filter-from"
-            type="date"
-            label="From date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-        </div>
-        <div className="w-44">
-          <Input
-            id="filter-to"
-            type="date"
-            label="To date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-        </div>
-        {(fromDate || toDate) && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setFromDate("");
-              setToDate("");
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-      </div>
+      <DateRangeBulkBar
+        fromDate={fromDate}
+        toDate={toDate}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        onClearDates={() => {
+          setFromDate("");
+          setToDate("");
+        }}
+        selectedCount={selectedIds.length}
+        visibleCount={enquiries.length}
+        onSelectAllVisible={() => setSelectedIds(enquiries.map((item) => item.id))}
+        onClearSelection={() => setSelectedIds([])}
+        onBulkDelete={() => void handleBulkDelete()}
+        bulkDeleting={bulkDeleting}
+      />
 
       {enquiries.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-700/50 bg-slate-800/20 p-10 text-center">
           <Store className="mx-auto mb-3 h-8 w-8 text-slate-500" />
-          <p className="text-slate-400">No walk-in enquiries yet.</p>
+          <p className="text-slate-400">No walk-in enquiries found for this date range.</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-700/50">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-800/80 text-slate-300">
               <tr>
+                <th className="px-4 py-3 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    aria-label="Select all shown walk-in enquiries"
+                    className="rounded border-slate-600 bg-slate-900 text-red-600 focus:ring-red-500"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Date</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Required model</th>
@@ -161,6 +202,15 @@ export default function AdminShowroomWalkInsPage() {
             <tbody className="divide-y divide-slate-700/50">
               {enquiries.map((enquiry) => (
                 <tr key={enquiry.id} className="text-slate-300">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(enquiry.id)}
+                      onChange={() => toggleSelected(enquiry.id)}
+                      aria-label={`Select ${enquiry.name}`}
+                      className="rounded border-slate-600 bg-slate-900 text-red-600 focus:ring-red-500"
+                    />
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {formatShowroomDate(enquiry.enquiryDate)}
                   </td>
