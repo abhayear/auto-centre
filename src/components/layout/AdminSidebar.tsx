@@ -35,6 +35,7 @@ const navItems = [
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/cash-box", label: "Cash Box", icon: IndianRupee },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
+  { href: "/admin/showroom-walk-ins", label: "Walk-in Enquiries", icon: Store },
   { href: "/admin/esteemed-customers", label: "Esteemed Customers", icon: Star },
   { href: "/admin/site-analytics", label: "Site Analytics", icon: BarChart3 },
   { href: "/admin/services", label: "Services", icon: Wrench },
@@ -57,7 +58,7 @@ export function AdminSidebar() {
   );
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-950">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-950 print:hidden">
       <div className="border-b border-slate-800 px-6 py-5">
         <Link href="/admin" className="text-lg font-bold text-white">
           {SITE_NAME}

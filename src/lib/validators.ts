@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SHOWROOM_PAYMENT_MODES } from "@/lib/showroom-walk-ins";
 
 export function formatZodErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
@@ -131,6 +132,18 @@ export const esteemedCustomerSchema = z.object({
   photoUrl: optionalUploadedImageUrlSchema,
   sortOrder: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
+});
+
+export const whatsappOtpSendSchema = z.object({
+  phone: z.string().trim().min(10, "Enter a valid phone number"),
+  name: z.string().trim().min(2, "Name is required").optional(),
+});
+
+export const whatsappOtpConfirmSchema = z.object({
+  phone: z.string().trim().min(10, "Enter a valid phone number"),
+  code: z.string().trim().length(6, "Enter the 6-digit code"),
+  name: z.string().trim().min(2, "Name is required"),
+  email: z.string().trim().email("Valid email is required").optional().or(z.literal("")),
 });
 
 export const inquirySchema = z
@@ -326,6 +339,24 @@ export const cashBoxRecordSchema = z.object({
 });
 
 export const cashBoxRecordUpdateSchema = cashBoxRecordSchema.partial().extend({
+  id: z.string().min(1),
+});
+
+const showroomDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date");
+
+export const showroomWalkInSchema = z.object({
+  enquiryDate: showroomDateSchema,
+  name: z.string().trim().min(2, "Name is required"),
+  requiredModel: z.string().trim().min(1, "Required model is required"),
+  contactNumber: z.string().trim().optional().or(z.literal("")),
+  address: z.string().trim().optional().or(z.literal("")),
+  paymentMode: z.enum(SHOWROOM_PAYMENT_MODES).optional().nullable(),
+  expectedPurchaseDate: showroomDateSchema.optional().nullable().or(z.literal("")),
+});
+
+export const showroomWalkInUpdateSchema = showroomWalkInSchema.partial().extend({
   id: z.string().min(1),
 });
 

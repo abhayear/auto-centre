@@ -1,0 +1,220 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { FileDown, Pencil, Plus, Store, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
+import {
+  ShowroomWalkInForm,
+  type ShowroomWalkInView,
+} from "@/components/forms/ShowroomWalkInForm";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import {
+  formatShowroomDate,
+  formatShowroomPaymentMode,
+} from "@/lib/showroom-walk-ins";
+
+export default function AdminShowroomWalkInsPage() {
+  const [enquiries, setEnquiries] = useState<ShowroomWalkInView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingEnquiry, setEditingEnquiry] = useState<ShowroomWalkInView | undefined>();
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const params = new URLSearchParams();
+      if (fromDate) params.set("from", fromDate);
+      if (toDate) params.set("to", toDate);
+
+      const res = await fetch(`/api/showroom-walk-ins?${params}`);
+      const data = await res.json();
+      if (active) {
+        setEnquiries(Array.isArray(data) ? data : []);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [fromDate, toDate]);
+
+  async function refreshEnquiries() {
+    const params = new URLSearchParams();
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    const res = await fetch(`/api/showroom-walk-ins?${params}`);
+    setEnquiries(await res.json());
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this walk-in enquiry?")) return;
+
+    const res = await fetch(`/api/showroom-walk-ins?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Enquiry deleted");
+      refreshEnquiries();
+    } else {
+      toast.error("Failed to delete enquiry");
+    }
+  }
+
+  function handleExportPdf() {
+    const params = new URLSearchParams();
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    params.set("auto", "1");
+    window.open(`/admin/showroom-walk-ins/print?${params}`, "_blank");
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Showroom walk-in enquiries</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Vehicle sales walk-ins from the contact page and showroom desk.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={handleExportPdf}>
+            <FileDown className="h-4 w-4" />
+            Export PDF
+          </Button>
+          <Button
+            onClick={() => {
+              setEditingEnquiry(undefined);
+              setShowForm(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add enquiry
+          </Button>
+        </div>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
+        <div className="w-44">
+          <Input
+            id="filter-from"
+            type="date"
+            label="From date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+        </div>
+        <div className="w-44">
+          <Input
+            id="filter-to"
+            type="date"
+            label="To date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+        </div>
+        {(fromDate || toDate) && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setFromDate("");
+              setToDate("");
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
+
+      {enquiries.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-700/50 bg-slate-800/20 p-10 text-center">
+          <Store className="mx-auto mb-3 h-8 w-8 text-slate-500" />
+          <p className="text-slate-400">No walk-in enquiries yet.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-700/50">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-800/80 text-slate-300">
+              <tr>
+                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Required model</th>
+                <th className="px-4 py-3 font-medium">Contact</th>
+                <th className="px-4 py-3 font-medium">Address</th>
+                <th className="px-4 py-3 font-medium">Payment</th>
+                <th className="px-4 py-3 font-medium">Expected purchase</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {enquiries.map((enquiry) => (
+                <tr key={enquiry.id} className="text-slate-300">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatShowroomDate(enquiry.enquiryDate)}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-white">{enquiry.name}</td>
+                  <td className="px-4 py-3">{enquiry.requiredModel}</td>
+                  <td className="px-4 py-3">{enquiry.contactNumber ?? "—"}</td>
+                  <td className="px-4 py-3 max-w-xs truncate">{enquiry.address ?? "—"}</td>
+                  <td className="px-4 py-3">{formatShowroomPaymentMode(enquiry.paymentMode)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatShowroomDate(enquiry.expectedPurchaseDate)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingEnquiry(enquiry);
+                          setShowForm(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300"
+                        onClick={() => void handleDelete(enquiry.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showForm && (
+        <ShowroomWalkInForm
+          enquiry={editingEnquiry}
+          onSuccess={() => {
+            setShowForm(false);
+            setEditingEnquiry(undefined);
+            refreshEnquiries();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingEnquiry(undefined);
+          }}
+        />
+      )}
+    </div>
+  );
+}

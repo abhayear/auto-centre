@@ -1,4 +1,6 @@
 import { InquiryForm } from "@/components/forms/InquiryForm";
+import { ContactWhatsAppUpdatesForm } from "@/components/forms/ContactWhatsAppUpdatesForm";
+import { WalkInEnquiryForm } from "@/components/forms/WalkInEnquiryForm";
 import { StoreMap } from "@/components/maps/StoreMap";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import {
@@ -69,6 +71,10 @@ export default async function ContactPage() {
           </div>
 
           <StoreMap />
+
+          <ContactWhatsAppUpdatesForm />
+
+          <WalkInEnquiryForm />
         </div>
 
         <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">

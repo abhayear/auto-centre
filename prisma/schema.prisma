@@ -161,6 +161,28 @@ model Inquiry {
   updatedAt DateTime @updatedAt
 }
 
+model WhatsAppOtp {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone, expiresAt])
+}
+
+model UpdateSubscription {
+  id               String   @id @default(cuid())
+  name             String
+  phone            String   @unique
+  email            String?
+  whatsappVerified Boolean  @default(true)
+  verifiedAt       DateTime @default(now())
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -218,6 +240,21 @@ model ApplicationActivity {
   createdAt     DateTime       @default(now())
 
   @@index([applicationId, createdAt])
+}
+
+model ShowroomWalkIn {
+  id                   String    @id @default(cuid())
+  enquiryDate          DateTime  @db.Date
+  name                 String
+  requiredModel        String
+  contactNumber        String?
+  address              String?
+  paymentMode          String?
+  expectedPurchaseDate DateTime? @db.Date
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([enquiryDate])
 }
 
 model CashBoxRecord {
