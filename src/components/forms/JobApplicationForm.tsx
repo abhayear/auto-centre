@@ -164,6 +164,20 @@ export function JobApplicationForm({ jobId, jobTitle, roleTemplate = "general" }
               );
             }
 
+            if (question.type === "textarea") {
+              return (
+                <Textarea
+                  key={question.id}
+                  id={fieldName}
+                  name={fieldName}
+                  label={question.label}
+                  required={question.required}
+                  rows={3}
+                  placeholder={question.placeholder}
+                />
+              );
+            }
+
             return (
               <Input
                 key={question.id}

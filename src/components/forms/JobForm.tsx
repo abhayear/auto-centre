@@ -12,6 +12,7 @@ import {
   GENERAL_ROLE_TEMPLATE,
   ROLE_TEMPLATE_OPTIONS,
 } from "@/lib/job-role-evaluation";
+import { RoleScreeningPreview } from "@/components/jobs/RoleScreeningPreview";
 
 interface JobFormProps {
   job?: JobPosting;
@@ -135,10 +136,13 @@ export function JobForm({ job, onSuccess, onCancel }: JobFormProps) {
           options={roleTemplateOptions}
         />
         {roleTemplate !== GENERAL_ROLE_TEMPLATE && (
-          <p className="text-xs text-amber-300/90">
-            Applicants will see role-specific screening questions (yes/no, dropdowns, text). Rate
-            candidates on the matching 8-point scale in Applicant Tracking.
-          </p>
+          <>
+            <p className="text-xs text-amber-300/90">
+              Applicants will see role-specific screening questions (yes/no, dropdowns, text). Rate
+              candidates on the matching 8-point scale in Applicant Tracking.
+            </p>
+            <RoleScreeningPreview roleTemplate={roleTemplate} />
+          </>
         )}
         <Input
           id="salaryRange"

@@ -12,7 +12,7 @@ export const JOB_ROLE_TEMPLATES = [
 
 export type JobRoleTemplate = (typeof JOB_ROLE_TEMPLATES)[number];
 
-export type ScreeningQuestionType = "yes_no" | "select" | "text";
+export type ScreeningQuestionType = "yes_no" | "select" | "text" | "textarea";
 
 export type ScreeningQuestion = {
   id: string;
@@ -70,66 +70,111 @@ const HINDI_ENGLISH: ScreeningQuestion = {
   required: true,
 };
 
-export const EV_MECHANIC_SCREENING_QUESTIONS: ScreeningQuestion[] = [
-  {
-    id: "evExperienceYears",
-    label: "Years of two-wheeler EV service experience",
+const ITI_DIPLOMA: ScreeningQuestion = {
+  id: "itiDiploma",
+  label: "Do you hold an ITI or diploma in automobile / electrical trade?",
+  type: "yes_no",
+  required: true,
+};
+
+function experienceYearsQuestion(id: string, label: string): ScreeningQuestion {
+  return {
+    id,
+    label,
     type: "select",
     required: true,
     options: EXPERIENCE_YEAR_OPTIONS,
-  },
-  {
-    id: "itiDiploma",
-    label: "Do you hold an ITI or diploma in automobile / electrical trade?",
-    type: "yes_no",
+  };
+}
+
+function experienceDetailsQuestion(
+  id: string,
+  label: string,
+  placeholder: string,
+): ScreeningQuestion {
+  return {
+    id,
+    label,
+    type: "textarea",
     required: true,
-  },
-  {
-    id: "batteryExperience",
-    label: "Have you inspected, tested, or replaced lithium-ion battery packs on EVs?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "hvSafetyTraining",
-    label: "Are you trained in high-voltage EV safety protocols?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "diagnosticToolsUsed",
-    label: "Have you used EV-specific diagnostic tools or software?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "bldcMotorExperience",
-    label: "Do you have experience servicing BLDC motors, controllers, or inverters?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "chargingSystemsExperience",
-    label: "Have you troubleshooted onboard chargers or external charging systems?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "firmwareUpdates",
-    label: "Have you installed firmware updates on smart dashboards or IoT-enabled EVs?",
-    type: "yes_no",
-    required: true,
-  },
-  TWO_WHEELER_LICENSE,
-  WILLING_LALITPUR,
-  {
-    id: "evBrandsWorked",
-    label: "Which EV brands or models have you serviced? (e.g. Ola, Ather, TVS iQube)",
-    type: "text",
-    required: true,
-    placeholder: "List brands/models and types of work performed",
-  },
-];
+    placeholder,
+  };
+}
+
+/** Shared closing questions: licence → location → (optional language) → experience details */
+function assembleScreeningQuestions(options: {
+  experience: ScreeningQuestion;
+  core: ScreeningQuestion[];
+  includeLicense?: boolean;
+  includeHindiEnglish?: boolean;
+  experienceDetails: ScreeningQuestion;
+}): ScreeningQuestion[] {
+  const shared: ScreeningQuestion[] = [];
+  if (options.includeLicense !== false) shared.push(TWO_WHEELER_LICENSE);
+  shared.push(WILLING_LALITPUR);
+  if (options.includeHindiEnglish) shared.push(HINDI_ENGLISH);
+
+  return [options.experience, ...options.core, ...shared, options.experienceDetails];
+}
+
+export const EV_MECHANIC_SCREENING_QUESTIONS: ScreeningQuestion[] = assembleScreeningQuestions({
+  experience: experienceYearsQuestion(
+    "evExperienceYears",
+    "Years of two-wheeler EV service experience",
+  ),
+  core: [
+    ITI_DIPLOMA,
+    {
+      id: "batteryExperience",
+      label: "Have you inspected, tested, or replaced lithium-ion battery packs on EVs?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "hvSafetyTraining",
+      label: "Are you trained in high-voltage EV safety protocols?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "diagnosticToolsUsed",
+      label: "Have you used EV-specific diagnostic tools or software?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "bldcMotorExperience",
+      label: "Do you have experience servicing BLDC motors, controllers, or inverters?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "chargingSystemsExperience",
+      label: "Have you troubleshooted onboard chargers or external charging systems?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "firmwareUpdates",
+      label: "Have you installed firmware updates on smart dashboards or IoT-enabled EVs?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "routineMaintenance",
+      label: "Can you perform routine two-wheeler maintenance (brakes, suspension, tyres)?",
+      type: "yes_no",
+      required: true,
+    },
+  ],
+  includeLicense: true,
+  includeHindiEnglish: false,
+  experienceDetails: experienceDetailsQuestion(
+    "evBrandsWorked",
+    "Which EV brands or models have you serviced?",
+    "List brands/models and types of work performed (e.g. Yakuza Rubie — battery diagnostics, motor service)",
+  ),
+});
 
 export const EV_MECHANIC_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   {
@@ -190,55 +235,66 @@ export const EV_MECHANIC_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   },
 ];
 
-export const SALES_EXECUTIVE_SCREENING_QUESTIONS: ScreeningQuestion[] = [
-  {
-    id: "salesExperienceYears",
-    label: "Years of retail or sales experience",
-    type: "select",
-    required: true,
-    options: EXPERIENCE_YEAR_OPTIONS,
-  },
-  TWO_WHEELER_LICENSE,
-  {
-    id: "evProductKnowledge",
-    label: "Do you have knowledge of electric scooters or two-wheelers?",
-    type: "yes_no",
-    required: true,
-  },
-  HINDI_ENGLISH,
-  {
-    id: "previousAutomotiveSales",
-    label: "Have you sold vehicles, automobiles, or EVs before?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "commissionExperience",
-    label: "Are you comfortable with commission-based sales targets?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "testRideComfort",
-    label: "Are you comfortable conducting customer test rides?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "financingBasics",
-    label: "Can you explain basic EMI / finance options to customers?",
-    type: "yes_no",
-    required: true,
-  },
-  WILLING_LALITPUR,
-  {
-    id: "previousEmployers",
-    label: "Previous employers or brands you sold for (if any)",
-    type: "text",
-    required: true,
-    placeholder: "e.g. Hero showroom, Ola Electric partner store",
-  },
-];
+export const SALES_EXECUTIVE_SCREENING_QUESTIONS: ScreeningQuestion[] = assembleScreeningQuestions({
+  experience: experienceYearsQuestion("salesExperienceYears", "Years of retail or sales experience"),
+  core: [
+    {
+      id: "evProductKnowledge",
+      label: "Do you have knowledge of electric scooters or two-wheelers?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "previousAutomotiveSales",
+      label: "Have you sold vehicles, automobiles, or EVs before?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "showroomFloorExperience",
+      label: "Have you worked on a vehicle showroom floor?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "testRideComfort",
+      label: "Are you comfortable conducting customer test rides?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "financingBasics",
+      label: "Can you explain basic EMI / finance options to customers?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "commissionExperience",
+      label: "Are you comfortable with commission-based sales targets?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "digitalSalesTools",
+      label: "Are you comfortable using WhatsApp or CRM tools for lead follow-up?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "localCustomerNetwork",
+      label: "Do you have a local customer network or referral base in Lalitpur area?",
+      type: "yes_no",
+      required: true,
+    },
+  ],
+  includeLicense: true,
+  includeHindiEnglish: true,
+  experienceDetails: experienceDetailsQuestion(
+    "previousEmployers",
+    "Previous employers or brands you sold for",
+    "List showroom names, brands handled, and your sales role (e.g. Yakuza dealer — walk-in and test rides)",
+  ),
+});
 
 export const SALES_EXECUTIVE_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   {
@@ -299,54 +355,70 @@ export const SALES_EXECUTIVE_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   },
 ];
 
-export const SERVICE_ADVISOR_SCREENING_QUESTIONS: ScreeningQuestion[] = [
-  {
-    id: "customerServiceYears",
-    label: "Years of customer-facing or front-desk experience",
-    type: "select",
-    required: true,
-    options: EXPERIENCE_YEAR_OPTIONS,
-  },
-  {
-    id: "twoWheelerKnowledge",
-    label: "Do you have basic knowledge of two-wheelers?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "evBasicsKnowledge",
-    label: "Are you familiar with basic EV service terms (battery, charger, range)?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "appointmentSchedulingExp",
-    label: "Have you handled appointment scheduling or service bookings?",
-    type: "yes_no",
-    required: true,
-  },
-  HINDI_ENGLISH,
-  {
-    id: "computerLiterate",
-    label: "Are you comfortable using a computer or smartphone for daily work?",
-    type: "yes_no",
-    required: true,
-  },
-  {
-    id: "availableSaturdays",
-    label: "Are you available to work on Saturdays?",
-    type: "yes_no",
-    required: true,
-  },
-  WILLING_LALITPUR,
-  {
-    id: "previousWorkplace",
-    label: "Previous workplace or role (if any)",
-    type: "text",
-    required: true,
-    placeholder: "e.g. Two-wheeler workshop front desk, service centre",
-  },
-];
+export const SERVICE_ADVISOR_SCREENING_QUESTIONS: ScreeningQuestion[] = assembleScreeningQuestions({
+  experience: experienceYearsQuestion(
+    "customerServiceYears",
+    "Years of customer-facing or front-desk experience",
+  ),
+  core: [
+    {
+      id: "twoWheelerKnowledge",
+      label: "Do you have basic knowledge of two-wheelers?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "evBasicsKnowledge",
+      label: "Are you familiar with basic EV service terms (battery, charger, range)?",
+      type: "yes_no",
+      required: true,
+    },
+    ITI_DIPLOMA,
+    {
+      id: "appointmentSchedulingExp",
+      label: "Have you handled appointment scheduling or service bookings?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "estimateAndInvoiceExp",
+      label: "Have you prepared service estimates or invoices for customers?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "complaintHandling",
+      label: "Do you have experience handling customer complaints calmly?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "followUpCalls",
+      label: "Are you comfortable making follow-up calls when vehicles are ready?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "computerLiterate",
+      label: "Are you comfortable using a computer or smartphone for daily work?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "availableSaturdays",
+      label: "Are you available to work on Saturdays?",
+      type: "yes_no",
+      required: true,
+    },
+  ],
+  includeLicense: true,
+  includeHindiEnglish: true,
+  experienceDetails: experienceDetailsQuestion(
+    "previousWorkplace",
+    "Previous workplace or service centre experience",
+    "Describe your role, workshop type, and brands served (e.g. EV service centre — job cards and customer updates)",
+  ),
+});
 
 export const SERVICE_ADVISOR_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   {
@@ -430,7 +502,7 @@ export const ROLE_TEMPLATE_CONFIGS: Record<JobRoleTemplate, RoleTemplateConfig> 
     id: SALES_EXECUTIVE_ROLE_TEMPLATE,
     label: "E-Scooter Sales Executive",
     screeningTitle: "Sales screening",
-    screeningDescription: "Tell us about your sales experience and EV interest.",
+    screeningDescription: "Tell us about your sales experience and interest in electric two-wheelers.",
     evaluationTitle: "Sales executive evaluation (1–5)",
     screeningQuestions: SALES_EXECUTIVE_SCREENING_QUESTIONS,
     evaluationCriteria: SALES_EXECUTIVE_EVALUATION_CRITERIA,
@@ -439,7 +511,7 @@ export const ROLE_TEMPLATE_CONFIGS: Record<JobRoleTemplate, RoleTemplateConfig> 
     id: SERVICE_ADVISOR_ROLE_TEMPLATE,
     label: "Service Advisor",
     screeningTitle: "Service advisor screening",
-    screeningDescription: "Share your customer service and two-wheeler background.",
+    screeningDescription: "Share your customer service and two-wheeler workshop background.",
     evaluationTitle: "Service advisor evaluation (1–5)",
     screeningQuestions: SERVICE_ADVISOR_SCREENING_QUESTIONS,
     evaluationCriteria: SERVICE_ADVISOR_EVALUATION_CRITERIA,

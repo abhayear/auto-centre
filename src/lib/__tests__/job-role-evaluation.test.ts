@@ -6,6 +6,7 @@ import {
   computeEvaluationAverage,
   formatEvaluationAverage,
   formatScreeningAnswer,
+  getScreeningQuestions,
   hasRoleScreening,
   parseEvaluationScores,
   validateScreeningResponses,
@@ -62,24 +63,28 @@ describe("job-role-evaluation", () => {
       bldcMotorExperience: "yes",
       chargingSystemsExperience: "yes",
       firmwareUpdates: "no",
+      routineMaintenance: "yes",
       twoWheelerLicense: "yes",
       willingToWorkLalitpur: "yes",
-      evBrandsWorked: "Ola S1",
+      evBrandsWorked: "Yakuza Rubie — battery and motor service",
     });
-    expect(responses?.evBrandsWorked).toBe("Ola S1");
+    expect(responses?.evBrandsWorked).toBe("Yakuza Rubie — battery and motor service");
   });
 
   it("validates sales executive screening", () => {
     const responses = validateScreeningResponses(SALES_EXECUTIVE_ROLE_TEMPLATE, {
       salesExperienceYears: "2_3",
-      twoWheelerLicense: "yes",
       evProductKnowledge: "yes",
-      hindiEnglishFluent: "yes",
       previousAutomotiveSales: "no",
-      commissionExperience: "yes",
+      showroomFloorExperience: "yes",
       testRideComfort: "yes",
       financingBasics: "yes",
+      commissionExperience: "yes",
+      digitalSalesTools: "yes",
+      localCustomerNetwork: "no",
+      twoWheelerLicense: "yes",
       willingToWorkLalitpur: "yes",
+      hindiEnglishFluent: "yes",
       previousEmployers: "Local retail store",
     });
     expect(responses?.previousEmployers).toBe("Local retail store");
@@ -90,11 +95,16 @@ describe("job-role-evaluation", () => {
       customerServiceYears: "1_2",
       twoWheelerKnowledge: "yes",
       evBasicsKnowledge: "yes",
+      itiDiploma: "no",
       appointmentSchedulingExp: "yes",
-      hindiEnglishFluent: "yes",
+      estimateAndInvoiceExp: "yes",
+      complaintHandling: "yes",
+      followUpCalls: "yes",
       computerLiterate: "yes",
       availableSaturdays: "yes",
+      twoWheelerLicense: "yes",
       willingToWorkLalitpur: "yes",
+      hindiEnglishFluent: "yes",
       previousWorkplace: "Workshop front desk",
     });
     expect(responses?.previousWorkplace).toBe("Workshop front desk");
@@ -102,5 +112,20 @@ describe("job-role-evaluation", () => {
 
   it("returns null screening for general roles", () => {
     expect(validateScreeningResponses("general", {})).toBeNull();
+  });
+
+  it("uses a consistent screening pattern per role template", () => {
+    const ev = getScreeningQuestions(EV_MECHANIC_ROLE_TEMPLATE);
+    const sales = getScreeningQuestions(SALES_EXECUTIVE_ROLE_TEMPLATE);
+    const advisor = getScreeningQuestions(SERVICE_ADVISOR_ROLE_TEMPLATE);
+
+    expect(ev[0].type).toBe("select");
+    expect(ev.at(-1)?.type).toBe("textarea");
+    expect(sales.some((q) => q.id === "twoWheelerLicense")).toBe(true);
+    expect(sales.some((q) => q.id === "hindiEnglishFluent")).toBe(true);
+    expect(advisor.some((q) => q.id === "itiDiploma")).toBe(true);
+    expect(ev.length).toBeGreaterThanOrEqual(10);
+    expect(sales.length).toBeGreaterThanOrEqual(10);
+    expect(advisor.length).toBeGreaterThanOrEqual(10);
   });
 });
