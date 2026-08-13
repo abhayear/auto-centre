@@ -123,9 +123,10 @@ export function AdminSidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start"
-          onClick={() =>
-            signOut({ callbackUrl: `${window.location.origin}/admin/login` })
-          }
+          onClick={async () => {
+            await signOut({ redirect: false });
+            window.location.href = "/";
+          }}
         >
           <LogOut className="h-4 w-4" />
           Sign Out
