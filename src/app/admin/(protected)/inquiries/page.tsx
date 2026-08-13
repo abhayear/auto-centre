@@ -1,9 +1,11 @@
 "use client";
 
 import { Inquiry, Vehicle } from "@prisma/client";
+import { FileDown, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge, statusBadgeVariant } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { formatDate, formatPrice } from "@/lib/utils";
 
@@ -59,6 +61,26 @@ export default function AdminInquiriesPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this enquiry?")) return;
+
+    const res = await fetch(`/api/inquiries/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Enquiry deleted");
+      refreshInquiries();
+    } else {
+      toast.error("Failed to delete enquiry");
+    }
+  }
+
+  function handleExportPdf() {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set("status", statusFilter);
+    if (typeFilter) params.set("type", typeFilter);
+    params.set("auto", "1");
+    window.open(`/admin/inquiries/print?${params}`, "_blank");
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -71,7 +93,11 @@ export default function AdminInquiriesPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">Inquiries</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={handleExportPdf}>
+            <FileDown className="h-4 w-4" />
+            Export PDF
+          </Button>
           <div className="w-40">
             <Select
               value={typeFilter}
@@ -141,16 +167,27 @@ export default function AdminInquiriesPage() {
                     </p>
                   )}
               </div>
-              <div className="w-36">
-                <Select
-                  value={inquiry.status}
-                  onChange={(e) => updateStatus(inquiry.id, e.target.value)}
-                  options={[
-                    { value: "new", label: "New" },
-                    { value: "replied", label: "Replied" },
-                    { value: "closed", label: "Closed" },
-                  ]}
-                />
+              <div className="flex items-start gap-2">
+                <div className="w-36">
+                  <Select
+                    value={inquiry.status}
+                    onChange={(e) => updateStatus(inquiry.id, e.target.value)}
+                    options={[
+                      { value: "new", label: "New" },
+                      { value: "replied", label: "Replied" },
+                      { value: "closed", label: "Closed" },
+                    ]}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-400 hover:text-red-300"
+                  onClick={() => void handleDelete(inquiry.id)}
+                  aria-label="Delete enquiry"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             <p className="text-sm text-slate-300">{inquiry.message}</p>

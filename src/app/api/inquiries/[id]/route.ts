@@ -68,3 +68,19 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Failed to update inquiry" }, { status: 500 });
   }
 }
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const session = await requireAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    await prisma.inquiry.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete inquiry" }, { status: 500 });
+  }
+}
