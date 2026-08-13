@@ -38,16 +38,45 @@ export function formatShowroomDate(date: Date | string | null | undefined): stri
   }).format(new Date(date));
 }
 
-export function serializeShowroomWalkIn<
-  T extends {
-    enquiryDate: Date;
-    expectedPurchaseDate: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-  },
->(record: T) {
+export type SerializedShowroomWalkIn = {
+  id: string;
+  enquiryDate: string;
+  name: string;
+  requiredModel: string;
+  contactNumber: string | null;
+  address: string | null;
+  paymentMode: ShowroomPaymentMode | null;
+  expectedPurchaseDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function normalizePaymentMode(value: string | null | undefined): ShowroomPaymentMode | null {
+  if (!value) return null;
+  return SHOWROOM_PAYMENT_MODES.includes(value as ShowroomPaymentMode)
+    ? (value as ShowroomPaymentMode)
+    : null;
+}
+
+export function serializeShowroomWalkIn(record: {
+  id: string;
+  enquiryDate: Date;
+  name: string;
+  requiredModel: string;
+  contactNumber: string | null;
+  address: string | null;
+  paymentMode: string | null;
+  expectedPurchaseDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): SerializedShowroomWalkIn {
   return {
-    ...record,
+    id: record.id,
+    name: record.name,
+    requiredModel: record.requiredModel,
+    contactNumber: record.contactNumber,
+    address: record.address,
+    paymentMode: normalizePaymentMode(record.paymentMode),
     enquiryDate: record.enquiryDate.toISOString().slice(0, 10),
     expectedPurchaseDate: record.expectedPurchaseDate
       ? record.expectedPurchaseDate.toISOString().slice(0, 10)

@@ -6,19 +6,11 @@ import { SITE_NAME } from "@/lib/constants";
 import {
   formatShowroomDate,
   formatShowroomPaymentMode,
-  type ShowroomPaymentMode,
+  type SerializedShowroomWalkIn,
 } from "@/lib/showroom-walk-ins";
 
 type ShowroomWalkInPrintClientProps = {
-  enquiries: {
-    enquiryDate: string;
-    name: string;
-    requiredModel: string;
-    contactNumber: string | null;
-    address: string | null;
-    paymentMode: ShowroomPaymentMode | null;
-    expectedPurchaseDate: string | null;
-  }[];
+  enquiries: SerializedShowroomWalkIn[];
   from?: string;
   to?: string;
   autoPrint?: boolean;
