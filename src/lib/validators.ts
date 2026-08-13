@@ -228,7 +228,7 @@ export const jobPostingSchema = z.object({
   status: z.enum(["open", "closed"]).default("open"),
   active: z.boolean().default(true),
   roleTemplate: z
-    .enum(["general", "ev_mechanic", "sales_executive", "service_advisor"])
+    .enum(["general", "ev_mechanic", "sales_executive", "service_advisor", "store_incharge"])
     .default("general"),
 });
 

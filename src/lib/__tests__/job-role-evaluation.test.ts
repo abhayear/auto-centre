@@ -3,6 +3,7 @@ import {
   EV_MECHANIC_ROLE_TEMPLATE,
   SALES_EXECUTIVE_ROLE_TEMPLATE,
   SERVICE_ADVISOR_ROLE_TEMPLATE,
+  STORE_INCHARGE_ROLE_TEMPLATE,
   computeEvaluationAverage,
   formatEvaluationAverage,
   formatScreeningAnswer,
@@ -17,6 +18,7 @@ describe("job-role-evaluation", () => {
     expect(hasRoleScreening(EV_MECHANIC_ROLE_TEMPLATE)).toBe(true);
     expect(hasRoleScreening(SALES_EXECUTIVE_ROLE_TEMPLATE)).toBe(true);
     expect(hasRoleScreening(SERVICE_ADVISOR_ROLE_TEMPLATE)).toBe(true);
+    expect(hasRoleScreening(STORE_INCHARGE_ROLE_TEMPLATE)).toBe(true);
     expect(hasRoleScreening("general")).toBe(false);
   });
 
@@ -110,6 +112,26 @@ describe("job-role-evaluation", () => {
     expect(responses?.previousWorkplace).toBe("Workshop front desk");
   });
 
+  it("validates store incharge screening", () => {
+    const responses = validateScreeningResponses(STORE_INCHARGE_ROLE_TEMPLATE, {
+      storeManagementYears: "3_5",
+      twoWheelerDealershipExp: "yes",
+      evProductKnowledge: "yes",
+      staffSupervision: "yes",
+      inventoryManagement: "yes",
+      cashHandlingClosing: "yes",
+      customerEscalations: "yes",
+      openingClosingProcedures: "yes",
+      reportingToManagement: "yes",
+      computerLiterate: "yes",
+      twoWheelerLicense: "yes",
+      willingToWorkLalitpur: "yes",
+      hindiEnglishFluent: "yes",
+      previousStoresManaged: "Yakuza dealer Lalitpur — 6 staff",
+    });
+    expect(responses?.previousStoresManaged).toBe("Yakuza dealer Lalitpur — 6 staff");
+  });
+
   it("returns null screening for general roles", () => {
     expect(validateScreeningResponses("general", {})).toBeNull();
   });
@@ -118,14 +140,17 @@ describe("job-role-evaluation", () => {
     const ev = getScreeningQuestions(EV_MECHANIC_ROLE_TEMPLATE);
     const sales = getScreeningQuestions(SALES_EXECUTIVE_ROLE_TEMPLATE);
     const advisor = getScreeningQuestions(SERVICE_ADVISOR_ROLE_TEMPLATE);
+    const storeIncharge = getScreeningQuestions(STORE_INCHARGE_ROLE_TEMPLATE);
 
     expect(ev[0].type).toBe("select");
     expect(ev.at(-1)?.type).toBe("textarea");
     expect(sales.some((q) => q.id === "twoWheelerLicense")).toBe(true);
     expect(sales.some((q) => q.id === "hindiEnglishFluent")).toBe(true);
     expect(advisor.some((q) => q.id === "itiDiploma")).toBe(true);
+    expect(storeIncharge.some((q) => q.id === "staffSupervision")).toBe(true);
     expect(ev.length).toBeGreaterThanOrEqual(10);
     expect(sales.length).toBeGreaterThanOrEqual(10);
     expect(advisor.length).toBeGreaterThanOrEqual(10);
+    expect(storeIncharge.length).toBeGreaterThanOrEqual(10);
   });
 });

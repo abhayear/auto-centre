@@ -2,12 +2,14 @@ export const GENERAL_ROLE_TEMPLATE = "general" as const;
 export const EV_MECHANIC_ROLE_TEMPLATE = "ev_mechanic" as const;
 export const SALES_EXECUTIVE_ROLE_TEMPLATE = "sales_executive" as const;
 export const SERVICE_ADVISOR_ROLE_TEMPLATE = "service_advisor" as const;
+export const STORE_INCHARGE_ROLE_TEMPLATE = "store_incharge" as const;
 
 export const JOB_ROLE_TEMPLATES = [
   GENERAL_ROLE_TEMPLATE,
   EV_MECHANIC_ROLE_TEMPLATE,
   SALES_EXECUTIVE_ROLE_TEMPLATE,
   SERVICE_ADVISOR_ROLE_TEMPLATE,
+  STORE_INCHARGE_ROLE_TEMPLATE,
 ] as const;
 
 export type JobRoleTemplate = (typeof JOB_ROLE_TEMPLATES)[number];
@@ -479,6 +481,135 @@ export const SERVICE_ADVISOR_EVALUATION_CRITERIA: EvaluationCriterion[] = [
   },
 ];
 
+export const STORE_INCHARGE_SCREENING_QUESTIONS: ScreeningQuestion[] = assembleScreeningQuestions({
+  experience: experienceYearsQuestion(
+    "storeManagementYears",
+    "Years of store incharge or showroom supervisory experience",
+  ),
+  core: [
+    {
+      id: "twoWheelerDealershipExp",
+      label: "Have you worked at a two-wheeler dealership or EV showroom?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "evProductKnowledge",
+      label: "Do you understand electric two-wheeler products and basic specifications?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "staffSupervision",
+      label: "Have you supervised sales or service staff?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "inventoryManagement",
+      label: "Do you have experience managing vehicle or parts inventory and stock records?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "cashHandlingClosing",
+      label: "Do you have experience with daily cash handling, closing, and basic accounts?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "customerEscalations",
+      label: "Can you handle customer escalations and complaints independently?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "openingClosingProcedures",
+      label: "Are you familiar with showroom opening/closing and display standards?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "reportingToManagement",
+      label: "Are you comfortable preparing daily sales and service reports for management?",
+      type: "yes_no",
+      required: true,
+    },
+    {
+      id: "computerLiterate",
+      label: "Are you comfortable using a computer or smartphone for daily work?",
+      type: "yes_no",
+      required: true,
+    },
+  ],
+  includeLicense: true,
+  includeHindiEnglish: true,
+  experienceDetails: experienceDetailsQuestion(
+    "previousStoresManaged",
+    "Previous stores or showrooms you have managed",
+    "List outlet names, your role, team size, and brands handled (e.g. Yakuza dealer — 5 staff, sales & service)",
+  ),
+});
+
+export const STORE_INCHARGE_EVALUATION_CRITERIA: EvaluationCriterion[] = [
+  {
+    id: "storeOperations",
+    label: "Store Operations",
+    description: "Day-to-day showroom running, displays, and SOP compliance",
+    lowLabel: "Weak",
+    highLabel: "Strong",
+  },
+  {
+    id: "teamLeadership",
+    label: "Team Leadership",
+    description: "Supervising sales and service staff, shift planning",
+    lowLabel: "Poor",
+    highLabel: "Excellent",
+  },
+  {
+    id: "inventoryControl",
+    label: "Inventory Control",
+    description: "Stock tracking, vehicle display, and parts records",
+    lowLabel: "Poor",
+    highLabel: "Excellent",
+  },
+  {
+    id: "cashCompliance",
+    label: "Cash & Compliance",
+    description: "Daily closing, cash box, and basic accounts discipline",
+    lowLabel: "Poor",
+    highLabel: "Excellent",
+  },
+  {
+    id: "customerHandling",
+    label: "Customer Handling",
+    description: "Escalations, complaints, and overall customer experience",
+    lowLabel: "Poor",
+    highLabel: "Excellent",
+  },
+  {
+    id: "evProductKnowledge",
+    label: "EV Product Knowledge",
+    description: "Understanding Yakuza models, features, and positioning",
+    lowLabel: "Basic",
+    highLabel: "Expert",
+  },
+  {
+    id: "communication",
+    label: "Communication",
+    description: "Reporting to management and coordinating with teams",
+    lowLabel: "Poor",
+    highLabel: "Excellent",
+  },
+  {
+    id: "experience",
+    label: "Experience",
+    description: "Years of store incharge or supervisory experience",
+    lowLabel: "<1 year",
+    highLabel: "5+ years",
+  },
+];
+
 export const ROLE_TEMPLATE_CONFIGS: Record<JobRoleTemplate, RoleTemplateConfig> = {
   [GENERAL_ROLE_TEMPLATE]: {
     id: GENERAL_ROLE_TEMPLATE,
@@ -515,6 +646,15 @@ export const ROLE_TEMPLATE_CONFIGS: Record<JobRoleTemplate, RoleTemplateConfig> 
     evaluationTitle: "Service advisor evaluation (1–5)",
     screeningQuestions: SERVICE_ADVISOR_SCREENING_QUESTIONS,
     evaluationCriteria: SERVICE_ADVISOR_EVALUATION_CRITERIA,
+  },
+  [STORE_INCHARGE_ROLE_TEMPLATE]: {
+    id: STORE_INCHARGE_ROLE_TEMPLATE,
+    label: "Store Incharge",
+    screeningTitle: "Store incharge screening",
+    screeningDescription: "Tell us about your showroom management and supervisory experience.",
+    evaluationTitle: "Store incharge evaluation (1–5)",
+    screeningQuestions: STORE_INCHARGE_SCREENING_QUESTIONS,
+    evaluationCriteria: STORE_INCHARGE_EVALUATION_CRITERIA,
   },
 };
 

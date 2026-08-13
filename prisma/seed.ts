@@ -339,6 +339,20 @@ async function main() {
           "Customer-facing experience required.\nBasic knowledge of two-wheelers.\nOrganized and professional.\nAvailable on Saturdays.",
       },
     }),
+    prisma.jobPosting.create({
+      data: {
+        title: "Store Incharge",
+        department: "Operations",
+        location: "Lalitpur, UP",
+        employmentType: "full_time",
+        salaryRange: "₹22,000 - ₹35,000",
+        roleTemplate: "store_incharge",
+        description:
+          "Lead daily operations at our Yakuza showroom in Lalitpur — supervise sales and service teams, manage inventory and displays, handle cash closing, resolve customer escalations, and report to management.",
+        requirements:
+          "3+ years store or showroom supervisory experience.\nTwo-wheeler dealership background preferred.\nExperience with staff supervision and inventory.\nDaily cash handling and reporting.\nValid two-wheeler driving licence.\nFluent in Hindi and English.",
+      },
+    }),
   ]);
 
   await prisma.jobApplication.create({
