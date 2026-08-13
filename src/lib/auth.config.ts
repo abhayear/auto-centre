@@ -3,6 +3,7 @@ import type { StaffRole } from "@/lib/admin-roles";
 
 export default {
   providers: [],
+  trustHost: true,
   pages: {
     signIn: "/admin/login",
   },
