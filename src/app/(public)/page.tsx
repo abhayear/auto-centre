@@ -86,7 +86,7 @@ export default async function HomePage() {
               Featured E-Scooters
             </h2>
             <p className="mt-2 text-slate-400">
-              Top electric 2-wheelers from leading brands
+              Yakuza electric 2-wheelers — sales and service
             </p>
           </div>
           <Link
@@ -160,7 +160,7 @@ export default async function HomePage() {
             </div>
             <h3 className="font-semibold text-white">Electric 2-Wheelers</h3>
             <p className="mt-2 text-sm text-slate-400">
-              New and pre-owned e-scooters from Ola, Ather, TVS, Bajaj, and more.
+              New Yakuza e-scooters — sales, service, and expert support.
             </p>
           </div>
           <div className="text-center">

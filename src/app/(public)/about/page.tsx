@@ -62,7 +62,7 @@ export default async function AboutPage() {
                 your first test ride to routine battery checks, we are with you at every step.
               </p>
               <p>
-                Our showroom on Siddhan Road stocks popular electric scooters and bikes. Our
+                Our showroom on Siddhan Road stocks Yakuza electric scooters. Our
                 service bay is equipped for battery diagnostics, motor service, brake work,
                 and general maintenance — all tailored for EVs.
               </p>
@@ -75,7 +75,7 @@ export default async function AboutPage() {
               {[
                 {
                   title: "Electric 2-Wheeler Sales",
-                  detail: "New and certified pre-owned e-scooters from top brands.",
+                  detail: "New Yakuza e-scooters with expert guidance and after-sales support.",
                 },
                 {
                   title: "EV Service & Repairs",

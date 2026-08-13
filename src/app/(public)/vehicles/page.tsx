@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "E-Scooters",
-  description: "Browse electric 2-wheelers — new and pre-owned e-scooters at Auto Galaxy, Lalitpur.",
+  description: "Browse Yakuza electric 2-wheelers at Auto Galaxy, Lalitpur.",
 };
 
 export default async function VehiclesPage() {

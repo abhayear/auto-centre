@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Investment Proposal",
-  description: `Investment opportunity at ${SITE_NAME} — electric 2-wheeler sales, service, and digital retail in Lalitpur.`,
+  description: `Investment opportunity at ${SITE_NAME} — Yakuza electric 2-wheeler sales and service in Lalitpur.`,
 };
 
 const sections = [
