@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  filterAtShowroomClaims,
   filterPendingFromCompanyClaims,
   parseReplacementDateInput,
   serializeReplacementClaim,
@@ -11,6 +12,7 @@ import {
   formatZodErrors,
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
 
@@ -24,6 +26,7 @@ function buildListFilter(params: {
   status?: string | null;
   itemType?: string | null;
   pendingFromCompany?: string | null;
+  pendingAtShowroom?: string | null;
 }) {
   const where: {
     receivedDate?: { gte?: Date; lte?: Date };
@@ -37,7 +40,9 @@ function buildListFilter(params: {
     if (params.to) where.receivedDate.lte = parseReplacementDateInput(params.to);
   }
 
-  if (params.pendingFromCompany === "1") {
+  if (params.pendingAtShowroom === "1") {
+    where.status = "received_from_customer";
+  } else if (params.pendingFromCompany === "1") {
     where.status = { in: ["sent_to_company", "received_from_company"] };
   } else if (params.status) {
     where.status = params.status;
@@ -128,14 +133,26 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status");
   const itemType = searchParams.get("itemType");
   const pendingFromCompany = searchParams.get("pendingFromCompany");
+  const pendingAtShowroom = searchParams.get("pendingAtShowroom");
 
   const records = await prisma.replacementClaim.findMany({
-    where: buildListFilter({ from, to, status, itemType, pendingFromCompany }),
+    where: buildListFilter({
+      from,
+      to,
+      status,
+      itemType,
+      pendingFromCompany,
+      pendingAtShowroom,
+    }),
     include: claimInclude,
     orderBy: [{ receivedDate: "desc" }, { createdAt: "desc" }],
   });
 
   const serialized = records.map(serializeReplacementClaim);
+
+  if (pendingAtShowroom === "1") {
+    return NextResponse.json(filterAtShowroomClaims(serialized));
+  }
 
   if (pendingFromCompany === "1") {
     return NextResponse.json(filterPendingFromCompanyClaims(serialized));
@@ -179,6 +196,51 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    if (body.sendToCompany) {
+      const sendData = replacementSendToCompanySchema.parse(body);
+      const sentToCompanyDate = parseReplacementDateInput(sendData.sentToCompanyDate);
+      const courierNote = sendData.courierNote?.trim();
+
+      const existing = await prisma.replacementClaim.findMany({
+        where: { id: { in: sendData.ids } },
+      });
+
+      const eligible = existing.filter((claim) => claim.status === "received_from_customer");
+      if (eligible.length === 0) {
+        return NextResponse.json(
+          { error: "No showroom items selected to send. Only items still at the showroom can be sent." },
+          { status: 400 },
+        );
+      }
+
+      await prisma.$transaction(
+        eligible.map((claim) =>
+          prisma.replacementClaim.update({
+            where: { id: claim.id },
+            data: {
+              status: "sent_to_company",
+              sentToCompanyDate,
+              ...(courierNote
+                ? {
+                    notes: [claim.notes, `Courier: ${courierNote}`].filter(Boolean).join("\n"),
+                  }
+                : {}),
+            },
+          }),
+        ),
+      );
+
+      const updated = await prisma.replacementClaim.findMany({
+        where: { id: { in: eligible.map((claim) => claim.id) } },
+        include: claimInclude,
+      });
+
+      return NextResponse.json({
+        updated: eligible.length,
+        claims: updated.map(serializeReplacementClaim),
+      });
+    }
 
     if (body.recordCompanyReceipt) {
       const receiptData = replacementCompanyReceiptSchema.parse(body);

@@ -409,6 +409,12 @@ export const replacementCompanyReceiptSchema = z.object({
   items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),
 });
 
+export const replacementSendToCompanySchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, "Select at least one claim"),
+  sentToCompanyDate: replacementDateSchema,
+  courierNote: z.string().trim().max(200).optional().or(z.literal("")),
+});
+
 export const replacementClaimUpdateSchema = replacementClaimSchema.partial().extend({
   id: z.string().min(1),
 });

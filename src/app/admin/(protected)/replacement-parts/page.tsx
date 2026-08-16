@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2 } from "lucide-react";
+import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
 import { CompanyReceiptForm } from "@/components/forms/CompanyReceiptForm";
+import { SendToCompanyForm } from "@/components/forms/SendToCompanyForm";
 import {
   ReplacementClaimForm,
   type ReplacementClaimView,
@@ -19,6 +20,7 @@ import {
   formatReplacementDate,
   formatReplacementItemType,
   formatReplacementStatus,
+  isAtShowroom,
   isPendingFromCompany,
   pendingFromCompanySummary,
   replacementStatusVariant,
@@ -64,10 +66,12 @@ function companyReceiptLabel(claim: ReplacementClaimView): string {
 export default function AdminReplacementPartsPage() {
   const [claims, setClaims] = useState<ReplacementClaimView[]>([]);
   const [pendingClaims, setPendingClaims] = useState<ReplacementClaimView[]>([]);
+  const [showroomClaims, setShowroomClaims] = useState<ReplacementClaimView[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClaim, setEditingClaim] = useState<ReplacementClaimView | undefined>();
   const [receiptClaim, setReceiptClaim] = useState<ReplacementClaimView | undefined>();
+  const [sendClaims, setSendClaims] = useState<ReplacementClaimView[] | undefined>();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -83,15 +87,18 @@ export default function AdminReplacementPartsPage() {
     async function load() {
       setLoading(true);
       const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-      const [listRes, pendingRes] = await Promise.all([
+      const [listRes, pendingRes, showroomRes] = await Promise.all([
         fetch(`/api/replacement-parts?${params}`),
         fetch("/api/replacement-parts?pendingFromCompany=1"),
+        fetch("/api/replacement-parts?pendingAtShowroom=1"),
       ]);
       const listData = await listRes.json();
       const pendingData = await pendingRes.json();
+      const showroomData = await showroomRes.json();
       if (active) {
         setClaims(Array.isArray(listData) ? listData : []);
         setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
+        setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
         setSelectedIds([]);
         setLoading(false);
       }
@@ -105,13 +112,16 @@ export default function AdminReplacementPartsPage() {
 
   async function refreshClaims() {
     const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-    const [listRes, pendingRes] = await Promise.all([
+    const [listRes, pendingRes, showroomRes] = await Promise.all([
       fetch(`/api/replacement-parts?${params}`),
       fetch("/api/replacement-parts?pendingFromCompany=1"),
+      fetch("/api/replacement-parts?pendingAtShowroom=1"),
     ]);
     setClaims(await listRes.json());
     const pendingData = await pendingRes.json();
+    const showroomData = await showroomRes.json();
     setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
+    setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
     setSelectedIds([]);
   }
 
@@ -282,6 +292,73 @@ export default function AdminReplacementPartsPage() {
         bulkDeleting={bulkDeleting}
       />
 
+      {showroomClaims.length > 0 && (
+        <div className="mb-6 rounded-xl border border-sky-500/30 bg-sky-500/10 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-sky-100">
+                At showroom — not yet sent ({showroomClaims.length})
+              </h2>
+              <p className="text-sm text-sky-200/80">
+                Faulty items received from customers. Send them to Yakuza when the parcel is ready.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => openLetterPrint(showroomClaims.map((claim) => claim.id))}
+              >
+                <FileText className="h-4 w-4" />
+                Letter for these
+              </Button>
+              <Button onClick={() => setSendClaims(showroomClaims)}>
+                <Truck className="h-4 w-4" />
+                Send all to company
+              </Button>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-sky-500/20">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-sky-500/10 text-sky-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Customer</th>
+                  <th className="px-4 py-2 font-medium">Faulty items</th>
+                  <th className="px-4 py-2 font-medium">Received</th>
+                  <th className="px-4 py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sky-500/10 text-sky-50">
+                {showroomClaims.map((claim) => (
+                  <tr key={claim.id}>
+                    <td className="px-4 py-2 font-medium">{claim.customerName}</td>
+                    <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      {formatReplacementDate(claim.receivedDate)}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openLetterPrint([claim.id])}
+                        >
+                          <FileText className="h-4 w-4" />
+                          Letter
+                        </Button>
+                        <Button size="sm" onClick={() => setSendClaims([claim])}>
+                          <Truck className="h-4 w-4" />
+                          Send to company
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {pendingClaims.length > 0 && (
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -449,6 +526,16 @@ export default function AdminReplacementPartsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
+                        {isAtShowroom(claim) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Send this item from showroom to company"
+                            onClick={() => setSendClaims([claim])}
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                        )}
                         {isPendingFromCompany(claim) && (
                           <Button
                             variant="ghost"
@@ -518,6 +605,17 @@ export default function AdminReplacementPartsPage() {
             refreshClaims();
           }}
           onCancel={() => setReceiptClaim(undefined)}
+        />
+      )}
+
+      {sendClaims && sendClaims.length > 0 && (
+        <SendToCompanyForm
+          claims={sendClaims}
+          onSuccess={() => {
+            setSendClaims(undefined);
+            refreshClaims();
+          }}
+          onCancel={() => setSendClaims(undefined)}
         />
       )}
     </div>

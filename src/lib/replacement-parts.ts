@@ -188,6 +188,17 @@ export function filterPendingFromCompanyClaims(
   return claims.filter(isPendingFromCompany);
 }
 
+/** Faulty items still sitting at the showroom, not yet sent to company */
+export function isAtShowroom(claim: SerializedReplacementClaim): boolean {
+  return claim.status === "received_from_customer";
+}
+
+export function filterAtShowroomClaims(
+  claims: SerializedReplacementClaim[],
+): SerializedReplacementClaim[] {
+  return claims.filter(isAtShowroom);
+}
+
 function normalizeItemType(value: string): ReplacementItemType {
   return REPLACEMENT_ITEM_TYPES.includes(value as ReplacementItemType)
     ? (value as ReplacementItemType)

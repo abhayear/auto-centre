@@ -8,6 +8,7 @@ import {
   buildMovementReport,
   claimMovementLocation,
   filterPendingFromCompanyClaims,
+  isAtShowroom,
   formatLetterQuantitySummary,
   sumLetterQuantities,
   formatItemSpecs,
@@ -23,6 +24,7 @@ import {
 import {
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
 
@@ -417,6 +419,8 @@ describe("replacement-parts helpers", () => {
     const report = buildMovementReport([atShowroom, sent, returned]);
 
     expect(claimMovementLocation(atShowroom)).toBe("At showroom (not yet sent)");
+    expect(isAtShowroom(atShowroom)).toBe(true);
+    expect(isAtShowroom(sent)).toBe(false);
     expect(claimMovementLocation(sent)).toBe("Pending at company");
     expect(claimMovementLocation(returned)).toBe("Returned to customer");
 
@@ -465,6 +469,16 @@ describe("company receipt validators", () => {
       sentToCompanyDate: "",
       companyReceivedDate: "",
       items: [{ itemType: "controller", side: "old", quantity: 1 }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts sending showroom claims to company", () => {
+    const result = replacementSendToCompanySchema.safeParse({
+      ids: ["claim-1", "claim-2"],
+      sentToCompanyDate: "2026-08-16",
+      courierNote: "DTDC AWB 921949267",
     });
 
     expect(result.success).toBe(true);
