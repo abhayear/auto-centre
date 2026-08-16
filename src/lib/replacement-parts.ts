@@ -472,21 +472,86 @@ const DISPATCHED_STATUSES: ReplacementStatus[] = [
   "closed",
 ];
 
-const COMPANY_BACK_STATUSES: ReplacementStatus[] = [
-  "received_from_company",
-  "returned_to_customer",
-  "closed",
-];
-
 const RETURNED_STATUSES: ReplacementStatus[] = ["returned_to_customer", "closed"];
+
+export type ClaimMovementQuantities = Record<MovementStage, TypeQuantityTotals>;
+
+/**
+ * Quantity equations (per item type):
+ * Received from customer = old qty
+ * Sent to company        = old qty once dispatched
+ * Received from company  = new qty recorded
+ * Returned to customer   = new qty handed over
+ * Pending at company     = Sent to company − Received from company
+ * Pending with us        = (Received from customer − Sent to company)
+ *                        + (Received from company − Returned to customer)
+ */
+export function claimMovementQuantities(
+  claim: SerializedReplacementClaim,
+): ClaimMovementQuantities {
+  const quantities: ClaimMovementQuantities = {
+    receivedFromCustomer: emptyTypeTotals(),
+    sentToCompany: emptyTypeTotals(),
+    receivedFromCompany: emptyTypeTotals(),
+    returnedToCustomer: emptyTypeTotals(),
+    pendingAtCompany: emptyTypeTotals(),
+    pendingWithUs: emptyTypeTotals(),
+  };
+
+  if (claim.status === "cancelled") {
+    return quantities;
+  }
+
+  const oldQty = quantitiesByType(claim.items, "old");
+  const newQty = quantitiesByType(claim.items, "new");
+  const dispatched = DISPATCHED_STATUSES.includes(claim.status);
+  const handedOver = RETURNED_STATUSES.includes(claim.status);
+
+  for (const type of LETTER_ITEM_TYPE_ORDER) {
+    const receivedFromCustomer = oldQty[type];
+    const sentToCompany = dispatched ? oldQty[type] : 0;
+    const receivedFromCompany = newQty[type];
+    const returnedToCustomer = handedOver ? newQty[type] : 0;
+    const pendingAtCompany = Math.max(sentToCompany - receivedFromCompany, 0);
+    const pendingWithUs =
+      Math.max(receivedFromCustomer - sentToCompany, 0) +
+      Math.max(receivedFromCompany - returnedToCustomer, 0);
+
+    addTypeQuantity(quantities.receivedFromCustomer, type, receivedFromCustomer);
+    addTypeQuantity(quantities.sentToCompany, type, sentToCompany);
+    addTypeQuantity(quantities.receivedFromCompany, type, receivedFromCompany);
+    addTypeQuantity(quantities.returnedToCustomer, type, returnedToCustomer);
+    addTypeQuantity(quantities.pendingAtCompany, type, pendingAtCompany);
+    addTypeQuantity(quantities.pendingWithUs, type, pendingWithUs);
+  }
+
+  return quantities;
+}
 
 export function claimMovementLocation(claim: SerializedReplacementClaim): string {
   if (claim.status === "cancelled") return "Cancelled";
-  if (RETURNED_STATUSES.includes(claim.status)) return "Returned to customer";
-  if (isPendingFromCompany(claim)) return "Pending at company";
-  if (claim.status === "received_from_company") return "Pending with us";
-  if (claim.status === "sent_to_company") return "Pending at company";
-  if (claim.status === "received_from_customer") return "At showroom (not yet sent)";
+
+  const quantities = claimMovementQuantities(claim);
+  const pendingAtCompany = quantities.pendingAtCompany.total;
+  const atShowroom = Math.max(
+    quantities.receivedFromCustomer.total - quantities.sentToCompany.total,
+    0,
+  );
+  const waitingHandover = Math.max(
+    quantities.receivedFromCompany.total - quantities.returnedToCustomer.total,
+    0,
+  );
+
+  if (pendingAtCompany > 0 && waitingHandover > 0) {
+    return `Split: ${pendingAtCompany} at company, ${waitingHandover} with us`;
+  }
+  if (pendingAtCompany > 0 && quantities.returnedToCustomer.total > 0) {
+    return `Partial return — ${pendingAtCompany} pending at company`;
+  }
+  if (pendingAtCompany > 0) return "Pending at company";
+  if (atShowroom > 0) return "At showroom (not yet sent)";
+  if (waitingHandover > 0) return "Pending with us";
+  if (quantities.returnedToCustomer.total > 0) return "Returned to customer";
   return formatReplacementStatus(claim.status);
 }
 
@@ -497,38 +562,11 @@ export function buildMovementReport(claims: SerializedReplacementClaim[]): Movem
   const rows: MovementReportRow[] = [];
 
   for (const claim of claims) {
-    const oldQty = quantitiesByType(claim.items, "old");
-    const newQty = quantitiesByType(claim.items, "new");
-    const pendingAtCompanyByType = emptyTypeTotals();
-    const pendingWithUsByType = emptyTypeTotals();
+    const quantities = claimMovementQuantities(claim);
 
-    if (claim.status !== "cancelled") {
+    for (const stage of MOVEMENT_STAGES) {
       for (const type of LETTER_ITEM_TYPE_ORDER) {
-        addTypeQuantity(stages.receivedFromCustomer, type, oldQty[type]);
-
-        if (DISPATCHED_STATUSES.includes(claim.status)) {
-          addTypeQuantity(stages.sentToCompany, type, oldQty[type]);
-        }
-
-        if (COMPANY_BACK_STATUSES.includes(claim.status)) {
-          addTypeQuantity(stages.receivedFromCompany, type, newQty[type]);
-        }
-
-        if (RETURNED_STATUSES.includes(claim.status)) {
-          addTypeQuantity(stages.returnedToCustomer, type, oldQty[type]);
-        }
-
-        if (claim.status === "sent_to_company") {
-          addTypeQuantity(pendingAtCompanyByType, type, oldQty[type]);
-        } else if (claim.status === "received_from_company") {
-          addTypeQuantity(pendingAtCompanyByType, type, Math.max(oldQty[type] - newQty[type], 0));
-          addTypeQuantity(pendingWithUsByType, type, newQty[type]);
-        }
-      }
-
-      for (const type of LETTER_ITEM_TYPE_ORDER) {
-        addTypeQuantity(stages.pendingAtCompany, type, pendingAtCompanyByType[type]);
-        addTypeQuantity(stages.pendingWithUs, type, pendingWithUsByType[type]);
+        addTypeQuantity(stages[stage], type, quantities[stage][type]);
       }
     }
 
@@ -544,8 +582,8 @@ export function buildMovementReport(claims: SerializedReplacementClaim[]): Movem
       companyReceivedDate: claim.companyReceivedDate,
       status: claim.status,
       location: claimMovementLocation(claim),
-      pendingAtCompany: pendingAtCompanyByType.total,
-      pendingWithUs: pendingWithUsByType.total,
+      pendingAtCompany: quantities.pendingAtCompany.total,
+      pendingWithUs: quantities.pendingWithUs.total,
     });
   }
 

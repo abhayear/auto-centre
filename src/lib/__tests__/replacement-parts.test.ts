@@ -7,6 +7,7 @@ import {
   buildLetterItems,
   buildMovementReport,
   claimMovementLocation,
+  claimMovementQuantities,
   filterPendingFromCompanyClaims,
   isAtShowroom,
   isPendingFromCompany,
@@ -440,10 +441,66 @@ describe("replacement-parts helpers", () => {
     expect(report.stages.returnedToCustomer.motor).toBe(1);
     expect(report.stages.pendingAtCompany.charger).toBe(1);
     expect(report.stages.pendingAtCompany.battery).toBe(0);
-    expect(report.stages.pendingWithUs.total).toBe(0);
+    expect(report.stages.pendingWithUs.battery).toBe(5);
+    expect(report.stages.pendingWithUs.total).toBe(5);
     expect(report.rows).toHaveLength(3);
     expect(report.rows[1].location).toBe("Pending at company");
     expect(isReadyForCustomer(returned)).toBe(false);
+  });
+
+  it("uses quantity equations when only some replacements come back", () => {
+    const vakil = serializeReplacementClaim({
+      id: "claim-vakil",
+      receivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      customerName: "vakil",
+      customerPhone: "+918090953096",
+      billNumber: "sale/12",
+      status: "returned_to_customer",
+      sentToCompanyDate: new Date("2026-08-17T00:00:00.000Z"),
+      companyReceivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      notes: null,
+      createdAt: new Date("2026-08-16T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-16T00:00:00.000Z"),
+      items: [
+        {
+          id: "old-6",
+          itemType: "battery",
+          side: "old",
+          modelCode: null,
+          serialNumber: null,
+          ah: 32,
+          voltage: null,
+          quantity: 6,
+          notes: null,
+          sortOrder: 0,
+        },
+        {
+          id: "new-2",
+          itemType: "battery",
+          side: "new",
+          modelCode: null,
+          serialNumber: null,
+          ah: 32,
+          voltage: null,
+          quantity: 2,
+          notes: null,
+          sortOrder: 1,
+        },
+      ],
+    });
+
+    const quantities = claimMovementQuantities(vakil);
+    expect(quantities.receivedFromCustomer.battery).toBe(6);
+    expect(quantities.sentToCompany.battery).toBe(6);
+    expect(quantities.receivedFromCompany.battery).toBe(2);
+    expect(quantities.returnedToCustomer.battery).toBe(2);
+    expect(quantities.pendingAtCompany.battery).toBe(4);
+    expect(quantities.pendingWithUs.battery).toBe(0);
+    expect(claimMovementLocation(vakil)).toBe("Partial return — 4 pending at company");
+
+    const report = buildMovementReport([vakil]);
+    expect(report.stages.returnedToCustomer.total).toBe(2);
+    expect(report.stages.pendingAtCompany.total).toBe(4);
   });
 });
 

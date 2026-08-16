@@ -115,6 +115,11 @@ export function MovementReportPrintClient({
             </tbody>
           </table>
         </div>
+        <p className="mb-8 text-xs text-slate-400 print:text-black">
+          Pending at company = Sent to company − Received from company. Pending with us =
+          (Received from customer − Sent to company) + (Received from company − Returned to
+          customer). Returned to customer counts new items handed over, not old qty sent.
+        </p>
 
         {report.rows.length === 0 ? (
           <p className="text-slate-400 print:text-black">No replacement claims found for this period.</p>
@@ -179,8 +184,13 @@ export function MovementReportPrintClient({
 
         <div className="mt-10 text-sm text-slate-300 print:text-black">
           <p>
-            Pending at company {report.stages.pendingAtCompany.total}, pending with us{" "}
-            {report.stages.pendingWithUs.total}.
+            Pending at company {report.stages.pendingAtCompany.total} = sent{" "}
+            {report.stages.sentToCompany.total} − received from company{" "}
+            {report.stages.receivedFromCompany.total}. Pending with us{" "}
+            {report.stages.pendingWithUs.total} = (received from customer{" "}
+            {report.stages.receivedFromCustomer.total} − sent {report.stages.sentToCompany.total}) +
+            (received from company {report.stages.receivedFromCompany.total} − returned{" "}
+            {report.stages.returnedToCustomer.total}).
           </p>
           <p className="mt-8">For {SITE_NAME}</p>
           <p className="mt-12">Authorised Signatory</p>
