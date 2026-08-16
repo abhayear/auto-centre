@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import {
   filterAtShowroomClaims,
   filterPendingFromCompanyClaims,
+  filterReadyForCustomerClaims,
+  isPendingFromCompany,
   parseReplacementDateInput,
   serializeReplacementClaim,
 } from "@/lib/replacement-parts";
@@ -12,6 +14,7 @@ import {
   formatZodErrors,
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
@@ -27,6 +30,7 @@ function buildListFilter(params: {
   itemType?: string | null;
   pendingFromCompany?: string | null;
   pendingAtShowroom?: string | null;
+  readyForCustomer?: string | null;
 }) {
   const where: {
     receivedDate?: { gte?: Date; lte?: Date };
@@ -42,6 +46,8 @@ function buildListFilter(params: {
 
   if (params.pendingAtShowroom === "1") {
     where.status = "received_from_customer";
+  } else if (params.readyForCustomer === "1") {
+    where.status = "received_from_company";
   } else if (params.pendingFromCompany === "1") {
     where.status = { in: ["sent_to_company", "received_from_company"] };
   } else if (params.status) {
@@ -65,6 +71,7 @@ function companyReceiptFields(data: {
   companyReceivedDate?: string | null;
   companyInvoiceNumber?: string | null;
   companyDeliveryNote?: string | null;
+  returnedToCustomerDate?: string | null;
 }) {
   return {
     ...(data.sentToCompanyDate !== undefined
@@ -78,6 +85,9 @@ function companyReceiptFields(data: {
       : {}),
     ...(data.companyDeliveryNote !== undefined
       ? { companyDeliveryNote: data.companyDeliveryNote?.trim() || null }
+      : {}),
+    ...(data.returnedToCustomerDate !== undefined
+      ? { returnedToCustomerDate: optionalDateInput(data.returnedToCustomerDate) }
       : {}),
   };
 }
@@ -114,6 +124,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
     companyReceivedDate: optionalDateInput(data.companyReceivedDate),
     companyInvoiceNumber: data.companyInvoiceNumber?.trim() || null,
     companyDeliveryNote: data.companyDeliveryNote?.trim() || null,
+    returnedToCustomerDate: optionalDateInput(data.returnedToCustomerDate),
     notes: data.notes?.trim() || null,
     items: {
       create: toItemCreateData(data.items),
@@ -134,6 +145,7 @@ export async function GET(request: NextRequest) {
   const itemType = searchParams.get("itemType");
   const pendingFromCompany = searchParams.get("pendingFromCompany");
   const pendingAtShowroom = searchParams.get("pendingAtShowroom");
+  const readyForCustomer = searchParams.get("readyForCustomer");
 
   const records = await prisma.replacementClaim.findMany({
     where: buildListFilter({
@@ -143,6 +155,7 @@ export async function GET(request: NextRequest) {
       itemType,
       pendingFromCompany,
       pendingAtShowroom,
+      readyForCustomer,
     }),
     include: claimInclude,
     orderBy: [{ receivedDate: "desc" }, { createdAt: "desc" }],
@@ -152,6 +165,10 @@ export async function GET(request: NextRequest) {
 
   if (pendingAtShowroom === "1") {
     return NextResponse.json(filterAtShowroomClaims(serialized));
+  }
+
+  if (readyForCustomer === "1") {
+    return NextResponse.json(filterReadyForCustomerClaims(serialized));
   }
 
   if (pendingFromCompany === "1") {
@@ -269,10 +286,15 @@ export async function PATCH(request: NextRequest) {
           .reduce((total, item) => total + item.quantity, 0) +
         receiptData.items.reduce((total, item) => total + item.quantity, 0);
 
-      const nextStatus =
-        newQty >= oldQty ? "received_from_company" : existing.status === "sent_to_company"
+      const fullyReceived = newQty >= oldQty;
+      const handoverNow = Boolean(receiptData.returnToCustomerNow) && fullyReceived;
+      const nextStatus = handoverNow
+        ? "returned_to_customer"
+        : fullyReceived
           ? "received_from_company"
-          : existing.status;
+          : existing.status === "sent_to_company"
+            ? "received_from_company"
+            : existing.status;
 
       const record = await prisma.replacementClaim.update({
         where: { id: receiptData.id },
@@ -281,6 +303,13 @@ export async function PATCH(request: NextRequest) {
           companyInvoiceNumber: receiptData.companyInvoiceNumber?.trim() || null,
           companyDeliveryNote: receiptData.companyDeliveryNote?.trim() || null,
           status: nextStatus,
+          ...(handoverNow
+            ? {
+                returnedToCustomerDate: parseReplacementDateInput(
+                  receiptData.returnedToCustomerDate ?? receiptData.companyReceivedDate,
+                ),
+              }
+            : {}),
           items: { create: newItems },
         },
         include: claimInclude,
@@ -289,15 +318,79 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(serializeReplacementClaim(record));
     }
 
+    if (body.returnToCustomer) {
+      const returnData = replacementReturnToCustomerSchema.parse(body);
+      const returnedToCustomerDate = parseReplacementDateInput(returnData.returnedToCustomerDate);
+      const handoverNote = returnData.handoverNote?.trim();
+
+      const existing = await prisma.replacementClaim.findMany({
+        where: { id: { in: returnData.ids } },
+        include: claimInclude,
+      });
+
+      const eligible = existing.filter((claim) => {
+        const serialized = serializeReplacementClaim(claim);
+        return serialized.status === "received_from_company" && !isPendingFromCompany(serialized);
+      });
+
+      if (eligible.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "No items ready to return. Record the company receipt first, then hand over to the customer.",
+          },
+          { status: 400 },
+        );
+      }
+
+      await prisma.$transaction(
+        eligible.map((claim) =>
+          prisma.replacementClaim.update({
+            where: { id: claim.id },
+            data: {
+              status: "returned_to_customer",
+              returnedToCustomerDate,
+              ...(handoverNote
+                ? {
+                    notes: [claim.notes, `Returned to customer: ${handoverNote}`]
+                      .filter(Boolean)
+                      .join("\n"),
+                  }
+                : {}),
+            },
+          }),
+        ),
+      );
+
+      const updated = await prisma.replacementClaim.findMany({
+        where: { id: { in: eligible.map((claim) => claim.id) } },
+        include: claimInclude,
+      });
+
+      return NextResponse.json({
+        updated: eligible.length,
+        claims: updated.map(serializeReplacementClaim),
+      });
+    }
+
     if (body.status && !body.items && Object.keys(body).length <= 2) {
       const statusData = replacementStatusUpdateSchema.parse(body);
-      const updateData: { status: string; sentToCompanyDate?: Date } = {
+      const updateData: {
+        status: string;
+        sentToCompanyDate?: Date;
+        returnedToCustomerDate?: Date;
+      } = {
         status: statusData.status,
       };
 
       if (statusData.status === "sent_to_company") {
         updateData.sentToCompanyDate = new Date();
         updateData.sentToCompanyDate.setUTCHours(0, 0, 0, 0);
+      }
+
+      if (statusData.status === "returned_to_customer") {
+        updateData.returnedToCustomerDate = new Date();
+        updateData.returnedToCustomerDate.setUTCHours(0, 0, 0, 0);
       }
 
       const record = await prisma.replacementClaim.update({

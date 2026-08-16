@@ -397,6 +397,7 @@ export const replacementClaimSchema = z.object({
   companyReceivedDate: optionalReplacementDateSchema,
   companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
   companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
+  returnedToCustomerDate: optionalReplacementDateSchema,
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
   items: z.array(replacementClaimItemSchema).min(1, "At least one item is required"),
 });
@@ -406,6 +407,8 @@ export const replacementCompanyReceiptSchema = z.object({
   companyReceivedDate: replacementDateSchema,
   companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
   companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
+  returnToCustomerNow: z.boolean().optional(),
+  returnedToCustomerDate: replacementDateSchema.optional(),
   items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),
 });
 
@@ -413,6 +416,12 @@ export const replacementSendToCompanySchema = z.object({
   ids: z.array(z.string().min(1)).min(1, "Select at least one claim"),
   sentToCompanyDate: replacementDateSchema,
   courierNote: z.string().trim().max(200).optional().or(z.literal("")),
+});
+
+export const replacementReturnToCustomerSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, "Select at least one claim"),
+  returnedToCustomerDate: replacementDateSchema,
+  handoverNote: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 export const replacementClaimUpdateSchema = replacementClaimSchema.partial().extend({

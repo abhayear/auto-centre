@@ -9,13 +9,14 @@ import {
   claimMovementLocation,
   filterPendingFromCompanyClaims,
   isAtShowroom,
+  isPendingFromCompany,
+  isReadyForCustomer,
   formatLetterQuantitySummary,
   sumLetterQuantities,
   formatItemSpecs,
   formatReplacementDate,
   formatReplacementItemType,
   formatReplacementStatus,
-  isPendingFromCompany,
   parseReplacementDateInput,
   pendingFromCompanySummary,
   replacementStatusVariant,
@@ -24,6 +25,7 @@ import {
 import {
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
@@ -441,6 +443,7 @@ describe("replacement-parts helpers", () => {
     expect(report.stages.pendingWithUs.total).toBe(0);
     expect(report.rows).toHaveLength(3);
     expect(report.rows[1].location).toBe("Pending at company");
+    expect(isReadyForCustomer(returned)).toBe(false);
   });
 });
 
@@ -479,6 +482,28 @@ describe("company receipt validators", () => {
       ids: ["claim-1", "claim-2"],
       sentToCompanyDate: "2026-08-16",
       courierNote: "DTDC AWB 921949267",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts returning replacements to the customer", () => {
+    const result = replacementReturnToCustomerSchema.safeParse({
+      ids: ["claim-1"],
+      returnedToCustomerDate: "2026-08-16",
+      handoverNote: "Collected from showroom",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts company receipt with same-day customer handover", () => {
+    const result = replacementCompanyReceiptSchema.safeParse({
+      id: "claim-1",
+      companyReceivedDate: "2026-08-16",
+      returnToCustomerNow: true,
+      returnedToCustomerDate: "2026-08-16",
+      items: [{ itemType: "battery", side: "new", quantity: 1 }],
     });
 
     expect(result.success).toBe(true);

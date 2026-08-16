@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck } from "lucide-react";
+import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck, UserCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
 import { CompanyReceiptForm } from "@/components/forms/CompanyReceiptForm";
+import { ReturnToCustomerForm } from "@/components/forms/ReturnToCustomerForm";
 import { SendToCompanyForm } from "@/components/forms/SendToCompanyForm";
 import {
   ReplacementClaimForm,
@@ -22,6 +23,7 @@ import {
   formatReplacementStatus,
   isAtShowroom,
   isPendingFromCompany,
+  isReadyForCustomer,
   pendingFromCompanySummary,
   replacementStatusVariant,
 } from "@/lib/replacement-parts";
@@ -51,7 +53,16 @@ function summarizeOldItems(claim: ReplacementClaimView): string {
     .join(", ");
 }
 
-function companyReceiptLabel(claim: ReplacementClaimView): string {
+function summarizeNewItems(claim: ReplacementClaimView): string {
+  const newItems = claim.items.filter((item) => item.side === "new");
+  if (newItems.length === 0) return "—";
+  return newItems
+    .map(
+      (item) =>
+        `${formatReplacementItemType(item.itemType)}${item.serialNumber ? ` / ${item.serialNumber}` : item.modelCode ? ` (${item.modelCode})` : ""}`,
+    )
+    .join(", ");
+}
   const parts: string[] = [];
   if (claim.companyInvoiceNumber) parts.push(`Invoice: ${claim.companyInvoiceNumber}`);
   if (claim.companyDeliveryNote) parts.push(`DN: ${claim.companyDeliveryNote}`);
@@ -67,11 +78,13 @@ export default function AdminReplacementPartsPage() {
   const [claims, setClaims] = useState<ReplacementClaimView[]>([]);
   const [pendingClaims, setPendingClaims] = useState<ReplacementClaimView[]>([]);
   const [showroomClaims, setShowroomClaims] = useState<ReplacementClaimView[]>([]);
+  const [readyClaims, setReadyClaims] = useState<ReplacementClaimView[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClaim, setEditingClaim] = useState<ReplacementClaimView | undefined>();
   const [receiptClaim, setReceiptClaim] = useState<ReplacementClaimView | undefined>();
   const [sendClaims, setSendClaims] = useState<ReplacementClaimView[] | undefined>();
+  const [returnClaims, setReturnClaims] = useState<ReplacementClaimView[] | undefined>();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -87,18 +100,21 @@ export default function AdminReplacementPartsPage() {
     async function load() {
       setLoading(true);
       const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-      const [listRes, pendingRes, showroomRes] = await Promise.all([
+      const [listRes, pendingRes, showroomRes, readyRes] = await Promise.all([
         fetch(`/api/replacement-parts?${params}`),
         fetch("/api/replacement-parts?pendingFromCompany=1"),
         fetch("/api/replacement-parts?pendingAtShowroom=1"),
+        fetch("/api/replacement-parts?readyForCustomer=1"),
       ]);
       const listData = await listRes.json();
       const pendingData = await pendingRes.json();
       const showroomData = await showroomRes.json();
+      const readyData = await readyRes.json();
       if (active) {
         setClaims(Array.isArray(listData) ? listData : []);
         setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
         setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
+        setReadyClaims(Array.isArray(readyData) ? readyData : []);
         setSelectedIds([]);
         setLoading(false);
       }
@@ -112,16 +128,19 @@ export default function AdminReplacementPartsPage() {
 
   async function refreshClaims() {
     const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-    const [listRes, pendingRes, showroomRes] = await Promise.all([
+    const [listRes, pendingRes, showroomRes, readyRes] = await Promise.all([
       fetch(`/api/replacement-parts?${params}`),
       fetch("/api/replacement-parts?pendingFromCompany=1"),
       fetch("/api/replacement-parts?pendingAtShowroom=1"),
+      fetch("/api/replacement-parts?readyForCustomer=1"),
     ]);
     setClaims(await listRes.json());
     const pendingData = await pendingRes.json();
     const showroomData = await showroomRes.json();
+    const readyData = await readyRes.json();
     setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
     setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
+    setReadyClaims(Array.isArray(readyData) ? readyData : []);
     setSelectedIds([]);
   }
 
@@ -408,6 +427,54 @@ export default function AdminReplacementPartsPage() {
         </div>
       )}
 
+      {readyClaims.length > 0 && (
+        <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-emerald-100">
+                Ready for customer ({readyClaims.length})
+              </h2>
+              <p className="text-sm text-emerald-200/80">
+                Replacements received from Yakuza. Hand them back to the customer.
+              </p>
+            </div>
+            <Button onClick={() => setReturnClaims(readyClaims)}>
+              <UserCheck className="h-4 w-4" />
+              Return all to customers
+            </Button>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-emerald-500/20">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-emerald-500/10 text-emerald-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Customer</th>
+                  <th className="px-4 py-2 font-medium">New items</th>
+                  <th className="px-4 py-2 font-medium">From company</th>
+                  <th className="px-4 py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-emerald-500/10 text-emerald-50">
+                {readyClaims.map((claim) => (
+                  <tr key={claim.id}>
+                    <td className="px-4 py-2 font-medium">{claim.customerName}</td>
+                    <td className="px-4 py-2">{summarizeNewItems(claim)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      {formatReplacementDate(claim.companyReceivedDate)}
+                    </td>
+                    <td className="px-4 py-2">
+                      <Button size="sm" onClick={() => setReturnClaims([claim])}>
+                        <UserCheck className="h-4 w-4" />
+                        Return to customer
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
         <div className="w-52">
           <Select
@@ -536,6 +603,16 @@ export default function AdminReplacementPartsPage() {
                             <Truck className="h-4 w-4" />
                           </Button>
                         )}
+                        {isReadyForCustomer(claim) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Return replacement to customer"
+                            onClick={() => setReturnClaims([claim])}
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+                        )}
                         {isPendingFromCompany(claim) && (
                           <Button
                             variant="ghost"
@@ -616,6 +693,17 @@ export default function AdminReplacementPartsPage() {
             refreshClaims();
           }}
           onCancel={() => setSendClaims(undefined)}
+        />
+      )}
+
+      {returnClaims && returnClaims.length > 0 && (
+        <ReturnToCustomerForm
+          claims={returnClaims}
+          onSuccess={() => {
+            setReturnClaims(undefined);
+            refreshClaims();
+          }}
+          onCancel={() => setReturnClaims(undefined)}
         />
       )}
     </div>

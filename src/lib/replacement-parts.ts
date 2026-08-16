@@ -134,6 +134,7 @@ export type SerializedReplacementClaim = {
   companyReceivedDate: string | null;
   companyInvoiceNumber: string | null;
   companyDeliveryNote: string | null;
+  returnedToCustomerDate: string | null;
   notes: string | null;
   items: SerializedReplacementClaimItem[];
   createdAt: string;
@@ -199,6 +200,17 @@ export function filterAtShowroomClaims(
   return claims.filter(isAtShowroom);
 }
 
+/** Replacement has arrived from company and is waiting to be given to the customer */
+export function isReadyForCustomer(claim: SerializedReplacementClaim): boolean {
+  return claim.status === "received_from_company" && !isPendingFromCompany(claim);
+}
+
+export function filterReadyForCustomerClaims(
+  claims: SerializedReplacementClaim[],
+): SerializedReplacementClaim[] {
+  return claims.filter(isReadyForCustomer);
+}
+
 function normalizeItemType(value: string): ReplacementItemType {
   return REPLACEMENT_ITEM_TYPES.includes(value as ReplacementItemType)
     ? (value as ReplacementItemType)
@@ -261,6 +273,7 @@ export function serializeReplacementClaim(claim: {
   companyReceivedDate?: Date | null;
   companyInvoiceNumber?: string | null;
   companyDeliveryNote?: string | null;
+  returnedToCustomerDate?: Date | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -288,6 +301,7 @@ export function serializeReplacementClaim(claim: {
     companyReceivedDate: formatOptionalDate(claim.companyReceivedDate),
     companyInvoiceNumber: claim.companyInvoiceNumber ?? null,
     companyDeliveryNote: claim.companyDeliveryNote ?? null,
+    returnedToCustomerDate: formatOptionalDate(claim.returnedToCustomerDate),
     notes: claim.notes,
     items: claim.items
       .slice()

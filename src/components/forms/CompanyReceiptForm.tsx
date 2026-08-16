@@ -48,6 +48,7 @@ interface CompanyReceiptFormProps {
 export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceiptFormProps) {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ItemDraft[]>([createEmptyItem(0)]);
+  const [returnNow, setReturnNow] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const oldItems = claim.items.filter((item) => item.side === "old");
 
@@ -79,6 +80,10 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
       companyReceivedDate: formData.get("companyReceivedDate"),
       companyInvoiceNumber: formData.get("companyInvoiceNumber") || undefined,
       companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
+      returnToCustomerNow: returnNow,
+      returnedToCustomerDate: returnNow
+        ? formData.get("returnedToCustomerDate") || formData.get("companyReceivedDate")
+        : undefined,
       items: items.map((item, index) => ({
         itemType: item.itemType,
         side: "new" as const,
@@ -105,7 +110,9 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
         return;
       }
 
-      toast.success("Company receipt recorded");
+      toast.success(
+        returnNow ? "Received from company and returned to customer" : "Company receipt recorded",
+      );
       onSuccess();
     } catch {
       toast.error("Something went wrong");
@@ -161,6 +168,32 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
         <p className="text-xs text-slate-400">
           Invoice and delivery note are optional — use whichever document you received from Yakuza.
         </p>
+
+        <label className="flex items-start gap-2 rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            checked={returnNow}
+            onChange={(e) => setReturnNow(e.target.checked)}
+            className="mt-0.5 rounded border-slate-600 bg-slate-900 text-red-600 focus:ring-red-500"
+          />
+          <span>
+            Also return this replacement to the customer now
+            <span className="mt-1 block text-xs text-slate-400">
+              Use this when the customer collects the new item on the same visit.
+            </span>
+          </span>
+        </label>
+
+        {returnNow && (
+          <Input
+            id="returnedToCustomerDate"
+            name="returnedToCustomerDate"
+            type="date"
+            label="Returned to customer date"
+            defaultValue={today}
+            required
+          />
+        )}
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
