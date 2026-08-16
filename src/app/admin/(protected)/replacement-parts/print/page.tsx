@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   LETTER_ELIGIBLE_STATUSES,
+  isMovementReportKind,
   parseReplacementDateInput,
   serializeReplacementClaim,
 } from "@/lib/replacement-parts";
@@ -28,7 +29,8 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
   }
 
   const { from, to, auto, ids, letter, report, itemType } = await searchParams;
-  const isMovementReport = report === "movement";
+  const reportKind = isMovementReportKind(report) ? report : null;
+  const isStageReport = reportKind != null;
 
   const receivedDate: { gte?: Date; lte?: Date } = {};
   if (from) receivedDate.gte = parseReplacementDateInput(from);
@@ -54,7 +56,7 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     if (Object.keys(receivedDate).length > 0) {
       where.receivedDate = receivedDate;
     }
-    if (letter === "1" && !isMovementReport) {
+    if (letter === "1" && !isStageReport) {
       where.status = { in: [...LETTER_ELIGIBLE_STATUSES] };
     }
   }
@@ -73,13 +75,14 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
 
   const claims = records.map(serializeReplacementClaim);
 
-  if (isMovementReport) {
+  if (reportKind) {
     return (
       <MovementReportPrintClient
         claims={claims}
         from={from}
         to={to}
         autoPrint={auto === "1"}
+        kind={reportKind}
       />
     );
   }

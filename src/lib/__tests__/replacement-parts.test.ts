@@ -444,6 +444,13 @@ describe("replacement-parts helpers", () => {
     expect(report.stages.pendingWithUs.battery).toBe(5);
     expect(report.stages.pendingWithUs.total).toBe(5);
     expect(report.rows).toHaveLength(3);
+    expect(buildMovementReport([atShowroom, sent, returned], "sent").rows.map((row) => row.claimId)).toEqual([
+      "claim-sent",
+      "claim-returned",
+    ]);
+    expect(buildMovementReport([atShowroom, sent, returned], "received").rows.map((row) => row.claimId)).toEqual([
+      "claim-returned",
+    ]);
     expect(report.rows[1].location).toBe("Pending at company");
     expect(isReadyForCustomer(returned)).toBe(false);
   });

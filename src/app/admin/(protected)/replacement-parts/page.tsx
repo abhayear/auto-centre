@@ -239,12 +239,12 @@ export default function AdminReplacementPartsPage() {
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
 
-  function openMovementReport() {
+  function openMovementReport(kind: "movement" | "sent" | "received" = "movement") {
     const params = buildListParams(fromDate, toDate, "", itemTypeFilter);
     if (selectedIds.length > 0) {
       params.set("ids", selectedIds.join(","));
     }
-    params.set("report", "movement");
+    params.set("report", kind);
     params.set("auto", "1");
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
@@ -276,9 +276,17 @@ export default function AdminReplacementPartsPage() {
             <FileText className="h-4 w-4" />
             Generate letter
           </Button>
-          <Button variant="outline" onClick={openMovementReport}>
+          <Button variant="outline" onClick={() => openMovementReport()}>
             <ClipboardList className="h-4 w-4" />
             Movement report
+          </Button>
+          <Button variant="outline" onClick={() => openMovementReport("sent")}>
+            <Truck className="h-4 w-4" />
+            Sent to company
+          </Button>
+          <Button variant="outline" onClick={() => openMovementReport("received")}>
+            <PackageCheck className="h-4 w-4" />
+            Received from company
           </Button>
           <Button variant="outline" onClick={handleExportPdf}>
             <FileDown className="h-4 w-4" />

@@ -399,6 +399,25 @@ export const MOVEMENT_STAGE_LABELS: Record<MovementStage, string> = {
   pendingWithUs: "Pending with us",
 };
 
+export const MOVEMENT_REPORT_KINDS = ["movement", "sent", "received"] as const;
+export type MovementReportKind = (typeof MOVEMENT_REPORT_KINDS)[number];
+
+export const MOVEMENT_REPORT_TITLES: Record<MovementReportKind, string> = {
+  movement: "Replaced items movement report",
+  sent: "Sent to company report",
+  received: "Received from company report",
+};
+
+export const MOVEMENT_REPORT_STAGES: Record<MovementReportKind, MovementStage[]> = {
+  movement: [...MOVEMENT_STAGES],
+  sent: ["sentToCompany", "receivedFromCompany", "pendingAtCompany"],
+  received: ["receivedFromCompany", "returnedToCustomer", "pendingWithUs"],
+};
+
+export function isMovementReportKind(value: string | null | undefined): value is MovementReportKind {
+  return MOVEMENT_REPORT_KINDS.includes(value as MovementReportKind);
+}
+
 export type TypeQuantityTotals = Record<ReplacementItemType, number> & { total: number };
 
 export type MovementReportRow = {
@@ -555,13 +574,27 @@ export function claimMovementLocation(claim: SerializedReplacementClaim): string
   return formatReplacementStatus(claim.status);
 }
 
-export function buildMovementReport(claims: SerializedReplacementClaim[]): MovementReport {
+export function claimMatchesMovementReport(
+  claim: SerializedReplacementClaim,
+  kind: MovementReportKind,
+): boolean {
+  if (kind === "movement") return true;
+  const quantities = claimMovementQuantities(claim);
+  if (kind === "sent") return quantities.sentToCompany.total > 0;
+  return quantities.receivedFromCompany.total > 0;
+}
+
+export function buildMovementReport(
+  claims: SerializedReplacementClaim[],
+  kind: MovementReportKind = "movement",
+): MovementReport {
   const stages = Object.fromEntries(
     MOVEMENT_STAGES.map((stage) => [stage, emptyTypeTotals()]),
   ) as Record<MovementStage, TypeQuantityTotals>;
   const rows: MovementReportRow[] = [];
 
   for (const claim of claims) {
+    if (!claimMatchesMovementReport(claim, kind)) continue;
     const quantities = claimMovementQuantities(claim);
 
     for (const stage of MOVEMENT_STAGES) {
