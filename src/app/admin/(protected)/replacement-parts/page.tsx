@@ -63,6 +63,8 @@ function summarizeNewItems(claim: ReplacementClaimView): string {
     )
     .join(", ");
 }
+
+function companyReceiptLabel(claim: ReplacementClaimView): string {
   const parts: string[] = [];
   if (claim.companyInvoiceNumber) parts.push(`Invoice: ${claim.companyInvoiceNumber}`);
   if (claim.companyDeliveryNote) parts.push(`DN: ${claim.companyDeliveryNote}`);
