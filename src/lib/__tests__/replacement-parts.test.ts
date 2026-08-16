@@ -4,16 +4,20 @@ import {
   REPLACEMENT_ITEM_TYPE_OPTIONS,
   REPLACEMENT_STATUS_OPTIONS,
   buildLetterItems,
+  filterPendingFromCompanyClaims,
   formatItemSpecs,
   formatReplacementDate,
   formatReplacementItemType,
   formatReplacementStatus,
+  isPendingFromCompany,
   parseReplacementDateInput,
+  pendingFromCompanySummary,
   replacementStatusVariant,
   serializeReplacementClaim,
 } from "@/lib/replacement-parts";
 import {
   replacementClaimSchema,
+  replacementCompanyReceiptSchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
 
@@ -198,5 +202,119 @@ describe("replacement-parts helpers", () => {
     expect(grouped.charger).toHaveLength(1);
     expect(grouped.motor).toHaveLength(0);
     expect(grouped.battery[0].serialNumber).toBe("SN12345");
+  });
+
+  it("treats sent-to-company claims as pending even without a bill", () => {
+    const claim = serializeReplacementClaim({
+      id: "claim-pending",
+      receivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      customerName: "Mithilesh Shukla",
+      customerPhone: null,
+      billNumber: null,
+      status: "sent_to_company",
+      sentToCompanyDate: new Date("2026-08-16T00:00:00.000Z"),
+      companyReceivedDate: null,
+      companyInvoiceNumber: null,
+      companyDeliveryNote: null,
+      notes: null,
+      createdAt: new Date("2026-08-16T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-16T00:00:00.000Z"),
+      items: [
+        {
+          id: "item-old",
+          itemType: "battery",
+          side: "old",
+          modelCode: "LMKN/F2S/WB/12M",
+          serialNumber: null,
+          ah: 43,
+          voltage: null,
+          quantity: 2,
+          notes: null,
+          sortOrder: 0,
+        },
+      ],
+    });
+
+    expect(isPendingFromCompany(claim)).toBe(true);
+    expect(pendingFromCompanySummary(claim)).toBe("2 items pending from company");
+    expect(filterPendingFromCompanyClaims([claim])).toHaveLength(1);
+  });
+
+  it("keeps partial company receipts on the pending list", () => {
+    const claim = serializeReplacementClaim({
+      id: "claim-partial",
+      receivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      customerName: "Mohini Patel",
+      customerPhone: null,
+      billNumber: null,
+      status: "received_from_company",
+      sentToCompanyDate: new Date("2026-08-10T00:00:00.000Z"),
+      companyReceivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      companyInvoiceNumber: null,
+      companyDeliveryNote: "DN-44",
+      notes: null,
+      createdAt: new Date("2026-08-16T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-16T00:00:00.000Z"),
+      items: [
+        {
+          id: "item-old",
+          itemType: "charger",
+          side: "old",
+          modelCode: "KYKM/A2G/12M",
+          serialNumber: null,
+          ah: null,
+          voltage: "60V",
+          quantity: 2,
+          notes: null,
+          sortOrder: 0,
+        },
+        {
+          id: "item-new",
+          itemType: "charger",
+          side: "new",
+          modelCode: "KYKM/A2G/12M",
+          serialNumber: "NEW-1",
+          ah: null,
+          voltage: "60V",
+          quantity: 1,
+          notes: null,
+          sortOrder: 1,
+        },
+      ],
+    });
+
+    expect(isPendingFromCompany(claim)).toBe(true);
+    expect(pendingFromCompanySummary(claim)).toBe("1 item pending from company");
+  });
+});
+
+describe("company receipt validators", () => {
+  it("accepts a receipt without invoice or delivery note", () => {
+    const result = replacementCompanyReceiptSchema.safeParse({
+      id: "claim-1",
+      companyReceivedDate: "2026-08-16",
+      items: [
+        {
+          itemType: "motor",
+          side: "new",
+          modelCode: "G2S/WB/12M",
+          quantity: 1,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty company dates on a claim update", () => {
+    const result = replacementClaimSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Raju Prasad",
+      sentToCompanyDate: "",
+      companyReceivedDate: "",
+      items: [{ itemType: "controller", side: "old", quantity: 1 }],
+    });
+
+    expect(result.success).toBe(true);
   });
 });

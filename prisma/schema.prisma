@@ -287,19 +287,24 @@ model CashBoxEntry {
 }
 
 model ReplacementClaim {
-  id            String                 @id @default(cuid())
-  receivedDate  DateTime               @db.Date
-  customerName  String
-  customerPhone String?
-  billNumber    String?
-  status        String                 @default("received_from_customer")
-  notes         String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  items         ReplacementClaimItem[]
+  id                    String                 @id @default(cuid())
+  receivedDate          DateTime               @db.Date
+  customerName          String
+  customerPhone         String?
+  billNumber            String?
+  status                String                 @default("received_from_customer")
+  sentToCompanyDate     DateTime?              @db.Date
+  companyReceivedDate   DateTime?              @db.Date
+  companyInvoiceNumber  String?
+  companyDeliveryNote   String?
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  items                 ReplacementClaimItem[]
 
   @@index([receivedDate])
   @@index([status])
+  @@index([sentToCompanyDate])
 }
 
 model ReplacementClaimItem {

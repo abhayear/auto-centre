@@ -127,11 +127,67 @@ export type SerializedReplacementClaim = {
   customerPhone: string | null;
   billNumber: string | null;
   status: ReplacementStatus;
+  sentToCompanyDate: string | null;
+  companyReceivedDate: string | null;
+  companyInvoiceNumber: string | null;
+  companyDeliveryNote: string | null;
   notes: string | null;
   items: SerializedReplacementClaimItem[];
   createdAt: string;
   updatedAt: string;
 };
+
+function formatOptionalDate(date: Date | string | null | undefined): string | null {
+  if (!date) return null;
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+export function sumItemQuantities(
+  items: Pick<SerializedReplacementClaimItem, "side" | "quantity">[],
+  side: ReplacementItemSide,
+): number {
+  return items
+    .filter((item) => item.side === side)
+    .reduce((total, item) => total + (item.quantity ?? 1), 0);
+}
+
+/** Items still waiting to arrive from Yakuza / company */
+export function isPendingFromCompany(claim: SerializedReplacementClaim): boolean {
+  if (claim.status === "cancelled" || claim.status === "closed" || claim.status === "returned_to_customer") {
+    return false;
+  }
+
+  if (claim.status === "sent_to_company") {
+    return true;
+  }
+
+  const oldQty = sumItemQuantities(claim.items, "old");
+  const newQty = sumItemQuantities(claim.items, "new");
+
+  return (
+    (claim.status === "received_from_company" || claim.status === "sent_to_company") &&
+    oldQty > 0 &&
+    newQty < oldQty
+  );
+}
+
+export function pendingFromCompanySummary(claim: SerializedReplacementClaim): string {
+  const oldQty = sumItemQuantities(claim.items, "old");
+  const newQty = sumItemQuantities(claim.items, "new");
+  const waiting = Math.max(oldQty - newQty, 0);
+
+  if (waiting <= 0) {
+    return claim.status === "sent_to_company" ? "Awaiting company shipment" : "—";
+  }
+
+  return `${waiting} item${waiting === 1 ? "" : "s"} pending from company`;
+}
+
+export function filterPendingFromCompanyClaims(
+  claims: SerializedReplacementClaim[],
+): SerializedReplacementClaim[] {
+  return claims.filter(isPendingFromCompany);
+}
 
 function normalizeItemType(value: string): ReplacementItemType {
   return REPLACEMENT_ITEM_TYPES.includes(value as ReplacementItemType)
@@ -191,6 +247,10 @@ export function serializeReplacementClaim(claim: {
   customerPhone: string | null;
   billNumber: string | null;
   status: string;
+  sentToCompanyDate?: Date | null;
+  companyReceivedDate?: Date | null;
+  companyInvoiceNumber?: string | null;
+  companyDeliveryNote?: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -214,6 +274,10 @@ export function serializeReplacementClaim(claim: {
     customerPhone: claim.customerPhone,
     billNumber: claim.billNumber,
     status: normalizeStatus(claim.status),
+    sentToCompanyDate: formatOptionalDate(claim.sentToCompanyDate),
+    companyReceivedDate: formatOptionalDate(claim.companyReceivedDate),
+    companyInvoiceNumber: claim.companyInvoiceNumber ?? null,
+    companyDeliveryNote: claim.companyDeliveryNote ?? null,
     notes: claim.notes,
     items: claim.items
       .slice()

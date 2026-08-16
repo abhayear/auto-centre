@@ -104,6 +104,10 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
       customerPhone: formData.get("customerPhone") || undefined,
       billNumber: formData.get("billNumber") || undefined,
       status: formData.get("status") || "received_from_customer",
+      sentToCompanyDate: formData.get("sentToCompanyDate") || undefined,
+      companyReceivedDate: formData.get("companyReceivedDate") || undefined,
+      companyInvoiceNumber: formData.get("companyInvoiceNumber") || undefined,
+      companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
       notes: formData.get("notes") || undefined,
       items: items.map((item, index) => ({
         itemType: item.itemType,
@@ -279,6 +283,42 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             defaultValue={claim?.notes ?? ""}
             className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           />
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-slate-700/50 bg-slate-900/30 p-4">
+          <h3 className="text-sm font-semibold text-white">Company receipt (from Yakuza)</h3>
+          <p className="text-xs text-slate-400">
+            Fill when replacement arrives. Invoice and delivery note are both optional.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              id="sentToCompanyDate"
+              name="sentToCompanyDate"
+              type="date"
+              label="Sent to company date"
+              defaultValue={claim?.sentToCompanyDate ?? ""}
+            />
+            <Input
+              id="companyReceivedDate"
+              name="companyReceivedDate"
+              type="date"
+              label="Received from company date"
+              defaultValue={claim?.companyReceivedDate ?? ""}
+            />
+            <Input
+              id="companyInvoiceNumber"
+              name="companyInvoiceNumber"
+              label="Company invoice / bill no."
+              placeholder="e.g. HR-AR/2526/6585"
+              defaultValue={claim?.companyInvoiceNumber ?? ""}
+            />
+            <Input
+              id="companyDeliveryNote"
+              name="companyDeliveryNote"
+              label="Delivery note no."
+              defaultValue={claim?.companyDeliveryNote ?? ""}
+            />
+          </div>
         </div>
 
         <div className="space-y-3">

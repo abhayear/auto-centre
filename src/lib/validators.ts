@@ -370,6 +370,11 @@ const replacementDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date");
 
+const optionalReplacementDateSchema = z
+  .union([replacementDateSchema, z.literal(""), z.null()])
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
 export const replacementClaimItemSchema = z.object({
   itemType: z.enum(REPLACEMENT_ITEM_TYPES),
   side: z.enum(REPLACEMENT_ITEM_SIDES),
@@ -388,8 +393,20 @@ export const replacementClaimSchema = z.object({
   customerPhone: z.string().trim().optional().or(z.literal("")),
   billNumber: z.string().trim().optional().or(z.literal("")),
   status: z.enum(REPLACEMENT_STATUSES).default("received_from_customer"),
+  sentToCompanyDate: optionalReplacementDateSchema,
+  companyReceivedDate: optionalReplacementDateSchema,
+  companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
+  companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
   items: z.array(replacementClaimItemSchema).min(1, "At least one item is required"),
+});
+
+export const replacementCompanyReceiptSchema = z.object({
+  id: z.string().min(1),
+  companyReceivedDate: replacementDateSchema,
+  companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
+  companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
+  items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),
 });
 
 export const replacementClaimUpdateSchema = replacementClaimSchema.partial().extend({

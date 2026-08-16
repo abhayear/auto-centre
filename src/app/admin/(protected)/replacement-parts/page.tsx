@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileDown, FileText, Package, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
+import { CompanyReceiptForm } from "@/components/forms/CompanyReceiptForm";
 import {
   ReplacementClaimForm,
   type ReplacementClaimView,
@@ -18,6 +19,8 @@ import {
   formatReplacementDate,
   formatReplacementItemType,
   formatReplacementStatus,
+  isPendingFromCompany,
+  pendingFromCompanySummary,
   replacementStatusVariant,
 } from "@/lib/replacement-parts";
 
@@ -46,11 +49,25 @@ function summarizeOldItems(claim: ReplacementClaimView): string {
     .join(", ");
 }
 
+function companyReceiptLabel(claim: ReplacementClaimView): string {
+  const parts: string[] = [];
+  if (claim.companyInvoiceNumber) parts.push(`Invoice: ${claim.companyInvoiceNumber}`);
+  if (claim.companyDeliveryNote) parts.push(`DN: ${claim.companyDeliveryNote}`);
+  if (claim.companyReceivedDate) {
+    parts.push(`Received ${formatReplacementDate(claim.companyReceivedDate)}`);
+  }
+  if (parts.length > 0) return parts.join(" · ");
+  if (isPendingFromCompany(claim)) return pendingFromCompanySummary(claim);
+  return "—";
+}
+
 export default function AdminReplacementPartsPage() {
   const [claims, setClaims] = useState<ReplacementClaimView[]>([]);
+  const [pendingClaims, setPendingClaims] = useState<ReplacementClaimView[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClaim, setEditingClaim] = useState<ReplacementClaimView | undefined>();
+  const [receiptClaim, setReceiptClaim] = useState<ReplacementClaimView | undefined>();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -58,6 +75,7 @@ export default function AdminReplacementPartsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,10 +83,15 @@ export default function AdminReplacementPartsPage() {
     async function load() {
       setLoading(true);
       const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-      const res = await fetch(`/api/replacement-parts?${params}`);
-      const data = await res.json();
+      const [listRes, pendingRes] = await Promise.all([
+        fetch(`/api/replacement-parts?${params}`),
+        fetch("/api/replacement-parts?pendingFromCompany=1"),
+      ]);
+      const listData = await listRes.json();
+      const pendingData = await pendingRes.json();
       if (active) {
-        setClaims(Array.isArray(data) ? data : []);
+        setClaims(Array.isArray(listData) ? listData : []);
+        setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
         setSelectedIds([]);
         setLoading(false);
       }
@@ -82,14 +105,24 @@ export default function AdminReplacementPartsPage() {
 
   async function refreshClaims() {
     const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-    const res = await fetch(`/api/replacement-parts?${params}`);
-    setClaims(await res.json());
+    const [listRes, pendingRes] = await Promise.all([
+      fetch(`/api/replacement-parts?${params}`),
+      fetch("/api/replacement-parts?pendingFromCompany=1"),
+    ]);
+    setClaims(await listRes.json());
+    const pendingData = await pendingRes.json();
+    setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
     setSelectedIds([]);
   }
 
+  const visibleClaims = useMemo(
+    () => (showPendingOnly ? claims.filter(isPendingFromCompany) : claims),
+    [claims, showPendingOnly],
+  );
+
   const allVisibleSelected = useMemo(
-    () => claims.length > 0 && claims.every((item) => selectedIds.includes(item.id)),
-    [claims, selectedIds],
+    () => visibleClaims.length > 0 && visibleClaims.every((item) => selectedIds.includes(item.id)),
+    [visibleClaims, selectedIds],
   );
 
   function toggleSelectAllVisible() {
@@ -97,7 +130,7 @@ export default function AdminReplacementPartsPage() {
       setSelectedIds([]);
       return;
     }
-    setSelectedIds(claims.map((item) => item.id));
+    setSelectedIds(visibleClaims.map((item) => item.id));
   }
 
   function toggleSelected(id: string) {
@@ -153,6 +186,7 @@ export default function AdminReplacementPartsPage() {
       if (res.ok) {
         toast.success("Status updated");
         setClaims((current) => current.map((claim) => (claim.id === id ? data : claim)));
+        refreshClaims();
       } else {
         toast.error(data.error ?? "Failed to update status");
       }
@@ -227,12 +261,61 @@ export default function AdminReplacementPartsPage() {
           setToDate("");
         }}
         selectedCount={selectedIds.length}
-        visibleCount={claims.length}
-        onSelectAllVisible={() => setSelectedIds(claims.map((item) => item.id))}
+        visibleCount={visibleClaims.length}
+        onSelectAllVisible={() => setSelectedIds(visibleClaims.map((item) => item.id))}
         onClearSelection={() => setSelectedIds([])}
         onBulkDelete={() => void handleBulkDelete()}
         bulkDeleting={bulkDeleting}
       />
+
+      {pendingClaims.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-amber-100">
+                Pending from company ({pendingClaims.length})
+              </h2>
+              <p className="text-sm text-amber-200/80">
+                Items sent to Yakuza but not yet fully received back.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setShowPendingOnly((current) => !current)}>
+              {showPendingOnly ? "Show all claims" : "Filter pending only"}
+            </Button>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-amber-500/20">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-amber-500/10 text-amber-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Customer</th>
+                  <th className="px-4 py-2 font-medium">Faulty items</th>
+                  <th className="px-4 py-2 font-medium">Sent date</th>
+                  <th className="px-4 py-2 font-medium">Pending</th>
+                  <th className="px-4 py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-500/10 text-amber-50">
+                {pendingClaims.map((claim) => (
+                  <tr key={claim.id}>
+                    <td className="px-4 py-2 font-medium">{claim.customerName}</td>
+                    <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      {formatReplacementDate(claim.sentToCompanyDate ?? claim.receivedDate)}
+                    </td>
+                    <td className="px-4 py-2">{pendingFromCompanySummary(claim)}</td>
+                    <td className="px-4 py-2">
+                      <Button size="sm" onClick={() => setReceiptClaim(claim)}>
+                        <PackageCheck className="h-4 w-4" />
+                        Record receipt
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
         <div className="w-52">
@@ -255,12 +338,13 @@ export default function AdminReplacementPartsPage() {
             options={REPLACEMENT_ITEM_TYPE_OPTIONS}
           />
         </div>
-        {(statusFilter || itemTypeFilter) && (
+        {(statusFilter || itemTypeFilter || showPendingOnly) && (
           <Button
             variant="ghost"
             onClick={() => {
               setStatusFilter("");
               setItemTypeFilter("");
+              setShowPendingOnly(false);
             }}
           >
             Clear filters
@@ -268,10 +352,14 @@ export default function AdminReplacementPartsPage() {
         )}
       </div>
 
-      {claims.length === 0 ? (
+      {visibleClaims.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-700/50 bg-slate-800/20 p-10 text-center">
           <Package className="mx-auto mb-3 h-8 w-8 text-slate-500" />
-          <p className="text-slate-400">No replacement claims found for these filters.</p>
+          <p className="text-slate-400">
+            {showPendingOnly
+              ? "No pending items from company for these filters."
+              : "No replacement claims found for these filters."}
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-700/50">
@@ -292,12 +380,13 @@ export default function AdminReplacementPartsPage() {
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Bill No</th>
                 <th className="px-4 py-3 font-medium">Faulty items</th>
+                <th className="px-4 py-3 font-medium">Company receipt</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
-              {claims.map((claim) => {
+              {visibleClaims.map((claim) => {
                 const oldItems = claim.items.filter((item) => item.side === "old");
                 return (
                   <tr key={claim.id} className="text-slate-300">
@@ -327,6 +416,9 @@ export default function AdminReplacementPartsPage() {
                         </p>
                       )}
                     </td>
+                    <td className="px-4 py-3 max-w-xs text-xs text-slate-400">
+                      {companyReceiptLabel(claim)}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="space-y-2">
                         <Badge variant={replacementStatusVariant(claim.status)}>
@@ -343,6 +435,16 @@ export default function AdminReplacementPartsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
+                        {isPendingFromCompany(claim) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Record items received from company"
+                            onClick={() => setReceiptClaim(claim)}
+                          >
+                            <PackageCheck className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -391,6 +493,17 @@ export default function AdminReplacementPartsPage() {
             setShowForm(false);
             setEditingClaim(undefined);
           }}
+        />
+      )}
+
+      {receiptClaim && (
+        <CompanyReceiptForm
+          claim={receiptClaim}
+          onSuccess={() => {
+            setReceiptClaim(undefined);
+            refreshClaims();
+          }}
+          onCancel={() => setReceiptClaim(undefined)}
         />
       )}
     </div>
