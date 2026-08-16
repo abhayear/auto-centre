@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2 } from "lucide-react";
+import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
 import { CompanyReceiptForm } from "@/components/forms/CompanyReceiptForm";
@@ -208,6 +208,16 @@ export default function AdminReplacementPartsPage() {
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
 
+  function openMovementReport() {
+    const params = buildListParams(fromDate, toDate, "", itemTypeFilter);
+    if (selectedIds.length > 0) {
+      params.set("ids", selectedIds.join(","));
+    }
+    params.set("report", "movement");
+    params.set("auto", "1");
+    window.open(`/admin/replacement-parts/print?${params}`, "_blank");
+  }
+
   function handleExportPdf() {
     openLetterPrint(selectedIds.length > 0 ? selectedIds : undefined);
   }
@@ -234,6 +244,10 @@ export default function AdminReplacementPartsPage() {
           <Button variant="outline" onClick={() => openLetterPrint()}>
             <FileText className="h-4 w-4" />
             Generate letter
+          </Button>
+          <Button variant="outline" onClick={openMovementReport}>
+            <ClipboardList className="h-4 w-4" />
+            Movement report
           </Button>
           <Button variant="outline" onClick={handleExportPdf}>
             <FileDown className="h-4 w-4" />

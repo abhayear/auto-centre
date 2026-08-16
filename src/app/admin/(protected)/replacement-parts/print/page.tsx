@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { MovementReportPrintClient } from "@/components/replacement-parts/MovementReportPrintClient";
 import { ReplacementPartsPrintClient } from "@/components/replacement-parts/ReplacementPartsPrintClient";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -15,6 +16,8 @@ type PageProps = {
     auto?: string;
     ids?: string;
     letter?: string;
+    report?: string;
+    itemType?: string;
   }>;
 };
 
@@ -24,7 +27,8 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     redirect("/admin/login");
   }
 
-  const { from, to, auto, ids, letter } = await searchParams;
+  const { from, to, auto, ids, letter, report, itemType } = await searchParams;
+  const isMovementReport = report === "movement";
 
   const receivedDate: { gte?: Date; lte?: Date } = {};
   if (from) receivedDate.gte = parseReplacementDateInput(from);
@@ -41,6 +45,7 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     id?: { in: string[] };
     receivedDate?: { gte?: Date; lte?: Date };
     status?: { in: string[] };
+    items?: { some: { itemType: string; side: string } };
   } = {};
 
   if (idList.length > 0) {
@@ -49,9 +54,13 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     if (Object.keys(receivedDate).length > 0) {
       where.receivedDate = receivedDate;
     }
-    if (letter === "1") {
+    if (letter === "1" && !isMovementReport) {
       where.status = { in: [...LETTER_ELIGIBLE_STATUSES] };
     }
+  }
+
+  if (itemType) {
+    where.items = { some: { itemType, side: "old" } };
   }
 
   const records = await prisma.replacementClaim.findMany({
@@ -63,6 +72,17 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
   });
 
   const claims = records.map(serializeReplacementClaim);
+
+  if (isMovementReport) {
+    return (
+      <MovementReportPrintClient
+        claims={claims}
+        from={from}
+        to={to}
+        autoPrint={auto === "1"}
+      />
+    );
+  }
 
   return (
     <ReplacementPartsPrintClient

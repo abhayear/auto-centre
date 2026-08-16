@@ -355,6 +355,178 @@ export function formatLetterQuantitySummary(
   return `${parts.join(", ")} respectively — Grand total ${totals.total}`;
 }
 
+export const MOVEMENT_STAGES = [
+  "receivedFromCustomer",
+  "sentToCompany",
+  "receivedFromCompany",
+  "returnedToCustomer",
+  "pendingAtCompany",
+  "pendingWithUs",
+] as const;
+export type MovementStage = (typeof MOVEMENT_STAGES)[number];
+
+export const MOVEMENT_STAGE_LABELS: Record<MovementStage, string> = {
+  receivedFromCustomer: "Received from customer",
+  sentToCompany: "Sent to company",
+  receivedFromCompany: "Received from company",
+  returnedToCustomer: "Returned to customer",
+  pendingAtCompany: "Pending at company",
+  pendingWithUs: "Pending with us",
+};
+
+export type TypeQuantityTotals = Record<ReplacementItemType, number> & { total: number };
+
+export type MovementReportRow = {
+  claimId: string;
+  receivedDate: string;
+  customerName: string;
+  customerPhone: string | null;
+  billNumber: string | null;
+  oldItems: string;
+  newItems: string;
+  sentToCompanyDate: string | null;
+  companyReceivedDate: string | null;
+  status: ReplacementStatus;
+  location: string;
+  pendingAtCompany: number;
+  pendingWithUs: number;
+};
+
+export type MovementReport = {
+  stages: Record<MovementStage, TypeQuantityTotals>;
+  rows: MovementReportRow[];
+};
+
+function emptyTypeTotals(): TypeQuantityTotals {
+  return { battery: 0, charger: 0, motor: 0, controller: 0, total: 0 };
+}
+
+function addTypeQuantity(
+  totals: TypeQuantityTotals,
+  itemType: ReplacementItemType,
+  quantity: number,
+) {
+  if (quantity <= 0) return;
+  totals[itemType] += quantity;
+  totals.total += quantity;
+}
+
+export function quantitiesByType(
+  items: Pick<SerializedReplacementClaimItem, "itemType" | "side" | "quantity">[],
+  side: ReplacementItemSide,
+): TypeQuantityTotals {
+  const totals = emptyTypeTotals();
+  for (const item of items) {
+    if (item.side !== side) continue;
+    addTypeQuantity(totals, item.itemType, item.quantity);
+  }
+  return totals;
+}
+
+export function summarizeReplacementItems(
+  items: SerializedReplacementClaimItem[],
+  side: ReplacementItemSide,
+): string {
+  const matching = items.filter((item) => item.side === side);
+  if (matching.length === 0) return "—";
+  return matching
+    .map((item) => {
+      const specs = formatItemSpecs(item);
+      const model = item.modelCode ? ` ${item.modelCode}` : "";
+      const serial = item.serialNumber ? ` / ${item.serialNumber}` : "";
+      const specPart = specs !== "—" ? ` (${specs})` : "";
+      return `${formatReplacementItemType(item.itemType)}${model}${serial}${specPart}`;
+    })
+    .join("; ");
+}
+
+const DISPATCHED_STATUSES: ReplacementStatus[] = [
+  "sent_to_company",
+  "received_from_company",
+  "returned_to_customer",
+  "closed",
+];
+
+const COMPANY_BACK_STATUSES: ReplacementStatus[] = [
+  "received_from_company",
+  "returned_to_customer",
+  "closed",
+];
+
+const RETURNED_STATUSES: ReplacementStatus[] = ["returned_to_customer", "closed"];
+
+export function claimMovementLocation(claim: SerializedReplacementClaim): string {
+  if (claim.status === "cancelled") return "Cancelled";
+  if (RETURNED_STATUSES.includes(claim.status)) return "Returned to customer";
+  if (isPendingFromCompany(claim)) return "Pending at company";
+  if (claim.status === "received_from_company") return "Pending with us";
+  if (claim.status === "sent_to_company") return "Pending at company";
+  if (claim.status === "received_from_customer") return "At showroom (not yet sent)";
+  return formatReplacementStatus(claim.status);
+}
+
+export function buildMovementReport(claims: SerializedReplacementClaim[]): MovementReport {
+  const stages = Object.fromEntries(
+    MOVEMENT_STAGES.map((stage) => [stage, emptyTypeTotals()]),
+  ) as Record<MovementStage, TypeQuantityTotals>;
+  const rows: MovementReportRow[] = [];
+
+  for (const claim of claims) {
+    const oldQty = quantitiesByType(claim.items, "old");
+    const newQty = quantitiesByType(claim.items, "new");
+    const pendingAtCompanyByType = emptyTypeTotals();
+    const pendingWithUsByType = emptyTypeTotals();
+
+    if (claim.status !== "cancelled") {
+      for (const type of LETTER_ITEM_TYPE_ORDER) {
+        addTypeQuantity(stages.receivedFromCustomer, type, oldQty[type]);
+
+        if (DISPATCHED_STATUSES.includes(claim.status)) {
+          addTypeQuantity(stages.sentToCompany, type, oldQty[type]);
+        }
+
+        if (COMPANY_BACK_STATUSES.includes(claim.status)) {
+          addTypeQuantity(stages.receivedFromCompany, type, newQty[type]);
+        }
+
+        if (RETURNED_STATUSES.includes(claim.status)) {
+          addTypeQuantity(stages.returnedToCustomer, type, oldQty[type]);
+        }
+
+        if (claim.status === "sent_to_company") {
+          addTypeQuantity(pendingAtCompanyByType, type, oldQty[type]);
+        } else if (claim.status === "received_from_company") {
+          addTypeQuantity(pendingAtCompanyByType, type, Math.max(oldQty[type] - newQty[type], 0));
+          addTypeQuantity(pendingWithUsByType, type, newQty[type]);
+        }
+      }
+
+      for (const type of LETTER_ITEM_TYPE_ORDER) {
+        addTypeQuantity(stages.pendingAtCompany, type, pendingAtCompanyByType[type]);
+        addTypeQuantity(stages.pendingWithUs, type, pendingWithUsByType[type]);
+      }
+    }
+
+    rows.push({
+      claimId: claim.id,
+      receivedDate: claim.receivedDate,
+      customerName: claim.customerName,
+      customerPhone: claim.customerPhone,
+      billNumber: claim.billNumber,
+      oldItems: summarizeReplacementItems(claim.items, "old"),
+      newItems: summarizeReplacementItems(claim.items, "new"),
+      sentToCompanyDate: claim.sentToCompanyDate,
+      companyReceivedDate: claim.companyReceivedDate,
+      status: claim.status,
+      location: claimMovementLocation(claim),
+      pendingAtCompany: pendingAtCompanyByType.total,
+      pendingWithUs: pendingWithUsByType.total,
+    });
+  }
+
+  return { stages, rows };
+}
+
 export function replacementStatusVariant(
   status: ReplacementStatus,
 ): "default" | "success" | "warning" | "danger" | "info" {

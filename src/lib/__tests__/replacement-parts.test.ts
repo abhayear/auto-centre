@@ -5,6 +5,8 @@ import {
   REPLACEMENT_STATUS_OPTIONS,
   LETTER_ITEM_TYPE_ORDER,
   buildLetterItems,
+  buildMovementReport,
+  claimMovementLocation,
   filterPendingFromCompanyClaims,
   formatLetterQuantitySummary,
   sumLetterQuantities,
@@ -316,6 +318,125 @@ describe("replacement-parts helpers", () => {
 
     expect(isPendingFromCompany(claim)).toBe(true);
     expect(pendingFromCompanySummary(claim)).toBe("1 item pending from company");
+  });
+
+  it("builds a movement report with stage totals and ledger rows", () => {
+    const atShowroom = serializeReplacementClaim({
+      id: "claim-showroom",
+      receivedDate: new Date("2026-08-01T00:00:00.000Z"),
+      customerName: "Sani",
+      customerPhone: "9005682289",
+      billNumber: null,
+      status: "received_from_customer",
+      notes: null,
+      createdAt: new Date("2026-08-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-01T00:00:00.000Z"),
+      items: [
+        {
+          id: "old-battery",
+          itemType: "battery",
+          side: "old",
+          modelCode: "LMKV-F25",
+          serialNumber: null,
+          ah: 43,
+          voltage: null,
+          quantity: 5,
+          notes: null,
+          sortOrder: 0,
+        },
+      ],
+    });
+
+    const sent = serializeReplacementClaim({
+      id: "claim-sent",
+      receivedDate: new Date("2026-08-02T00:00:00.000Z"),
+      customerName: "Satyendra Singh",
+      customerPhone: null,
+      billNumber: "119",
+      status: "sent_to_company",
+      sentToCompanyDate: new Date("2026-08-03T00:00:00.000Z"),
+      notes: null,
+      createdAt: new Date("2026-08-02T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-02T00:00:00.000Z"),
+      items: [
+        {
+          id: "old-charger",
+          itemType: "charger",
+          side: "old",
+          modelCode: "VLN/I24",
+          serialNumber: null,
+          ah: null,
+          voltage: "60V",
+          quantity: 1,
+          notes: null,
+          sortOrder: 0,
+        },
+      ],
+    });
+
+    const returned = serializeReplacementClaim({
+      id: "claim-returned",
+      receivedDate: new Date("2026-08-04T00:00:00.000Z"),
+      customerName: "Rahul Bhagirath",
+      customerPhone: null,
+      billNumber: "172",
+      status: "returned_to_customer",
+      sentToCompanyDate: new Date("2026-08-05T00:00:00.000Z"),
+      companyReceivedDate: new Date("2026-08-10T00:00:00.000Z"),
+      notes: null,
+      createdAt: new Date("2026-08-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-04T00:00:00.000Z"),
+      items: [
+        {
+          id: "old-motor",
+          itemType: "motor",
+          side: "old",
+          modelCode: "MMMM/K2S",
+          serialNumber: "AL-1",
+          ah: null,
+          voltage: null,
+          quantity: 1,
+          notes: null,
+          sortOrder: 0,
+        },
+        {
+          id: "new-motor",
+          itemType: "motor",
+          side: "new",
+          modelCode: "KYKM/M26",
+          serialNumber: "NEW-1",
+          ah: null,
+          voltage: null,
+          quantity: 1,
+          notes: null,
+          sortOrder: 1,
+        },
+      ],
+    });
+
+    const report = buildMovementReport([atShowroom, sent, returned]);
+
+    expect(claimMovementLocation(atShowroom)).toBe("At showroom (not yet sent)");
+    expect(claimMovementLocation(sent)).toBe("Pending at company");
+    expect(claimMovementLocation(returned)).toBe("Returned to customer");
+
+    expect(report.stages.receivedFromCustomer).toEqual({
+      battery: 5,
+      charger: 1,
+      motor: 1,
+      controller: 0,
+      total: 7,
+    });
+    expect(report.stages.sentToCompany.charger).toBe(1);
+    expect(report.stages.sentToCompany.motor).toBe(1);
+    expect(report.stages.sentToCompany.battery).toBe(0);
+    expect(report.stages.receivedFromCompany.motor).toBe(1);
+    expect(report.stages.returnedToCustomer.motor).toBe(1);
+    expect(report.stages.pendingAtCompany.charger).toBe(1);
+    expect(report.stages.pendingAtCompany.battery).toBe(0);
+    expect(report.stages.pendingWithUs.total).toBe(0);
+    expect(report.rows).toHaveLength(3);
+    expect(report.rows[1].location).toBe("Pending at company");
   });
 });
 
