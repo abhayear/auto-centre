@@ -164,11 +164,7 @@ export function isPendingFromCompany(claim: SerializedReplacementClaim): boolean
   const oldQty = sumItemQuantities(claim.items, "old");
   const newQty = sumItemQuantities(claim.items, "new");
 
-  return (
-    (claim.status === "received_from_company" || claim.status === "sent_to_company") &&
-    oldQty > 0 &&
-    newQty < oldQty
-  );
+  return claim.status === "received_from_company" && oldQty > 0 && newQty < oldQty;
 }
 
 export function pendingFromCompanySummary(claim: SerializedReplacementClaim): string {
