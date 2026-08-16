@@ -285,3 +285,35 @@ model CashBoxEntry {
   sortOrder     Int           @default(0)
   createdAt     DateTime      @default(now())
 }
+
+model ReplacementClaim {
+  id            String                 @id @default(cuid())
+  receivedDate  DateTime               @db.Date
+  customerName  String
+  customerPhone String?
+  billNumber    String?
+  status        String                 @default("received_from_customer")
+  notes         String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  items         ReplacementClaimItem[]
+
+  @@index([receivedDate])
+  @@index([status])
+}
+
+model ReplacementClaimItem {
+  id           String           @id @default(cuid())
+  claimId      String
+  claim        ReplacementClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  itemType     String
+  side         String
+  modelCode    String?
+  serialNumber String?
+  ah           Float?
+  voltage      String?
+  quantity     Int              @default(1)
+  notes        String?
+  sortOrder    Int              @default(0)
+  createdAt    DateTime         @default(now())
+}

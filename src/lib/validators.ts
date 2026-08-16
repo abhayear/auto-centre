@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  REPLACEMENT_ITEM_SIDES,
+  REPLACEMENT_ITEM_TYPES,
+  REPLACEMENT_STATUSES,
+  REPLACEMENT_VOLTAGES,
+} from "@/lib/replacement-parts";
 import { SHOWROOM_PAYMENT_MODES } from "@/lib/showroom-walk-ins";
 
 export function formatZodErrors(error: z.ZodError) {
@@ -358,6 +364,41 @@ export const showroomWalkInSchema = z.object({
 
 export const showroomWalkInUpdateSchema = showroomWalkInSchema.partial().extend({
   id: z.string().min(1),
+});
+
+const replacementDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date");
+
+export const replacementClaimItemSchema = z.object({
+  itemType: z.enum(REPLACEMENT_ITEM_TYPES),
+  side: z.enum(REPLACEMENT_ITEM_SIDES),
+  modelCode: z.string().trim().optional().or(z.literal("")),
+  serialNumber: z.string().trim().optional().or(z.literal("")),
+  ah: z.coerce.number().positive().optional().nullable(),
+  voltage: z.enum(REPLACEMENT_VOLTAGES).optional().nullable(),
+  quantity: z.coerce.number().int().min(1).default(1),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+});
+
+export const replacementClaimSchema = z.object({
+  receivedDate: replacementDateSchema,
+  customerName: z.string().trim().min(2, "Customer name is required"),
+  customerPhone: z.string().trim().optional().or(z.literal("")),
+  billNumber: z.string().trim().optional().or(z.literal("")),
+  status: z.enum(REPLACEMENT_STATUSES).default("received_from_customer"),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  items: z.array(replacementClaimItemSchema).min(1, "At least one item is required"),
+});
+
+export const replacementClaimUpdateSchema = replacementClaimSchema.partial().extend({
+  id: z.string().min(1),
+});
+
+export const replacementStatusUpdateSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(REPLACEMENT_STATUSES),
 });
 
 export type VehicleInput = z.infer<typeof vehicleSchema>;
