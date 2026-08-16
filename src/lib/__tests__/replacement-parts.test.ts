@@ -3,8 +3,11 @@ import {
   REPLACEMENT_COMPANY,
   REPLACEMENT_ITEM_TYPE_OPTIONS,
   REPLACEMENT_STATUS_OPTIONS,
+  LETTER_ITEM_TYPE_ORDER,
   buildLetterItems,
   filterPendingFromCompanyClaims,
+  formatLetterQuantitySummary,
+  sumLetterQuantities,
   formatItemSpecs,
   formatReplacementDate,
   formatReplacementItemType,
@@ -202,6 +205,34 @@ describe("replacement-parts helpers", () => {
     expect(grouped.charger).toHaveLength(1);
     expect(grouped.motor).toHaveLength(0);
     expect(grouped.battery[0].serialNumber).toBe("SN12345");
+    expect(sumLetterQuantities(grouped)).toEqual({
+      battery: 1,
+      charger: 1,
+      motor: 0,
+      controller: 0,
+      total: 2,
+    });
+  });
+
+  it("sums letter quantities by item type, not row count", () => {
+    const totals = sumLetterQuantities({
+      battery: [{ quantity: 5 }, { quantity: 2 }],
+      charger: [{ quantity: 3 }],
+      controller: [{ quantity: 1 }],
+      motor: [{ quantity: 2 }],
+    });
+
+    expect(totals).toEqual({
+      battery: 7,
+      charger: 3,
+      motor: 2,
+      controller: 1,
+      total: 13,
+    });
+    expect(LETTER_ITEM_TYPE_ORDER).toEqual(["battery", "charger", "motor", "controller"]);
+    expect(formatLetterQuantitySummary(totals)).toBe(
+      "Battery 7, Charger 3, Motor 2, Controller 1 respectively — Grand total 13",
+    );
   });
 
   it("treats sent-to-company claims as pending even without a bill", () => {

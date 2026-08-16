@@ -8,11 +8,13 @@ import {
   SITE_PHONE,
 } from "@/lib/constants";
 import {
+  LETTER_ITEM_TYPE_ORDER,
   REPLACEMENT_COMPANY,
-  REPLACEMENT_ITEM_TYPES,
   buildLetterItems,
+  formatLetterQuantitySummary,
   formatReplacementDate,
   formatReplacementItemType,
+  sumLetterQuantities,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
 
@@ -43,10 +45,8 @@ export function ReplacementPartsPrintClient({
           : "All dates";
 
   const groupedItems = buildLetterItems(claims);
-  const totalItems = REPLACEMENT_ITEM_TYPES.reduce(
-    (sum, type) => sum + groupedItems[type].length,
-    0,
-  );
+  const quantityTotals = sumLetterQuantities(groupedItems);
+  const totalItems = quantityTotals.total;
 
   useEffect(() => {
     if (autoPrint) {
@@ -96,15 +96,44 @@ export function ReplacementPartsPrintClient({
         {totalItems === 0 ? (
           <p className="text-slate-400 print:text-black">No faulty items found for this selection.</p>
         ) : (
+          <div>
+          <div className="mb-8 overflow-x-auto rounded-lg border border-slate-700/50 print:border-black">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-800/80 text-slate-200 print:bg-white print:text-black">
+                <tr>
+                  <th className="px-3 py-2 print:border print:border-black">Item</th>
+                  <th className="px-3 py-2 print:border print:border-black">Total qty</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-300 print:text-black">
+                {LETTER_ITEM_TYPE_ORDER.map((itemType) => (
+                  <tr key={itemType}>
+                    <td className="px-3 py-2 print:border print:border-black">
+                      {formatReplacementItemType(itemType)}
+                    </td>
+                    <td className="px-3 py-2 print:border print:border-black">
+                      {quantityTotals[itemType]}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="font-semibold">
+                  <td className="px-3 py-2 print:border print:border-black">Grand total</td>
+                  <td className="px-3 py-2 print:border print:border-black">{quantityTotals.total}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <div className="space-y-8">
-            {REPLACEMENT_ITEM_TYPES.map((itemType) => {
+            {LETTER_ITEM_TYPE_ORDER.map((itemType) => {
               const rows = groupedItems[itemType];
               if (rows.length === 0) return null;
+              const typeTotal = quantityTotals[itemType];
 
               return (
                 <div key={itemType}>
                   <h2 className="mb-3 text-lg font-semibold text-white print:text-black">
-                    {formatReplacementItemType(itemType)}
+                    {formatReplacementItemType(itemType)} — Total {typeTotal}
                   </h2>
                   <div className="overflow-x-auto rounded-lg border border-slate-700/50 print:border-black">
                     <table className="min-w-full text-left text-sm">
@@ -143,6 +172,12 @@ export function ReplacementPartsPrintClient({
                             <td className="px-3 py-2 print:border print:border-black">{row.quantity}</td>
                           </tr>
                         ))}
+                        <tr className="font-semibold text-slate-200 print:text-black">
+                          <td className="px-3 py-2 print:border print:border-black" colSpan={7}>
+                            Total {formatReplacementItemType(itemType)}
+                          </td>
+                          <td className="px-3 py-2 print:border print:border-black">{typeTotal}</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -150,10 +185,11 @@ export function ReplacementPartsPrintClient({
               );
             })}
           </div>
+          </div>
         )}
 
         <div className="mt-10 text-sm text-slate-300 print:text-black">
-          <p>Total faulty items: {totalItems}</p>
+          <p>Total: {formatLetterQuantitySummary(quantityTotals)}</p>
           <p className="mt-8">Thanking you,</p>
           <p className="mt-6 font-semibold">For {SITE_NAME}</p>
           <p className="mt-12">Authorised Signatory</p>

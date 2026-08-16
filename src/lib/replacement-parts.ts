@@ -13,6 +13,9 @@ export const REPLACEMENT_ITEM_TYPE_OPTIONS = REPLACEMENT_ITEM_TYPES.map((value) 
   label: REPLACEMENT_ITEM_TYPE_LABELS[value],
 }));
 
+/** Letter totals and sections: battery, charger, motor, controller */
+export const LETTER_ITEM_TYPE_ORDER = ["battery", "charger", "motor", "controller"] as const;
+
 export const REPLACEMENT_ITEM_SIDES = ["old", "new"] as const;
 export type ReplacementItemSide = (typeof REPLACEMENT_ITEM_SIDES)[number];
 
@@ -324,6 +327,32 @@ export function buildLetterItems(
   }
 
   return grouped;
+}
+
+export function sumLetterQuantities(
+  grouped: Record<ReplacementItemType, Pick<LetterItemRow, "quantity">[]>,
+): Record<ReplacementItemType, number> & { total: number } {
+  const battery = grouped.battery.reduce((sum, row) => sum + row.quantity, 0);
+  const charger = grouped.charger.reduce((sum, row) => sum + row.quantity, 0);
+  const controller = grouped.controller.reduce((sum, row) => sum + row.quantity, 0);
+  const motor = grouped.motor.reduce((sum, row) => sum + row.quantity, 0);
+
+  return {
+    battery,
+    charger,
+    motor,
+    controller,
+    total: battery + charger + motor + controller,
+  };
+}
+
+export function formatLetterQuantitySummary(
+  totals: ReturnType<typeof sumLetterQuantities>,
+): string {
+  const parts = LETTER_ITEM_TYPE_ORDER.map(
+    (type) => `${REPLACEMENT_ITEM_TYPE_LABELS[type]} ${totals[type]}`,
+  );
+  return `${parts.join(", ")} respectively — Grand total ${totals.total}`;
 }
 
 export function replacementStatusVariant(
