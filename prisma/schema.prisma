@@ -142,6 +142,46 @@ model WebVitalsSample {
   @@index([name, createdAt])
 }
 
+model HealthMinuteBucket {
+  id              String   @id @default(cuid())
+  minute          DateTime
+  routeGroup      String
+  statusClass     String
+  count           Int      @default(0)
+  totalDurationMs Int      @default(0)
+
+  @@unique([minute, routeGroup, statusClass])
+  @@index([minute])
+}
+
+model HealthSnapshot {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  source        String
+  overallStatus String
+  payload       Json
+
+  @@index([createdAt])
+}
+
+model HealthAlert {
+  id               String    @id @default(cuid())
+  signal           String
+  severity         String
+  state            String
+  openedAt         DateTime  @default(now())
+  lastSeenAt       DateTime  @default(now())
+  lastSentAt       DateTime?
+  recoveredAt      DateTime?
+  title            String
+  detail           String
+  suggestedAction  String
+  fingerprint      String
+
+  @@index([signal, state])
+  @@index([openedAt])
+}
+
 model Inquiry {
   id        String   @id @default(cuid())
   type      String
