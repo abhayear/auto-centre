@@ -25,13 +25,10 @@ export function BookingConfirmationClient() {
   const bookingId = searchParams.get("id");
 
   const [booking, setBooking] = useState<BookingSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(bookingId));
 
   useEffect(() => {
-    if (!bookingId) {
-      setLoading(false);
-      return;
-    }
+    if (!bookingId) return;
 
     async function load() {
       try {

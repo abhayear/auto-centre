@@ -44,15 +44,12 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
   const bookingId = searchParams.get("id");
 
   const [booking, setBooking] = useState<BookingSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(bookingId));
   const [paying, setPaying] = useState(false);
   const [isTestMode, setIsTestMode] = useState(initialTestMode);
 
   useEffect(() => {
-    if (!bookingId) {
-      setLoading(false);
-      return;
-    }
+    if (!bookingId) return;
 
     async function load() {
       try {
