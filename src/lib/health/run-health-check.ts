@@ -1,5 +1,5 @@
 import { prisma as defaultPrisma } from "@/lib/prisma";
-import { planAlertUpdates, type AlertEmailItem, type OpenAlertState } from "@/lib/health/alert-policy";
+import { planAlertUpdates, type OpenAlertState } from "@/lib/health/alert-policy";
 import { buildAlertEmail } from "@/lib/health/alert-email";
 import {
   fetchVercelUsagePercent,
@@ -84,6 +84,9 @@ type Report = {
 type QueryRaw = (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
 type Email = ReturnType<typeof buildAlertEmail>;
 type EmailResult = { sent: boolean; skipped?: string };
+type PreviousSnapshot = {
+  payload?: { facts?: { availabilityOk?: boolean }; availabilityOk?: boolean };
+};
 
 type HealthCheckPrisma = {
   healthSnapshot: {
@@ -95,9 +98,12 @@ type HealthCheckPrisma = {
     findMany(args: unknown): Promise<Bucket[]>;
     deleteMany(args: unknown): Promise<unknown>;
   };
+  siteVisit: {
+    count(args: unknown): Promise<number>;
+  };
   healthAlert: {
     findMany(args: unknown): Promise<StoredAlert[]>;
-    create(args: unknown): Promise<{ id: string }>;
+    upsert(args: unknown): Promise<{ id: string }>;
     update(args: unknown): Promise<unknown>;
   };
 };
@@ -192,24 +198,6 @@ function countBuckets(
   }, 0);
 }
 
-function recommendationEmailItems(recommendations: HealthRecommendation[]): AlertEmailItem[] {
-  return recommendations
-    .filter((recommendation) => recommendation.severity !== "ok")
-    .map((recommendation) => ({
-      kind: "digest" as const,
-      signal: {
-        id: recommendation.title.toLowerCase().includes("database")
-          ? ("database" as const)
-          : ("traffic_spike" as const),
-        label: recommendation.title,
-        value: recommendation.severity,
-        threshold: "System health recommendation",
-        status: recommendation.severity,
-        suggestedAction: recommendation.action,
-      },
-    }));
-}
-
 function defaultDependencies(): HealthCheckDependencies {
   return {
     prisma: defaultPrisma as unknown as HealthCheckPrisma,
@@ -237,6 +225,7 @@ export async function runHealthCheck(
   const now = input.now ?? new Date();
   const siteUrl = (dependencies.env.NEXTAUTH_URL ?? "https://autogalaxy.in").replace(/\/+$/, "");
   const collectorFailures = new Set<MonitorSignalId>();
+  let persistenceFailed = false;
 
   let home: PingResult = { ok: false, ms: 0, status: null };
   let health: PingResult = { ok: false, ms: 0, status: null };
@@ -250,10 +239,15 @@ export async function runHealthCheck(
     collectorFailures.add("response_time");
   }
 
-  const previousSnapshot = (await dependencies.prisma.healthSnapshot.findFirst({
-    orderBy: { createdAt: "desc" },
-    select: { payload: true },
-  })) as { payload?: { facts?: { availabilityOk?: boolean }; availabilityOk?: boolean } } | null;
+  let previousSnapshot: PreviousSnapshot | null = null;
+  try {
+    previousSnapshot = (await dependencies.prisma.healthSnapshot.findFirst({
+      orderBy: { createdAt: "desc" },
+      select: { payload: true },
+    })) as PreviousSnapshot | null;
+  } catch {
+    persistenceFailed = true;
+  }
   const previousAvailability =
     previousSnapshot?.payload?.facts?.availabilityOk ??
     previousSnapshot?.payload?.availabilityOk ??
@@ -271,6 +265,7 @@ export async function runHealthCheck(
       select: { minute: true, routeGroup: true, statusClass: true, count: true },
     });
   } catch {
+    persistenceFailed = true;
     collectorFailures.add("http_5xx");
     collectorFailures.add("api_errors");
     collectorFailures.add("function_failures");
@@ -284,7 +279,17 @@ export async function runHealthCheck(
     to: now,
     status: fiveXx,
   });
-  const httpTotal = countBuckets(buckets, { from: fifteenMinutesAgo, to: now });
+  let html2xx = 0;
+  try {
+    html2xx = await dependencies.prisma.siteVisit.count({
+      where: { visitedAt: { gte: fifteenMinutesAgo, lt: now } },
+    });
+  } catch {
+    persistenceFailed = true;
+    collectorFailures.add("http_5xx");
+  }
+  const httpTotal =
+    countBuckets(buckets, { from: fifteenMinutesAgo, to: now }) + html2xx;
   const apiErrorsCurrent = countBuckets(buckets, {
     from: currentHourStart,
     to: now,
@@ -380,13 +385,13 @@ export async function runHealthCheck(
     visitsSameHourMedian,
     vercelConfigured: vercel.configured,
     vercelPercent: vercel.percent,
-    databaseOk,
+    databaseOk: databaseOk && !persistenceFailed,
     databaseLatencyMs: dbLatencyVital?.numericValue ?? 0,
     databaseConnections: connections.connections,
     databaseMaxConnections: connections.maxConnections,
     collectorFailures: [...collectorFailures],
   };
-  const signals = buildSignalsFromFacts(facts);
+  let signals = buildSignalsFromFacts(facts);
   const recommendations = buildRecommendations({
     dbLatencyMs: facts.databaseLatencyMs,
     visitsLastHour: facts.visitsLastHour,
@@ -395,15 +400,38 @@ export async function runHealthCheck(
     webVitals: report.webVitals,
     databaseOk: facts.databaseOk,
   });
-  const overallStatus = worstStatus([
+  let overallStatus = worstStatus([
     report.overallStatus,
     ...signals.map((signal) => signal.status),
   ]);
 
-  const storedAlerts = await dependencies.prisma.healthAlert.findMany({
-    where: { state: "open" },
-    orderBy: { openedAt: "asc" },
-  });
+  const markPersistenceFailure = () => {
+    persistenceFailed = true;
+    facts.databaseOk = false;
+    signals = signals.map((signal) =>
+      signal.id === "database"
+        ? evaluateDatabase({
+            ok: false,
+            latencyMs: facts.databaseLatencyMs,
+            connections: facts.databaseConnections,
+            maxConnections: facts.databaseMaxConnections,
+          })
+        : signal,
+    );
+    overallStatus = worstStatus([
+      report.overallStatus,
+      ...signals.map((signal) => signal.status),
+    ]);
+  };
+  let storedAlerts: StoredAlert[] = [];
+  try {
+    storedAlerts = await dependencies.prisma.healthAlert.findMany({
+      where: { state: "open" },
+      orderBy: { openedAt: "asc" },
+    });
+  } catch {
+    markPersistenceFailure();
+  }
   const openAlerts: OpenAlertState[] = storedAlerts
     .filter(
       (alert): alert is StoredAlert & { signal: MonitorSignalId; severity: "warning" | "critical" } =>
@@ -427,20 +455,24 @@ export async function runHealthCheck(
     alertPlan.shouldEmail && (!dependencies.env.SMTP_USER || !dependencies.env.SMTP_PASS)
       ? "smtp_not_configured"
       : null;
-  await dependencies.prisma.healthSnapshot.create({
-    data: {
-      createdAt: now,
-      source: input.source,
-      overallStatus,
-      payload: {
-        signals,
-        recommendations,
-        environment: report.environment,
-        facts,
-        emailSkipped,
+  try {
+    await dependencies.prisma.healthSnapshot.create({
+      data: {
+        createdAt: now,
+        source: input.source,
+        overallStatus,
+        payload: {
+          signals,
+          recommendations,
+          environment: report.environment,
+          facts,
+          emailSkipped,
+        },
       },
-    },
-  });
+    });
+  } catch {
+    markPersistenceFailure();
+  }
 
   const existingBySignal = new Map(storedAlerts.map((alert) => [alert.signal, alert]));
   const openIds = new Map<MonitorSignalId, string>();
@@ -448,50 +480,80 @@ export async function runHealthCheck(
     if (signal.status === "ok") continue;
     const existing = existingBySignal.get(signal.id);
     if (existing) {
-      await dependencies.prisma.healthAlert.update({
-        where: { id: existing.id },
-        data: {
-          severity: signal.status,
-          lastSeenAt: now,
-          title: signal.label,
-          detail: signal.detail ?? signal.value,
-          suggestedAction: signal.suggestedAction,
-        },
-      });
-      openIds.set(signal.id, existing.id);
+      try {
+        await dependencies.prisma.healthAlert.update({
+          where: { id: existing.id },
+          data: {
+            severity: signal.status,
+            lastSeenAt: now,
+            title: signal.label,
+            detail: signal.detail ?? signal.value,
+            suggestedAction: signal.suggestedAction,
+          },
+        });
+        openIds.set(signal.id, existing.id);
+      } catch {
+        markPersistenceFailure();
+      }
     } else {
-      const created = await dependencies.prisma.healthAlert.create({
-        data: {
-          signal: signal.id,
-          severity: signal.status,
-          state: "open",
-          openedAt: now,
-          lastSeenAt: now,
-          title: signal.label,
-          detail: signal.detail ?? signal.value,
-          suggestedAction: signal.suggestedAction,
-          fingerprint: `${signal.id}:${now.toISOString()}`,
-        },
-      });
-      openIds.set(signal.id, created.id);
+      const fingerprint = `open:${signal.id}`;
+      try {
+        const created = await dependencies.prisma.healthAlert.upsert({
+          where: { fingerprint },
+          update: {
+            severity: signal.status,
+            lastSeenAt: now,
+            title: signal.label,
+            detail: signal.detail ?? signal.value,
+            suggestedAction: signal.suggestedAction,
+          },
+          create: {
+            signal: signal.id,
+            severity: signal.status,
+            state: "open",
+            openedAt: now,
+            lastSeenAt: now,
+            title: signal.label,
+            detail: signal.detail ?? signal.value,
+            suggestedAction: signal.suggestedAction,
+            fingerprint,
+          },
+        });
+        openIds.set(signal.id, created.id);
+      } catch {
+        markPersistenceFailure();
+      }
     }
   }
   for (const signalId of alertPlan.recover) {
     const existing = existingBySignal.get(signalId);
     if (!existing) continue;
-    await dependencies.prisma.healthAlert.update({
-      where: { id: existing.id },
-      data: { state: "recovered", recoveredAt: now, lastSeenAt: now },
-    });
+    try {
+      await dependencies.prisma.healthAlert.update({
+        where: { id: existing.id },
+        data: {
+          state: "recovered",
+          recoveredAt: now,
+          lastSeenAt: now,
+          fingerprint: `recovered:${existing.id}`,
+        },
+      });
+    } catch {
+      markPersistenceFailure();
+    }
   }
 
   await Promise.all([
-    dependencies.prisma.healthMinuteBucket.deleteMany({
-      where: { minute: { lt: new Date(now.getTime() - 8 * DAY_MS) } },
-    }),
-    dependencies.prisma.healthSnapshot.deleteMany({
-      where: { createdAt: { lt: new Date(now.getTime() - 30 * DAY_MS) } },
-    }),
+    dependencies.prisma.healthMinuteBucket
+      .deleteMany({
+        where: { minute: { lt: new Date(now.getTime() - 8 * DAY_MS) } },
+      })
+      .catch(markPersistenceFailure),
+    dependencies.prisma.healthSnapshot
+      .deleteMany({
+        where: { createdAt: { lt: new Date(now.getTime() - 30 * DAY_MS) } },
+      })
+      .catch(markPersistenceFailure),
   ]);
 
   let emailed = false;
@@ -500,10 +562,10 @@ export async function runHealthCheck(
       emailSkipped = "smtp_not_configured";
     } else {
       try {
-        const items = [...alertPlan.emailItems, ...recommendationEmailItems(recommendations)];
         const result = await dependencies.sendHealthEmail(
           buildAlertEmail({
-            items,
+            items: alertPlan.emailItems,
+            recommendations,
             digest: input.digest,
             overallStatus,
             siteUrl,
@@ -522,10 +584,14 @@ export async function runHealthCheck(
       if (item.signal.status === "ok") continue;
       const id = openIds.get(item.signal.id);
       if (!id) continue;
-      await dependencies.prisma.healthAlert.update({
-        where: { id },
-        data: { lastSentAt: now },
-      });
+      try {
+        await dependencies.prisma.healthAlert.update({
+          where: { id },
+          data: { lastSentAt: now },
+        });
+      } catch {
+        markPersistenceFailure();
+      }
     }
   }
 

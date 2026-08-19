@@ -176,7 +176,7 @@ model HealthAlert {
   title            String
   detail           String
   suggestedAction  String
-  fingerprint      String
+  fingerprint      String    @unique
 
   @@index([signal, state])
   @@index([openedAt])

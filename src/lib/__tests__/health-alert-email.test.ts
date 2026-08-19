@@ -38,11 +38,19 @@ describe("buildAlertEmail", () => {
   it("uses Recovered when all items are recovered", () => {
     const email = buildAlertEmail({
       items: [{ kind: "recovered", signal: { ...warning, status: "ok", suggestedAction: "No action required." } }],
+      recommendations: [
+        {
+          severity: "warning",
+          title: "Traffic is high",
+          action: "Review traffic sources.",
+        },
+      ],
       digest: false,
       overallStatus: "ok",
       siteUrl: "https://autogalaxy.in",
     });
     expect(email.subject).toBe("[Auto Galaxy] Recovered: Site availability");
     expect(email.text).toContain("no further action unless it returns");
+    expect(email.text).toContain("Traffic is high");
   });
 });

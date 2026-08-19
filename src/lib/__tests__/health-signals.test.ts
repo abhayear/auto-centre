@@ -12,6 +12,26 @@ import {
 } from "@/lib/health/signals";
 
 describe("suggested actions", () => {
+  it("matches the monitoring specification verbatim", () => {
+    expect(SUGGESTED_ACTIONS).toEqual({
+      availability:
+        "Check the latest Vercel deployment and DNS for autogalaxy.in. Confirm `/api/health`.",
+      response_time:
+        "Check Neon latency on Cloud Vitals, then Vercel function duration and cold starts.",
+      http_5xx:
+        "Open Vercel function logs for 5xx. Roll back the last deploy if the spike started then.",
+      api_errors:
+        "Identify the failing route group from the snapshot. Check database, auth, and env for that route.",
+      function_failures:
+        "Inspect that function in Vercel. Redeploy or raise memory/timeout if duration is maxed.",
+      traffic_spike:
+        "Watch Vercel and Neon limits. Pause ads or campaigns if usage is also high.",
+      vercel_usage: "Upgrade the Vercel plan or cut bandwidth / function duration.",
+      database:
+        "Check Neon status, pooling (`DATABASE_URL` pooler), and connection limit. Restart compute only if Neon shows idle-fail.",
+    });
+  });
+
   it("has a non-empty action for every signal id", () => {
     for (const id of MONITOR_SIGNAL_IDS) {
       expect(SUGGESTED_ACTIONS[id].length).toBeGreaterThan(10);

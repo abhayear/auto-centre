@@ -42,9 +42,13 @@ function fakePrisma() {
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    siteVisit: {
+      count: vi.fn().mockResolvedValue(0),
+    },
     healthAlert: {
       findMany: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue({ id: "alert-1" }),
+      upsert: vi.fn().mockResolvedValue({ id: "alert-1" }),
       update: vi.fn().mockResolvedValue({}),
     },
   };
@@ -220,5 +224,182 @@ describe("runHealthCheck", () => {
       status: "ok",
       detail: "baseline too small",
     });
+  });
+
+  it("includes HTML 2xx visits in the HTTP 5xx denominator", async () => {
+    const prisma = fakePrisma();
+    prisma.healthMinuteBucket.findMany.mockResolvedValue([
+      {
+        minute: new Date("2026-08-19T03:25:00.000Z"),
+        routeGroup: "/api/bookings",
+        statusClass: "5xx",
+        count: 3,
+      },
+    ]);
+    prisma.siteVisit.count.mockResolvedValue(97);
+
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.signals.find((signal) => signal.id === "http_5xx")).toMatchObject({
+      status: "warning",
+      numericValue: 3,
+    });
+  });
+
+  it.each([
+    "healthSnapshot.findFirst",
+    "healthSnapshot.create",
+    "healthSnapshot.deleteMany",
+    "healthAlert.findMany",
+    "healthAlert.upsert",
+    "healthMinuteBucket.deleteMany",
+  ])("returns a critical database signal when %s fails", async (operation) => {
+    const prisma = fakePrisma();
+    const [model, method] = operation.split(".") as [
+      keyof typeof prisma,
+      "findFirst" | "create" | "deleteMany" | "findMany" | "upsert",
+    ];
+    const target = prisma[model] as Record<string, ReturnType<typeof vi.fn>>;
+    target[method]?.mockRejectedValueOnce(new Error("persistence unavailable"));
+
+    if (method === "upsert") {
+      prisma.healthMinuteBucket.findMany.mockResolvedValue([
+        {
+          minute: new Date("2026-08-19T03:25:00.000Z"),
+          routeGroup: "/api/bookings",
+          statusClass: "5xx",
+          count: 6,
+        },
+      ]);
+    }
+
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.overallStatus).toBe("critical");
+    expect(result.signals.find((signal) => signal.id === "database")?.status).toBe("critical");
+  });
+
+  it("uses one stable fingerprint when opening the same signal", async () => {
+    const prisma = fakePrisma();
+    prisma.healthMinuteBucket.findMany.mockResolvedValue([
+      {
+        minute: new Date("2026-08-19T03:25:00.000Z"),
+        routeGroup: "/api/bookings",
+        statusClass: "5xx",
+        count: 6,
+      },
+    ]);
+
+    await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(prisma.healthAlert.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { fingerprint: "open:http_5xx" },
+        create: expect.objectContaining({ fingerprint: "open:http_5xx" }),
+      }),
+    );
+  });
+
+  it("returns a critical database signal when an alert update fails", async () => {
+    const prisma = fakePrisma();
+    prisma.healthAlert.findMany.mockResolvedValue([
+      {
+        id: "open-availability",
+        signal: "availability",
+        severity: "warning",
+        state: "open",
+        lastSentAt: null,
+      },
+    ]);
+    prisma.healthAlert.update.mockRejectedValueOnce(new Error("persistence unavailable"));
+
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.overallStatus).toBe("critical");
+    expect(result.signals.find((signal) => signal.id === "database")?.status).toBe("critical");
   });
 });

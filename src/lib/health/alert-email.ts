@@ -1,5 +1,5 @@
 import type { AlertEmailItem } from "@/lib/health/alert-policy";
-import type { MetricStatus } from "@/lib/system-health";
+import type { HealthRecommendation, MetricStatus } from "@/lib/system-health";
 
 const LINKS = [
   "Cloud Vitals: https://autogalaxy.in/admin/cloud-vitals",
@@ -9,6 +9,7 @@ const LINKS = [
 
 export function buildAlertEmail(input: {
   items: AlertEmailItem[];
+  recommendations?: HealthRecommendation[];
   digest: boolean;
   overallStatus: MetricStatus;
   siteUrl: string;
@@ -43,12 +44,22 @@ export function buildAlertEmail(input: {
       `Suggested action: ${item.signal.suggestedAction}${recoveredNote}`,
     ].join("\n");
   });
+  const recommendationBlocks = (input.recommendations ?? [])
+    .filter((recommendation) => recommendation.severity !== "ok")
+    .map((recommendation) =>
+      [
+        `${recommendation.title} (recommendation)`,
+        `Status: ${recommendation.severity}`,
+        `Suggested action: ${recommendation.action}`,
+      ].join("\n"),
+    );
 
   const text = [
     `Overall: ${input.overallStatus}`,
     `Site: ${input.siteUrl}`,
     "",
     ...blocks,
+    ...recommendationBlocks,
     "",
     LINKS,
   ].join("\n");

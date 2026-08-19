@@ -84,4 +84,18 @@ describe("/api/ops/health-check", () => {
       digest: false,
     });
   });
+
+  it("returns JSON when the health check fails unexpectedly", async () => {
+    runHealthCheck.mockRejectedValueOnce(new Error("unexpected"));
+
+    const response = await POST(
+      new Request("https://example.com/api/ops/health-check", {
+        method: "POST",
+        headers: { authorization: "Bearer cron-secret" },
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: "health_check_failed" });
+  });
 });
