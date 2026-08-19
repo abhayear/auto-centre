@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { parseGeoFromHeaders, recordSiteVisit } from "@/lib/site-analytics";
 import { getVisitorCount, recordHomePageVisit } from "@/lib/visitor-count";
@@ -6,12 +7,12 @@ const noStoreHeaders = {
   "Cache-Control": "no-store, max-age=0",
 };
 
-export async function GET() {
+ async function getHandler() {
   const data = await getVisitorCount();
   return NextResponse.json(data, { headers: noStoreHeaders });
 }
 
-export async function POST(request: Request) {
+ async function postHandler(request: Request) {
   const geo = parseGeoFromHeaders(request.headers);
 
   await recordSiteVisit({
@@ -24,3 +25,6 @@ export async function POST(request: Request) {
   const data = await recordHomePageVisit();
   return NextResponse.json(data, { headers: noStoreHeaders });
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);

@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -7,7 +8,7 @@ import { formatZodErrors, jobPostingSchema } from "@/lib/validators";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+ async function getHandler(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const job = await prisma.jobPosting.findUnique({ where: { id } });
 
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   return NextResponse.json(job);
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+ async function patchHandler(request: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+ async function deleteHandler(_request: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -64,3 +65,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Failed to delete job posting" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

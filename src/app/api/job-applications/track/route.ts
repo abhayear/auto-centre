@@ -1,10 +1,11 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatStatusLabel } from "@/lib/applicant-tracking";
 import { prisma } from "@/lib/prisma";
 import { applicationTrackSchema, formatZodErrors } from "@/lib/validators";
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const parsed = applicationTrackSchema.parse({
@@ -54,3 +55,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to look up application" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);

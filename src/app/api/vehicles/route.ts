@@ -1,9 +1,10 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validators";
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
   const featured = searchParams.get("featured");
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(vehicles);
 }
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,3 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create vehicle" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);

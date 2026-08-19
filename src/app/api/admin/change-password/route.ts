@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -5,7 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { changePasswordSchema, formatZodErrors } from "@/lib/validators";
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,3 +49,5 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to change password" }, { status: 500 });
   }
 }
+
+export const PATCH = observeRoute(patchHandler);

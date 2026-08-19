@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -5,7 +6,7 @@ import { vehicleSchema } from "@/lib/validators";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+ async function getHandler(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const vehicle = await prisma.vehicle.findUnique({ where: { id } });
 
@@ -16,7 +17,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   return NextResponse.json(vehicle);
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+ async function patchHandler(request: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+ async function deleteHandler(_request: NextRequest, { params }: RouteParams) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,3 +62,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Failed to delete vehicle" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

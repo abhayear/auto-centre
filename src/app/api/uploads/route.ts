@@ -1,8 +1,9 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { isUploadCategory, saveUploadedImage } from "@/lib/image-upload";
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,3 +29,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const POST = observeRoute(postHandler);
