@@ -11,11 +11,11 @@ vi.mock("@/lib/health/record-bucket", () => ({
 import { observeRoute } from "@/lib/health/observe-route";
 import { onRequestError } from "@/instrumentation";
 
-describe("observeRoute", () => {
-  beforeEach(() => {
-    recordMinuteBucket.mockClear();
-  });
+beforeEach(() => {
+  recordMinuteBucket.mockClear();
+});
 
+describe("observeRoute", () => {
   it("records the returned status and elapsed duration", async () => {
     const dateNow = vi.spyOn(Date, "now").mockReturnValue(1_000);
     const handler = observeRoute(async () => new Response(null, { status: 201 }));
@@ -67,20 +67,43 @@ describe("observeRoute", () => {
 });
 
 describe("onRequestError", () => {
-  it("records a zero-duration 500 bucket for the request path", async () => {
+  it.each(["/api/bookings", "/api/ops/health-check"])(
+    "skips API path %s",
+    async (path) => {
+      await onRequestError(
+        new Error("route failed"),
+        { path, method: "GET", headers: {} },
+        {
+          routerKind: "App Router",
+          routePath: path,
+          routeType: "route",
+          revalidateReason: undefined,
+        },
+      );
+
+      expect(recordMinuteBucket).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    "/api/auth",
+    "/api/auth/session",
+    "/api/auth/callback/credentials",
+    "/vehicles",
+  ])("records a zero-duration 500 bucket for path %s", async (path) => {
     await onRequestError(
       new Error("render failed"),
-      { path: "/api/jobs?state=open", method: "GET", headers: {} },
+      { path, method: "GET", headers: {} },
       {
         routerKind: "App Router",
-        routePath: "/api/jobs",
+        routePath: path,
         routeType: "route",
         revalidateReason: undefined,
       },
     );
 
     expect(recordMinuteBucket).toHaveBeenCalledWith({
-      path: "/api/jobs",
+      path,
       status: 500,
       durationMs: 0,
     });
