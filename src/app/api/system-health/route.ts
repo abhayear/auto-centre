@@ -2,8 +2,9 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { collectSystemHealthReport } from "@/lib/system-health-report";
+import { loadHealthDashboard } from "@/lib/health/load-dashboard";
 
- async function getHandler() {
+async function getHandler() {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,7 +12,8 @@ import { collectSystemHealthReport } from "@/lib/system-health-report";
 
   try {
     const report = await collectSystemHealthReport();
-    return NextResponse.json(report);
+    const monitor = await loadHealthDashboard();
+    return NextResponse.json({ ...report, monitor });
   } catch {
     return NextResponse.json(
       { error: "Failed to collect system health report" },
