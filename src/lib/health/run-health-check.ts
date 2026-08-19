@@ -434,6 +434,37 @@ export async function runHealthCheck(
   } catch {
     markPersistenceFailure();
   }
+  try {
+    await dependencies.prisma.healthSnapshot.create({
+      data: {
+        createdAt: now,
+        source: input.source,
+        overallStatus,
+        payload: {
+          signals,
+          recommendations,
+          environment: report.environment,
+          facts,
+          emailSkipped: null,
+        },
+      },
+    });
+  } catch {
+    markPersistenceFailure();
+  }
+  await Promise.all([
+    dependencies.prisma.healthMinuteBucket
+      .deleteMany({
+        where: { minute: { lt: new Date(now.getTime() - 8 * DAY_MS) } },
+      })
+      .catch(markPersistenceFailure),
+    dependencies.prisma.healthSnapshot
+      .deleteMany({
+        where: { createdAt: { lt: new Date(now.getTime() - 30 * DAY_MS) } },
+      })
+      .catch(markPersistenceFailure),
+  ]);
+
   const openAlerts: OpenAlertState[] = storedAlerts
     .filter(
       (alert): alert is StoredAlert & { signal: MonitorSignalId; severity: "warning" | "critical" } =>
@@ -469,24 +500,6 @@ export async function runHealthCheck(
         ? "smtp_not_configured"
         : null;
   };
-  try {
-    await dependencies.prisma.healthSnapshot.create({
-      data: {
-        createdAt: now,
-        source: input.source,
-        overallStatus,
-        payload: {
-          signals,
-          recommendations,
-          environment: report.environment,
-          facts,
-          emailSkipped,
-        },
-      },
-    });
-  } catch {
-    markPersistenceFailure();
-  }
 
   const existingBySignal = new Map(storedAlerts.map((alert) => [alert.signal, alert]));
   const openIds = new Map<MonitorSignalId, string>();
@@ -557,19 +570,6 @@ export async function runHealthCheck(
       markPersistenceFailure();
     }
   }
-
-  await Promise.all([
-    dependencies.prisma.healthMinuteBucket
-      .deleteMany({
-        where: { minute: { lt: new Date(now.getTime() - 8 * DAY_MS) } },
-      })
-      .catch(markPersistenceFailure),
-    dependencies.prisma.healthSnapshot
-      .deleteMany({
-        where: { createdAt: { lt: new Date(now.getTime() - 30 * DAY_MS) } },
-      })
-      .catch(markPersistenceFailure),
-  ]);
 
   let emailed = false;
   if (alertPlan.shouldEmail && emailSkipped == null) {

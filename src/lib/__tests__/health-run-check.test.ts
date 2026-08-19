@@ -451,4 +451,50 @@ describe("runHealthCheck", () => {
       expect.objectContaining({ subject: "[Auto Galaxy] CRITICAL: Database" }),
     );
   });
+
+  it("does not recover a database alert when retention fails after healthy evaluation", async () => {
+    const prisma = fakePrisma();
+    prisma.healthMinuteBucket.deleteMany.mockRejectedValueOnce(
+      new Error("persistence unavailable"),
+    );
+    prisma.healthAlert.findMany.mockResolvedValue([
+      {
+        id: "open-database",
+        signal: "database",
+        severity: "warning",
+        state: "open",
+        lastSentAt: null,
+      },
+    ]);
+
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.signals.find((signal) => signal.id === "database")?.status).toBe("critical");
+    expect(prisma.healthAlert.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ state: "recovered" }),
+      }),
+    );
+  });
 });
