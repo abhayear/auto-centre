@@ -402,4 +402,53 @@ describe("runHealthCheck", () => {
     expect(result.overallStatus).toBe("critical");
     expect(result.signals.find((signal) => signal.id === "database")?.status).toBe("critical");
   });
+
+  it("replans alerts after snapshot persistence makes the database critical", async () => {
+    const prisma = fakePrisma();
+    prisma.healthSnapshot.create.mockRejectedValueOnce(new Error("persistence unavailable"));
+    prisma.healthAlert.findMany.mockResolvedValue([
+      {
+        id: "open-database",
+        signal: "database",
+        severity: "warning",
+        state: "open",
+        lastSentAt: new Date("2026-08-19T03:25:00.000Z"),
+      },
+    ]);
+    const sendHealthEmail = vi.fn().mockResolvedValue({ sent: true });
+
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma,
+        env: { SMTP_USER: "user", SMTP_PASS: "pass" },
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+        sendHealthEmail,
+      },
+    );
+
+    expect(result.signals.find((signal) => signal.id === "database")?.status).toBe("critical");
+    expect(prisma.healthAlert.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ state: "recovered" }),
+      }),
+    );
+    expect(sendHealthEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: "[Auto Galaxy] CRITICAL: Database" }),
+    );
+  });
 });

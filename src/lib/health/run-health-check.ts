@@ -404,6 +404,7 @@ export async function runHealthCheck(
     report.overallStatus,
     ...signals.map((signal) => signal.status),
   ]);
+  let replanAlerts: (() => void) | null = null;
 
   const markPersistenceFailure = () => {
     persistenceFailed = true;
@@ -422,6 +423,7 @@ export async function runHealthCheck(
       report.overallStatus,
       ...signals.map((signal) => signal.status),
     ]);
+    replanAlerts?.();
   };
   let storedAlerts: StoredAlert[] = [];
   try {
@@ -444,7 +446,7 @@ export async function runHealthCheck(
       state: "open",
       lastSentAt: alert.lastSentAt?.toISOString() ?? null,
     }));
-  const alertPlan = planAlertUpdates({
+  let alertPlan = planAlertUpdates({
     now,
     digest: input.digest,
     signals,
@@ -455,6 +457,18 @@ export async function runHealthCheck(
     alertPlan.shouldEmail && (!dependencies.env.SMTP_USER || !dependencies.env.SMTP_PASS)
       ? "smtp_not_configured"
       : null;
+  replanAlerts = () => {
+    alertPlan = planAlertUpdates({
+      now,
+      digest: input.digest,
+      signals,
+      openAlerts,
+    });
+    emailSkipped =
+      alertPlan.shouldEmail && (!dependencies.env.SMTP_USER || !dependencies.env.SMTP_PASS)
+        ? "smtp_not_configured"
+        : null;
+  };
   try {
     await dependencies.prisma.healthSnapshot.create({
       data: {
@@ -525,7 +539,8 @@ export async function runHealthCheck(
       }
     }
   }
-  for (const signalId of alertPlan.recover) {
+  for (const signalId of [...alertPlan.recover]) {
+    if (!alertPlan.recover.includes(signalId)) continue;
     const existing = existingBySignal.get(signalId);
     if (!existing) continue;
     try {
