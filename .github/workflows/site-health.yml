@@ -18,7 +18,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Probe site
         env:
-          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://autogalaxy.in' }}
+          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://auto-centre.vercel.app' }}
         run: |
           set +e
           curl -sS -o /tmp/home.html -w "%{http_code} %{time_total}" --max-time 5 "$SITE_URL/" > /tmp/home.meta
@@ -47,7 +47,7 @@ jobs:
       - name: Run in-app health check
         if: env.down == '0'
         env:
-          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://autogalaxy.in' }}
+          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://auto-centre.vercel.app' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set +e
