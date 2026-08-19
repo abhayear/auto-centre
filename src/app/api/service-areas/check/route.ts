@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { STORE_LOCATION } from "@/lib/constants";
@@ -13,7 +14,7 @@ const defaultCentre: ServiceCentreConfig = {
   label: "Auto Galaxy Service Centre",
 };
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const data = serviceAreaCheckSchema.parse(body);
@@ -80,3 +81,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to check service area" }, { status: 500 });
   }
 }
+
+export const POST = observeRoute(postHandler);

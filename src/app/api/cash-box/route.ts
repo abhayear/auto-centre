@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -39,7 +40,7 @@ function serializeRecord(
   };
 }
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(records.map(serializeRecord));
 }
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -104,3 +105,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create cash box record" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);

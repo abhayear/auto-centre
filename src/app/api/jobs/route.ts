@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePublicCareerPages } from "@/lib/revalidate";
 import { formatZodErrors, jobPostingSchema } from "@/lib/validators";
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   const session = await requireAdmin();
   const all = request.nextUrl.searchParams.get("all") === "true";
 
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -90,7 +91,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+ async function deleteHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -109,3 +110,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Failed to delete job posting" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

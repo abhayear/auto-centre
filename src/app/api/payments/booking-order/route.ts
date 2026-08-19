@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -21,7 +22,7 @@ const bookingOrderByInquirySchema = z.object({
   inquiryId: z.string().trim().min(1),
 });
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -193,3 +194,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create payment order" }, { status: 500 });
   }
 }
+
+export const POST = observeRoute(postHandler);

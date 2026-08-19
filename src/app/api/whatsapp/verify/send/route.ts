@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,7 @@ import {
 } from "@/lib/whatsapp-verification";
 import { isWhatsAppConfigured } from "@/lib/whatsapp-notify";
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const data = whatsappOtpSendSchema.parse(body);
@@ -66,3 +67,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to send verification code" }, { status: 500 });
   }
 }
+
+export const POST = observeRoute(postHandler);

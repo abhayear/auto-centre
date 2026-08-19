@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
@@ -66,7 +67,7 @@ function buildInquiryDateFilter(from?: string | null, to?: string | null) {
   return { createdAt };
 }
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(inquiries);
 }
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const data = inquirySchema.parse(body);
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -225,7 +226,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+ async function deleteHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -250,3 +251,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Failed to delete inquiries" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

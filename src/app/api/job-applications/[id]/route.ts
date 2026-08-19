@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { statusChangeMessage } from "@/lib/applicant-tracking";
@@ -8,7 +9,7 @@ import { formatZodErrors, jobApplicationUpdateSchema } from "@/lib/validators";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+ async function getHandler(_request: NextRequest, context: RouteContext) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +37,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+ async function patchHandler(request: NextRequest, context: RouteContext) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -122,3 +123,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Failed to update application" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);

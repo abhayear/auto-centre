@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { inquiryStatusSchema } from "@/lib/validators";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+ async function getHandler(_request: Request, { params }: Params) {
   const { id } = await params;
 
   const inquiry = await prisma.inquiry.findUnique({
@@ -45,7 +46,7 @@ export async function GET(_request: Request, { params }: Params) {
   });
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+ async function patchHandler(request: Request, { params }: Params) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,7 +70,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+ async function deleteHandler(_request: Request, { params }: Params) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -84,3 +85,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Failed to delete inquiry" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

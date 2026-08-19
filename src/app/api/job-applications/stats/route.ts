@@ -1,9 +1,10 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { APPLICATION_STATUSES } from "@/lib/applicant-tracking";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+ async function getHandler() {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,3 +54,5 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);

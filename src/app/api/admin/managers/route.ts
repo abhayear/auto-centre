@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -6,7 +7,7 @@ import { requireAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createManagerSchema, formatZodErrors, updateManagerSchema } from "@/lib/validators";
 
-export async function GET() {
+ async function getHandler() {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,7 +28,7 @@ export async function GET() {
   return NextResponse.json(managers);
 }
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -123,7 +124,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+ async function deleteHandler(request: NextRequest) {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -142,3 +143,8 @@ export async function DELETE(request: NextRequest) {
   await prisma.adminUser.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
+
+export const GET = observeRoute(getHandler);
+export const POST = observeRoute(postHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

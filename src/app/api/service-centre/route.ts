@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -22,7 +23,7 @@ const defaultConfig = {
   label: "Auto Galaxy Service Centre",
 };
 
-export async function GET() {
+ async function getHandler() {
   const config = await prisma.serviceCentreConfig.findUnique({
     where: { id: "default" },
   });
@@ -30,7 +31,7 @@ export async function GET() {
   return NextResponse.json(config ?? defaultConfig);
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,3 +58,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update service centre" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);

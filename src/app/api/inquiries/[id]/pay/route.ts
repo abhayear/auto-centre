@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyRazorpayPaymentSignature } from "@/lib/booking-payment";
@@ -13,7 +14,7 @@ const payInquirySchema = z.object({
   razorpay_signature: z.string().trim().min(1),
 });
 
-export async function POST(request: NextRequest, { params }: Params) {
+ async function postHandler(request: NextRequest, { params }: Params) {
   const { id } = await params;
 
   try {
@@ -90,3 +91,5 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
   }
 }
+
+export const POST = observeRoute(postHandler);

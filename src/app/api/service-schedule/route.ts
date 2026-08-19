@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -11,7 +12,7 @@ import {
 } from "@/lib/service-schedule-default";
 import { formatZodErrors, serviceScheduleSchema } from "@/lib/validators";
 
-export async function GET(request: NextRequest) {
+ async function getHandler(request: NextRequest) {
   const schedule = await getServiceSchedule();
   const session = await requireAdmin();
   const publicOnly = request.nextUrl.searchParams.get("public") === "true";
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,7 +76,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function PUT() {
+ async function putHandler() {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -106,3 +107,7 @@ export async function PUT() {
     published: row.published,
   });
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);
+export const PUT = observeRoute(putHandler);

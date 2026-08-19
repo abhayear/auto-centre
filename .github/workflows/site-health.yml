@@ -1,0 +1,73 @@
+name: Site health
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Probe site
+        env:
+          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://autogalaxy.in' }}
+        run: |
+          set +e
+          curl -sS -o /tmp/home.html -w "%{http_code} %{time_total}" --max-time 5 "$SITE_URL/" > /tmp/home.meta
+          HOME_EC=$?
+          curl -sS -o /tmp/health.json -w "%{http_code} %{time_total}" --max-time 5 "$SITE_URL/api/health" > /tmp/health.meta
+          HEALTH_EC=$?
+          echo "home=$(cat /tmp/home.meta) ec=$HOME_EC"
+          echo "health=$(cat /tmp/health.meta) ec=$HEALTH_EC"
+          HOME_CODE=$(cut -d' ' -f1 /tmp/home.meta)
+          HEALTH_CODE=$(cut -d' ' -f1 /tmp/health.meta)
+          if [ "$HOME_EC" != "0" ] || [ "$HEALTH_EC" != "0" ] || [ "$HOME_CODE" -ge 400 ] || [ "$HEALTH_CODE" -ge 400 ]; then
+            echo "down=1" >> "$GITHUB_ENV"
+          else
+            echo "down=0" >> "$GITHUB_ENV"
+          fi
+      - name: Email if down
+        if: env.down == '1'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+        run: node scripts/send-health-alert.mjs
+      - name: Run in-app health check
+        if: env.down == '0'
+        env:
+          SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://autogalaxy.in' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set +e
+          HEALTH_CHECK_CODE=$(curl -sS --fail-with-body --max-time 60 -o /tmp/health-check.json -w "%{http_code}" -X POST "$SITE_URL/api/ops/health-check" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "x-health-source: github-actions")
+          HEALTH_CHECK_EC=$?
+          cat /tmp/health-check.json 2>/dev/null || true
+          echo "health_check_http=$HEALTH_CHECK_CODE ec=$HEALTH_CHECK_EC"
+          if [ "$HEALTH_CHECK_EC" != "0" ] || [ "$HEALTH_CHECK_CODE" != "200" ]; then
+            echo "health_check_failed=1" >> "$GITHUB_ENV"
+          else
+            echo "health_check_failed=0" >> "$GITHUB_ENV"
+          fi
+      - name: Email if in-app health check failed
+        if: env.health_check_failed == '1'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+        run: node scripts/send-health-alert.mjs

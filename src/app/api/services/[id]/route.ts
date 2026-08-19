@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +8,7 @@ import { formatZodErrors, serviceSchema } from "@/lib/validators";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+ async function getHandler(_request: Request, { params }: Params) {
   const { id } = await params;
   const service = await prisma.service.findUnique({ where: { id } });
 
@@ -18,7 +19,7 @@ export async function GET(_request: Request, { params }: Params) {
   return NextResponse.json(service);
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+ async function patchHandler(request: Request, { params }: Params) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,7 +49,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+ async function deleteHandler(_request: Request, { params }: Params) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -64,3 +65,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Failed to delete service" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);
+export const DELETE = observeRoute(deleteHandler);

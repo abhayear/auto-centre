@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CloudVitalsAssistant } from "@/components/admin/CloudVitalsAssistant";
 import { getDynamicSuggestedPrompts } from "@/lib/cloud-vitals-advisor";
+import type { MonitorSignal } from "@/lib/health/signals";
 import { statusLabel, type MetricStatus } from "@/lib/system-health";
 
 type VitalMetric = {
@@ -32,6 +33,21 @@ type Recommendation = {
   action: string;
 };
 
+type HealthMonitor = {
+  signals: MonitorSignal[];
+  openAlerts: {
+    id: string;
+    severity: MetricStatus;
+    title: string;
+    detail: string;
+    suggestedAction: string;
+  }[];
+  recentSnapshots: {
+    createdAt: string;
+    overallStatus: MetricStatus;
+  }[];
+};
+
 type HealthReport = {
   generatedAt: string;
   overallStatus: MetricStatus;
@@ -45,6 +61,7 @@ type HealthReport = {
   hourlyTraffic: { hour: string; count: number }[];
   recommendations: Recommendation[];
   cloudLinks: { label: string; href: string; description: string }[];
+  monitor?: HealthMonitor;
 };
 
 function statusBadgeVariant(status: MetricStatus) {
@@ -58,9 +75,108 @@ function statusBadgeVariant(status: MetricStatus) {
   }
 }
 
-function overallIcon(status: MetricStatus) {
-  if (status === "ok") return Activity;
-  return AlertTriangle;
+export function MonitoringAlerts({ monitor }: { monitor: HealthMonitor }) {
+  return (
+    <section className="mb-8 rounded-xl border border-slate-700/50 bg-slate-800/30 p-5">
+      <h2 className="mb-4 flex items-center gap-2 font-semibold text-white">
+        <AlertTriangle className="h-5 w-5 text-red-500" />
+        Monitoring alerts
+      </h2>
+
+      {monitor.openAlerts.length === 0 ? (
+        <p className="mb-6 text-sm text-slate-400">No open alerts.</p>
+      ) : (
+        <ul className="mb-6 grid gap-3 lg:grid-cols-2">
+          {monitor.openAlerts.map((alert) => (
+            <li
+              key={alert.id}
+              className="rounded-lg border border-slate-700/40 bg-slate-900/40 p-4"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge variant={statusBadgeVariant(alert.severity)}>
+                  {statusLabel(alert.severity)}
+                </Badge>
+                <p className="font-medium text-white">{alert.title}</p>
+              </div>
+              <p className="text-sm text-slate-400">{alert.detail}</p>
+              <p className="mt-3 text-sm text-slate-400">
+                <span className="font-semibold text-slate-300">Suggested action</span>:{" "}
+                {alert.suggestedAction}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[48rem] text-left text-sm">
+          <thead className="border-b border-slate-700 text-xs uppercase text-slate-500">
+            <tr>
+              <th className="px-3 py-2 font-medium">Label</th>
+              <th className="px-3 py-2 font-medium">Value</th>
+              <th className="px-3 py-2 font-medium">Threshold</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Suggested action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/50">
+            {monitor.signals.map((signal) => (
+              <tr key={signal.id}>
+                <td className="px-3 py-3 font-medium text-white">{signal.label}</td>
+                <td className="px-3 py-3 text-slate-300">{signal.value}</td>
+                <td className="px-3 py-3 text-slate-400">{signal.threshold}</td>
+                <td className="px-3 py-3">
+                  <Badge variant={statusBadgeVariant(signal.status)}>
+                    {statusLabel(signal.status)}
+                  </Badge>
+                </td>
+                <td className="px-3 py-3 text-slate-400">{signal.suggestedAction}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {monitor.signals.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-slate-500">No monitoring signals yet.</p>
+        ) : null}
+      </div>
+
+      <div className="mt-6 border-t border-slate-700/50 pt-5">
+        <h3 className="mb-3 text-sm font-semibold text-white">Recent snapshots</h3>
+        {monitor.recentSnapshots.length === 0 ? (
+          <p className="text-sm text-slate-500">No snapshots yet.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {monitor.recentSnapshots.map((snapshot) => (
+              <li
+                key={snapshot.createdAt}
+                className="flex items-center gap-2 rounded-lg border border-slate-700/40 bg-slate-900/40 px-3 py-2"
+              >
+                <time className="text-xs text-slate-400" dateTime={snapshot.createdAt}>
+                  {new Date(snapshot.createdAt).toLocaleString("en-IN", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </time>
+                <Badge variant={statusBadgeVariant(snapshot.overallStatus)}>
+                  {statusLabel(snapshot.overallStatus)}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+async function fetchHealthReport(): Promise<HealthReport | null> {
+  try {
+    const response = await fetch("/api/system-health");
+    const data = await response.json();
+    return response.ok ? data : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function AdminCloudVitalsPage() {
@@ -70,16 +186,23 @@ export default function AdminCloudVitalsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/system-health");
-      const data = await res.json();
-      if (res.ok) setReport(data);
+      const nextReport = await fetchHealthReport();
+      if (nextReport) setReport(nextReport);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void fetchHealthReport().then((nextReport) => {
+      if (!active) return;
+      if (nextReport) setReport(nextReport);
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (loading) {
@@ -94,7 +217,6 @@ export default function AdminCloudVitalsPage() {
     return <p className="text-slate-400">Unable to load cloud vitals.</p>;
   }
 
-  const OverallIcon = overallIcon(report.overallStatus);
   const maxTraffic = Math.max(...report.hourlyTraffic.map((row) => row.count), 1);
   const suggestedPrompts = getDynamicSuggestedPrompts({
     generatedAt: report.generatedAt,
@@ -126,15 +248,15 @@ export default function AdminCloudVitalsPage() {
       <div className="mb-8 rounded-xl border border-slate-700/50 bg-slate-800/30 p-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="rounded-full bg-slate-900 p-3">
-            <OverallIcon
-              className={`h-8 w-8 ${
-                report.overallStatus === "ok"
-                  ? "text-green-400"
-                  : report.overallStatus === "warning"
-                    ? "text-yellow-400"
-                    : "text-red-400"
-              }`}
-            />
+            {report.overallStatus === "ok" ? (
+              <Activity className="h-8 w-8 text-green-400" />
+            ) : (
+              <AlertTriangle
+                className={`h-8 w-8 ${
+                  report.overallStatus === "warning" ? "text-yellow-400" : "text-red-400"
+                }`}
+              />
+            )}
           </div>
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-3">
@@ -157,6 +279,8 @@ export default function AdminCloudVitalsPage() {
           </div>
         </div>
       </div>
+
+      {report.monitor ? <MonitoringAlerts monitor={report.monitor} /> : null}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {report.vitals.map((vital) => (

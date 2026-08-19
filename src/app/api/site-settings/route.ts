@@ -1,3 +1,4 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
@@ -10,7 +11,7 @@ import {
 } from "@/lib/site-settings";
 import { formatZodErrors, siteSettingsSchema } from "@/lib/validators";
 
-export async function GET() {
+ async function getHandler() {
   const settings = await getSiteSettings();
   return NextResponse.json(settings, {
     headers: {
@@ -19,7 +20,7 @@ export async function GET() {
   });
 }
 
-export async function PATCH(request: NextRequest) {
+ async function patchHandler(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,3 +77,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update site settings" }, { status: 500 });
   }
 }
+
+export const GET = observeRoute(getHandler);
+export const PATCH = observeRoute(patchHandler);

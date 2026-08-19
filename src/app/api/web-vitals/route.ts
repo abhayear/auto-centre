@@ -1,9 +1,10 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { recordWebVitalSample } from "@/lib/system-health-report";
 import { formatZodErrors, webVitalsSchema } from "@/lib/validators";
 
-export async function POST(request: NextRequest) {
+ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const data = webVitalsSchema.parse(body);
@@ -26,3 +27,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to record web vital" }, { status: 500 });
   }
 }
+
+export const POST = observeRoute(postHandler);

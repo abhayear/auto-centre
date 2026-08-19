@@ -1,7 +1,8 @@
+import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+ async function getHandler() {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return NextResponse.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -12,3 +13,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = observeRoute(getHandler);
