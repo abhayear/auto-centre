@@ -28,6 +28,7 @@ import {
   type MetricStatus,
   type WebVitalSummary,
 } from "@/lib/system-health";
+import { sendHealthAlertEmail } from "@/lib/health/send-smtp";
 
 const COLLECTOR_FAILED_DETAIL = "collector failed, retry next run";
 const MINUTE_MS = 60_000;
@@ -219,6 +220,7 @@ function defaultDependencies(): HealthCheckDependencies {
     collectReport: collectSystemHealthReport,
     readConnections: readDatabaseConnections,
     fetchVercelUsage: fetchVercelUsagePercent,
+    sendHealthEmail: (email) => sendHealthAlertEmail(email),
   };
 }
 
