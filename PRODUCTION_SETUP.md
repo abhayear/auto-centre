@@ -70,9 +70,9 @@ required by the protected operations endpoint.
 
 ### Scheduled health monitoring
 
-Production schedules `/api/ops/health-check` every 15 minutes and runs its
-daily digest at 03:30 UTC. Vercel Hobby accounts only run the daily job;
-GitHub Actions still covers health checks every 5 minutes.
+Vercel runs the daily digest at 03:30 UTC (`/api/ops/health-check?digest=1`).
+Frequent probes (every 5 minutes) come from the GitHub Actions
+`site-health.yml` workflow — Vercel Hobby only allows one cron job per day.
 
 Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `CRON_SECRET` as
 GitHub repository secrets. Add the GitHub repository variable `NEXTAUTH_URL`
