@@ -14,7 +14,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # Skip postinstall prisma generate — this job only needs nodemailer for down emails.
+      - run: npm ci --ignore-scripts
       - name: Probe site
         env:
           SITE_URL: ${{ vars.NEXTAUTH_URL || 'https://autogalaxy.in' }}
