@@ -38,6 +38,24 @@ Follow these steps in order. Your repo is already on GitHub and CI is passing.
 | `ADMIN_EMAIL` | `admin@autogalaxy.in` |
 | `ADMIN_PASSWORD` | *(choose a strong password — used only for seeding)*
 
+### Monitoring and alerting environment variables
+
+| Name | Value |
+|------|--------|
+| `CRON_SECRET` | random 32+ byte string |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | Gmail address |
+| `SMTP_PASS` | Gmail app password |
+| `ALERT_EMAIL` | `mr.abhaysachan@gmail.com` |
+| `VERCEL_API_TOKEN` | optional, for usage % |
+| `VERCEL_TEAM_ID` | optional |
+| `VERCEL_PROJECT_ID` | optional |
+
+`CRON_SECRET` must exist in the Vercel project environment. Vercel then
+automatically sends `Authorization: Bearer $CRON_SECRET` with cron requests, as
+required by the protected operations endpoint.
+
 5. **Framework Preset:** Next.js (auto-detected)
 6. **Build Command:** leave default (`npm run build:prod` from vercel.json)
 7. Click **Deploy**
@@ -49,6 +67,27 @@ Follow these steps in order. Your repo is already on GitHub and CI is passing.
 1. Vercel → your project → **Settings** → **Environment Variables**
 2. Edit `NEXTAUTH_URL` to your **exact** Vercel URL (with `https://`)
 3. **Redeploy** (Deployments → ⋯ → Redeploy)
+
+### Scheduled health monitoring
+
+Production schedules `/api/ops/health-check` every 15 minutes and runs its
+daily digest at 03:30 UTC. Vercel Hobby accounts only run the daily job;
+GitHub Actions still covers health checks every 5 minutes.
+
+Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `CRON_SECRET` as
+GitHub repository secrets. Add the GitHub repository variable `NEXTAUTH_URL`
+with the value `https://autogalaxy.in`.
+
+After deployment, create a Cursor automation that runs every hour with these
+instructions:
+
+> GET `https://autogalaxy.in/api/health`. If the response is non-200, fail the
+> run and include the suggested action from the availability row. A 200
+> response completes the availability check.
+
+Do not put `CRON_SECRET` or SMTP passwords in a Cursor automation prompt. The
+automation uses the public health endpoint only; it must not call the protected
+operations endpoint.
 
 ---
 
