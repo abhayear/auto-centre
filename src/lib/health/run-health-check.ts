@@ -155,7 +155,9 @@ export function buildSignalsFromFacts(facts: HealthCheckFacts): MonitorSignal[] 
     }),
   ];
 
-  return signals.map((signal) => (failed.has(signal.id) ? collectorFailed(signal) : signal));
+  return signals.map((signal) =>
+    signal.id !== "database" && failed.has(signal.id) ? collectorFailed(signal) : signal,
+  );
 }
 
 function numberFromVital(report: Report, id: string, fallback = 0): number {
@@ -310,23 +312,21 @@ export async function runHealthCheck(
   try {
     report = await dependencies.collectReport();
   } catch {
-    collectorFailures.add("database");
     report = {
-      overallStatus: "warning",
+      overallStatus: "critical",
       environment: {
         nodeVersion: process.version,
         vercelRegion: dependencies.env.VERCEL_REGION ?? null,
         vercelEnv: dependencies.env.VERCEL_ENV ?? null,
         siteUrl,
       },
-      vitals: [],
+      vitals: [{ id: "db-latency", value: "Unreachable", status: "critical" }],
       webVitals: [],
       recommendations: [],
     };
   }
 
   const connections = await dependencies.readConnections(dependencies.queryRaw);
-  if (connections.error) collectorFailures.add("database");
 
   const vercel = await dependencies.fetchVercelUsage(dependencies.env, dependencies.fetchFn);
   if (vercel.error) collectorFailures.add("vercel_usage");
@@ -342,13 +342,17 @@ export async function runHealthCheck(
       GROUP BY 1
       ORDER BY 1
     `;
-    visitsSameHourMedian = median(
-      Array.isArray(rows)
-        ? rows
-            .map((row) => Number((row as { count?: unknown }).count))
-            .filter(Number.isFinite)
-        : [],
-    );
+    const populatedCounts = Array.isArray(rows)
+      ? rows
+          .map((row) => Number((row as { count?: unknown }).count))
+          .filter(Number.isFinite)
+          .slice(-7)
+      : [];
+    const sevenDayCounts = [
+      ...populatedCounts,
+      ...Array(Math.max(0, 7 - populatedCounts.length)).fill(0),
+    ];
+    visitsSameHourMedian = median(sevenDayCounts);
   } catch {
     visitsSameHourMedian = 0;
   }
@@ -357,7 +361,8 @@ export async function runHealthCheck(
   const databaseOk =
     dbLatencyVital != null &&
     dbLatencyVital.value !== "Unreachable" &&
-    (dbLatencyVital.value != null || dbLatencyVital.status !== "critical");
+    (dbLatencyVital.value != null || dbLatencyVital.status !== "critical") &&
+    connections.connections != null;
   const facts: HealthCheckFacts = {
     availabilityOk,
     consecutiveFailures,

@@ -31,6 +31,46 @@ function allOkFacts(overrides: Partial<HealthCheckFacts> = {}): HealthCheckFacts
   };
 }
 
+function fakePrisma() {
+  return {
+    healthSnapshot: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: "snapshot-1" }),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    healthMinuteBucket: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    healthAlert: {
+      findMany: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: "alert-1" }),
+      update: vi.fn().mockResolvedValue({}),
+    },
+  };
+}
+
+function healthyReport(visitsLastHour = 10) {
+  return {
+    overallStatus: "ok" as const,
+    environment: { nodeVersion: "test", vercelRegion: null, vercelEnv: null, siteUrl: null },
+    vitals: [
+      { id: "db-latency", numericValue: 50, status: "ok" as const },
+      { id: "traffic-hour", numericValue: visitsLastHour, status: "ok" as const },
+      { id: "traffic-today", numericValue: visitsLastHour, status: "ok" as const },
+      { id: "analytics-rows", numericValue: 10, status: "ok" as const },
+    ],
+    webVitals: [],
+    recommendations: [
+      {
+        severity: "ok" as const,
+        title: "All vitals within safe limits",
+        action: "Keep monitoring.",
+      },
+    ],
+  };
+}
+
 describe("buildSignalsFromFacts", () => {
   it("marks repeated site failure critical without blaming the database", () => {
     const signals = buildSignalsFromFacts(
@@ -86,23 +126,7 @@ describe("buildSignalsFromFacts", () => {
 
 describe("runHealthCheck", () => {
   it("persists an all-ok digest and skips email when SMTP is missing", async () => {
-    const snapshotCreate = vi.fn().mockResolvedValue({ id: "snapshot-1" });
-    const fakePrisma = {
-      healthSnapshot: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create: snapshotCreate,
-        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-      },
-      healthMinuteBucket: {
-        findMany: vi.fn().mockResolvedValue([]),
-        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-      },
-      healthAlert: {
-        findMany: vi.fn().mockResolvedValue([]),
-        create: vi.fn().mockResolvedValue({ id: "alert-1" }),
-        update: vi.fn().mockResolvedValue({}),
-      },
-    };
+    const prisma = fakePrisma();
     const sendHealthEmail = vi.fn();
 
     const result = await runHealthCheck(
@@ -112,28 +136,11 @@ describe("runHealthCheck", () => {
         now: new Date("2026-08-19T03:30:00.000Z"),
       },
       {
-        prisma: fakePrisma,
+        prisma,
         env: {},
         ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
         queryRaw: vi.fn().mockResolvedValue([]),
-        collectReport: vi.fn().mockResolvedValue({
-          overallStatus: "ok",
-          environment: { nodeVersion: "test", vercelRegion: null, vercelEnv: null, siteUrl: null },
-          vitals: [
-            { id: "db-latency", numericValue: 50, status: "ok" },
-            { id: "traffic-hour", numericValue: 10, status: "ok" },
-            { id: "traffic-today", numericValue: 10, status: "ok" },
-            { id: "analytics-rows", numericValue: 10, status: "ok" },
-          ],
-          webVitals: [],
-          recommendations: [
-            {
-              severity: "ok",
-              title: "All vitals within safe limits",
-              action: "Keep monitoring.",
-            },
-          ],
-        }),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
         readConnections: vi.fn().mockResolvedValue({
           connections: 2,
           maxConnections: 100,
@@ -150,6 +157,68 @@ describe("runHealthCheck", () => {
     expect(result.emailSkipped).toBe("smtp_not_configured");
     expect(result.emailed).toBe(false);
     expect(sendHealthEmail).not.toHaveBeenCalled();
-    expect(snapshotCreate).toHaveBeenCalledOnce();
+    expect(prisma.healthSnapshot.create).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a database connection collector outage critical while the site is up", async () => {
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma: fakePrisma(),
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport()),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: null,
+          maxConnections: null,
+          error: "collector failed",
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.signals.find((signal) => signal.id === "availability")?.status).toBe("ok");
+    expect(result.signals.find((signal) => signal.id === "database")).toMatchObject({
+      status: "critical",
+      value: "Unreachable",
+    });
+  });
+
+  it("counts six missing same-hour samples as zero in the traffic median", async () => {
+    const result = await runHealthCheck(
+      {
+        source: "manual",
+        digest: false,
+        now: new Date("2026-08-19T03:30:00.000Z"),
+      },
+      {
+        prisma: fakePrisma(),
+        env: {},
+        ping: vi.fn().mockResolvedValue({ ok: true, ms: 100, status: 200 }),
+        queryRaw: vi.fn().mockResolvedValue([{ count: 20 }]),
+        collectReport: vi.fn().mockResolvedValue(healthyReport(100)),
+        readConnections: vi.fn().mockResolvedValue({
+          connections: 2,
+          maxConnections: 100,
+        }),
+        fetchVercelUsage: vi.fn().mockResolvedValue({
+          configured: false,
+          percent: null,
+        }),
+      },
+    );
+
+    expect(result.signals.find((signal) => signal.id === "traffic_spike")).toMatchObject({
+      status: "ok",
+      detail: "baseline too small",
+    });
   });
 });
