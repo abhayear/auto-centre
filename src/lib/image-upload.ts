@@ -3,7 +3,13 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 
-export const UPLOAD_CATEGORIES = ["vehicles", "site", "services", "customers"] as const;
+export const UPLOAD_CATEGORIES = [
+  "vehicles",
+  "site",
+  "services",
+  "customers",
+  "training",
+] as const;
 export type UploadCategory = (typeof UPLOAD_CATEGORIES)[number];
 
 export const ALLOWED_IMAGE_TYPES = new Set([
@@ -14,12 +20,17 @@ export const ALLOWED_IMAGE_TYPES = new Set([
 ]);
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const ALLOWED_TRAINING_TYPES = new Set([
+  ...ALLOWED_IMAGE_TYPES,
+  "application/pdf",
+]);
 
 const EXT_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "application/pdf": "pdf",
 };
 
 export function isUploadCategory(value: string): value is UploadCategory {
@@ -32,6 +43,16 @@ export function validateImageFile(file: File): string | null {
   }
   if (file.size > MAX_IMAGE_BYTES) {
     return "Each image must be 5 MB or smaller.";
+  }
+  return null;
+}
+
+export function validateTrainingFile(file: File): string | null {
+  if (!ALLOWED_TRAINING_TYPES.has(file.type)) {
+    return "Only JPEG, PNG, WebP, GIF, and PDF files are allowed.";
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return "Each training file must be 5 MB or smaller.";
   }
   return null;
 }
@@ -72,7 +93,10 @@ export async function saveUploadedImage(
   file: File,
   category: UploadCategory = "vehicles",
 ): Promise<string> {
-  const error = validateImageFile(file);
+  const error =
+    category === "training"
+      ? validateTrainingFile(file)
+      : validateImageFile(file);
   if (error) {
     throw new Error(error);
   }

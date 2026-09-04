@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import {
   getEffectiveOnlineBookingAmount,
   requiresOnlineBookingPayment,
@@ -68,7 +68,7 @@ function buildInquiryDateFilter(from?: string | null, to?: string | null) {
 }
 
  async function getHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -193,7 +193,7 @@ function buildInquiryDateFilter(from?: string | null, to?: string | null) {
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -227,7 +227,7 @@ function buildInquiryDateFilter(from?: string | null, to?: string | null) {
 }
 
  async function deleteHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

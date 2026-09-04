@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { statusChangeMessage } from "@/lib/applicant-tracking";
 import { parseEvaluationScores } from "@/lib/job-role-evaluation";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, jobApplicationUpdateSchema } from "@/lib/validators";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
  async function getHandler(_request: NextRequest, context: RouteContext) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,7 +38,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 }
 
  async function patchHandler(request: NextRequest, context: RouteContext) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

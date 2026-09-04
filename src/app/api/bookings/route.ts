@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { STORE_LOCATION } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { checkLocationServiceability, type ServiceCentreConfig } from "@/lib/service-areas";
@@ -16,7 +16,7 @@ const defaultCentre: ServiceCentreConfig = {
 };
 
  async function getHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -101,7 +101,7 @@ const defaultCentre: ServiceCentreConfig = {
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

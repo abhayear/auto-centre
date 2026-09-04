@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Activity,
   Briefcase,
@@ -9,12 +10,25 @@ import {
   Wrench,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
+import { requireStaffSession } from "@/lib/auth";
+import { homeRedirectForRole } from "@/lib/portal-pages";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
+  const session = await requireStaffSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+
+  const role = session.user.role;
+  const homeRedirect = homeRedirectForRole(role);
+  if (homeRedirect) {
+    redirect(homeRedirect);
+  }
+
   const [vehicleCount, pendingBookings, newInquiries, serviceCount, openJobs, newApplications] =
     await Promise.all([
       safeDbQuery(() => prisma.vehicle.count({ where: { status: "available" } }), 0),

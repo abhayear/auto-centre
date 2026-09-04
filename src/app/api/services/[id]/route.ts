@@ -2,7 +2,7 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { revalidatePublicServicePages } from "@/lib/revalidate";
 import { formatZodErrors, serviceSchema } from "@/lib/validators";
 
@@ -20,7 +20,7 @@ type Params = { params: Promise<{ id: string }> };
 }
 
  async function patchHandler(request: Request, { params }: Params) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -50,7 +50,7 @@ type Params = { params: Promise<{ id: string }> };
 }
 
  async function deleteHandler(_request: Request, { params }: Params) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

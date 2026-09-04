@@ -1,6 +1,6 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validators";
 
@@ -21,7 +21,7 @@ import { vehicleSchema } from "@/lib/validators";
 }
 
  async function postHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

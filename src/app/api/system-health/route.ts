@@ -1,11 +1,11 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { collectSystemHealthReport } from "@/lib/system-health-report";
 import { loadHealthDashboard } from "@/lib/health/load-dashboard";
 
 async function getHandler() {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

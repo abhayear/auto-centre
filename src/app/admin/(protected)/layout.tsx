@@ -1,11 +1,26 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { DevDbBanner } from "@/components/layout/DevDbBanner";
+import { requireStaffSession } from "@/lib/auth";
+import { assertStaffPageAccess } from "@/lib/portal-pages";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await requireStaffSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+
+  const pathname = (await headers()).get("x-pathname");
+  const accessRedirect = assertStaffPageAccess(pathname, session.user.role);
+  if (accessRedirect) {
+    redirect(accessRedirect);
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-900">
       <AdminSidebar />

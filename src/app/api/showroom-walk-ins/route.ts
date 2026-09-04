@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseShowroomDateInput, serializeShowroomWalkIn } from "@/lib/showroom-walk-ins";
 import { formatZodErrors, showroomWalkInSchema } from "@/lib/validators";
@@ -32,7 +32,7 @@ function toCreateData(data: z.infer<typeof showroomWalkInSchema>) {
 }
 
  async function getHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -71,7 +71,7 @@ function toCreateData(data: z.infer<typeof showroomWalkInSchema>) {
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -123,7 +123,7 @@ function toCreateData(data: z.infer<typeof showroomWalkInSchema>) {
 }
 
  async function deleteHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

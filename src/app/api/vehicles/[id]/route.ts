@@ -1,6 +1,6 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validators";
 
@@ -18,7 +18,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 }
 
  async function patchHandler(request: NextRequest, { params }: RouteParams) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -48,7 +48,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 }
 
  async function deleteHandler(_request: NextRequest, { params }: RouteParams) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

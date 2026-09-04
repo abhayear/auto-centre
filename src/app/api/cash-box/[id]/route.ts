@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin, requireAdminRole } from "@/lib/auth";
+import { requireOpsPortal, requireAdminRole } from "@/lib/auth";
 import { computeCashBoxTotals, parseRecordDateInput } from "@/lib/cash-box";
 import { prisma } from "@/lib/prisma";
 import { cashBoxRecordSchema, formatZodErrors } from "@/lib/validators";
@@ -43,7 +43,7 @@ function serializeRecord(
 }
 
  async function getHandler(_request: NextRequest, { params }: RouteParams) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

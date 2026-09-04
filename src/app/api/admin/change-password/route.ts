@@ -2,12 +2,12 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { changePasswordSchema, formatZodErrors } from "@/lib/validators";
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireStaffSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

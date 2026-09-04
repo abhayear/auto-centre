@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_IMAGE_TYPES,
   isAllowedVehicleImage,
+  isUploadCategory,
   validateImageFile,
+  validateTrainingFile,
 } from "@/lib/image-upload";
 
 describe("validateImageFile", () => {
@@ -16,6 +18,20 @@ describe("validateImageFile", () => {
     const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
     Object.defineProperty(file, "size", { value: 1024 });
     expect(validateImageFile(file)).toMatch(/JPEG/);
+  });
+});
+
+describe("validateTrainingFile", () => {
+  it("accepts PDF files under the size limit", () => {
+    const file = new File(["x"], "handbook.pdf", { type: "application/pdf" });
+    Object.defineProperty(file, "size", { value: 1024 });
+    expect(validateTrainingFile(file)).toBeNull();
+  });
+});
+
+describe("isUploadCategory", () => {
+  it("accepts training uploads", () => {
+    expect(isUploadCategory("training")).toBe(true);
   });
 });
 

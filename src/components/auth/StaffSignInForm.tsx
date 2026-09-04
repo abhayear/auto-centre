@@ -15,6 +15,10 @@ type Props = {
   compact?: boolean;
 };
 
+function formatRoleLabel(role: StaffRole): string {
+  return role.replaceAll("_", " ");
+}
+
 const roleOptions: { value: StaffRole; label: string; description: string }[] = [
   {
     value: "admin",
@@ -25,6 +29,26 @@ const roleOptions: { value: StaffRole; label: string; description: string }[] = 
     value: "manager",
     label: "Manager",
     description: "Update vehicles, services, bookings, and site content",
+  },
+  {
+    value: "senior_developer",
+    label: "Senior developer",
+    description: "Approve releases and assign work to junior developers",
+  },
+  {
+    value: "junior_developer",
+    label: "Junior developer",
+    description: "View assigned work and preview links",
+  },
+  {
+    value: "sales",
+    label: "Sales",
+    description: "Access sales training materials",
+  },
+  {
+    value: "mechanic",
+    label: "Mechanic",
+    description: "Access mechanic training materials",
   },
 ];
 
@@ -58,19 +82,19 @@ export function StaffSignInForm({
     }
 
     const session = await getSession();
-    const actualRole = session?.user?.role ?? "admin";
+    const actualRole = (session?.user?.role ?? "admin") as StaffRole;
 
     if (actualRole !== role) {
       await signOut({ redirect: false });
       setLoading(false);
       toast.error(
-        `These credentials are for ${actualRole === "admin" ? "Admin" : "Manager"}. Select the correct portal above.`,
+        `These credentials are for ${formatRoleLabel(actualRole)}. Select the correct portal above.`,
       );
       return;
     }
 
     setLoading(false);
-    toast.success(`Welcome back, ${role === "admin" ? "Admin" : "Manager"}!`);
+    toast.success(`Welcome back, ${formatRoleLabel(role)}!`);
     router.push("/admin");
     router.refresh();
   }
@@ -79,7 +103,12 @@ export function StaffSignInForm({
     <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-slate-300">Sign in as</legend>
-        <div className={cn("grid gap-2", compact ? "sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2")}>
+        <div
+          className={cn(
+            "grid gap-2",
+            compact ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+          )}
+        >
           {roleOptions.map((option) => {
             const id = `staff-role-${option.value}`;
             const selected = role === option.value;
@@ -134,7 +163,7 @@ export function StaffSignInForm({
       />
 
       <Button type="submit" loading={loading} className="w-full">
-        Sign in to {role === "admin" ? "Admin" : "Manager"} portal
+        Sign in to {formatRoleLabel(role)} portal
       </Button>
     </form>
   );

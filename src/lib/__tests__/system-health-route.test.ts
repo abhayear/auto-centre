@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { collectSystemHealthReport, loadHealthDashboard, requireAdmin } = vi.hoisted(() => ({
+const { collectSystemHealthReport, loadHealthDashboard, requireOpsPortal } = vi.hoisted(() => ({
   collectSystemHealthReport: vi.fn(),
   loadHealthDashboard: vi.fn(),
-  requireAdmin: vi.fn(),
+  requireOpsPortal: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({ requireAdmin }));
+vi.mock("@/lib/auth", () => ({ requireOpsPortal }));
 vi.mock("@/lib/system-health-report", () => ({ collectSystemHealthReport }));
 vi.mock("@/lib/health/load-dashboard", () => ({ loadHealthDashboard }));
 vi.mock("@/lib/health/observe-route", () => ({
@@ -18,7 +18,7 @@ import { GET } from "@/app/api/system-health/route";
 describe("/api/system-health", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+    requireOpsPortal.mockResolvedValue({ user: { role: "admin" } });
     collectSystemHealthReport.mockResolvedValue({
       generatedAt: "2026-08-19T05:00:00.000Z",
       overallStatus: "ok",

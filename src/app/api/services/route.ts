@@ -1,13 +1,13 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicServicePages } from "@/lib/revalidate";
 import { formatZodErrors, serviceSchema } from "@/lib/validators";
 
  async function getHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   const all = request.nextUrl.searchParams.get("all") === "true";
 
   const services = await prisma.service.findMany({
@@ -19,7 +19,7 @@ import { formatZodErrors, serviceSchema } from "@/lib/validators";
 }
 
  async function postHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -43,7 +43,7 @@ import { formatZodErrors, serviceSchema } from "@/lib/validators";
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -77,7 +77,7 @@ import { formatZodErrors, serviceSchema } from "@/lib/validators";
 }
 
  async function deleteHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

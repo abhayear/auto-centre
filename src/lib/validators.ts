@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { STAFF_ROLES } from "@/lib/admin-roles";
+import { TRAINING_AUDIENCES, TRAINING_KINDS } from "@/lib/training-access";
 import {
   REPLACEMENT_ITEM_SIDES,
   REPLACEMENT_ITEM_TYPES,
@@ -213,6 +215,19 @@ export const updateManagerSchema = z.object({
   id: z.string().min(1),
   active: z.boolean().optional(),
   password: z.string().min(8, "Password must be at least 8 characters").optional(),
+});
+
+export const createStaffSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(STAFF_ROLES),
+});
+
+export const updateStaffSchema = z.object({
+  id: z.string().min(1),
+  active: z.boolean().optional(),
+  password: z.string().min(8).optional(),
+  role: z.enum(STAFF_ROLES).optional(),
 });
 
 export const bookingStatusSchema = z.object({
@@ -432,6 +447,53 @@ export const replacementStatusUpdateSchema = z.object({
   id: z.string().min(1),
   status: z.enum(REPLACEMENT_STATUSES),
 });
+
+export const trainingResourceSchema = z.object({
+  audience: z.enum(TRAINING_AUDIENCES),
+  kind: z.enum(TRAINING_KINDS),
+  title: z.string().min(1, "Title is required"),
+  summary: z.string().optional().nullable(),
+  body: z.string().min(1, "Body is required"),
+  linkUrl: z.string().max(2048).optional().nullable(),
+  fileUrl: z.string().max(2048).optional().nullable(),
+  published: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().default(0),
+});
+
+export const workItemStatusSchema = z.enum(["open", "in_progress", "done"]);
+
+const workItemFields = {
+  title: z.string().trim().min(1, "Title is required"),
+  notes: z.string(),
+  status: workItemStatusSchema,
+  githubPrUrl: z.string().url().max(2048).nullable(),
+  previewUrl: z.string().url().max(2048).nullable(),
+  assigneeId: z.string().min(1).nullable(),
+};
+
+export const createWorkItemSchema = z.object({
+  title: workItemFields.title,
+  notes: workItemFields.notes,
+  status: workItemFields.status.optional().default("open"),
+  githubPrUrl: workItemFields.githubPrUrl.optional(),
+  previewUrl: workItemFields.previewUrl.optional(),
+  assigneeId: workItemFields.assigneeId.optional(),
+});
+
+export const patchWorkItemSchema = z
+  .object({
+    id: z.string().min(1, "Work item id is required"),
+    title: workItemFields.title.optional(),
+    notes: workItemFields.notes.optional(),
+    status: workItemFields.status.optional(),
+    githubPrUrl: workItemFields.githubPrUrl.optional(),
+    previewUrl: workItemFields.previewUrl.optional(),
+    assigneeId: workItemFields.assigneeId.optional(),
+  })
+  .refine(
+    (data) => Object.keys(data).some((key) => key !== "id"),
+    "At least one work item field is required",
+  );
 
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;

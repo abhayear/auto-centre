@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicSitePages } from "@/lib/revalidate";
 import { getServiceSchedule } from "@/lib/service-schedule";
@@ -14,7 +14,7 @@ import { formatZodErrors, serviceScheduleSchema } from "@/lib/validators";
 
  async function getHandler(request: NextRequest) {
   const schedule = await getServiceSchedule();
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   const publicOnly = request.nextUrl.searchParams.get("public") === "true";
 
   if (publicOnly && !schedule.published) {
@@ -31,7 +31,7 @@ import { formatZodErrors, serviceScheduleSchema } from "@/lib/validators";
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -77,7 +77,7 @@ import { formatZodErrors, serviceScheduleSchema } from "@/lib/validators";
 }
 
  async function putHandler() {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
