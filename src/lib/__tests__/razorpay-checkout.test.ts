@@ -42,8 +42,11 @@ describe("buildRazorpayMethodConfig", () => {
       card: true,
       netbanking: true,
       wallet: true,
+      emi: true,
+      paylater: true,
     });
     expect(config.config?.display?.sequence?.[0]).toBe("upi");
+    expect(config.config?.display?.sequence).toContain("emi");
   });
 });
 

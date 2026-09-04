@@ -41,6 +41,8 @@ type RazorpayCheckoutMethodConfig = {
     card?: boolean;
     netbanking?: boolean;
     wallet?: boolean;
+    emi?: boolean;
+    paylater?: boolean;
   };
   config?: {
     display?: {
@@ -73,10 +75,12 @@ export function buildRazorpayMethodConfig(testMode: boolean): RazorpayCheckoutMe
       card: true,
       netbanking: true,
       wallet: true,
+      emi: true,
+      paylater: true,
     },
     config: {
       display: {
-        sequence: ["upi", "card", "netbanking", "wallet"],
+        sequence: ["upi", "card", "emi", "paylater", "netbanking", "wallet"],
         preferences: { show_default_blocks: true },
       },
     },

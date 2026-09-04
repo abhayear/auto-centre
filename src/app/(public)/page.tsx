@@ -2,10 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Battery, Shield, Wrench, Zap } from "lucide-react";
 import { EsteemedCustomersSection } from "@/components/customers/EsteemedCustomersSection";
+import { CampaignOffers } from "@/components/home/CampaignOffers";
 import { StaffPortalSection } from "@/components/home/StaffPortalSection";
 import { VisitorCountBadge } from "@/components/home/VisitorCountBadge";
 import { VehicleGrid } from "@/components/vehicles/VehicleGrid";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
+import { findLiveCampaigns } from "@/lib/campaigns";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -14,7 +16,8 @@ import { formatPrice } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featuredVehicles, services, esteemedCustomers, siteSettings] = await Promise.all([
+  const [featuredVehicles, services, esteemedCustomers, siteSettings, liveCampaigns] =
+    await Promise.all([
     safeDbQuery(
       () =>
         prisma.vehicle.findMany({
@@ -42,10 +45,12 @@ export default async function HomePage() {
       []
     ),
     getSiteSettings(),
+    safeDbQuery(() => findLiveCampaigns(), []),
   ]);
 
   return (
     <>
+      <CampaignOffers campaigns={liveCampaigns} />
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30">
         {siteSettings.heroImageUrl ? (
           <div

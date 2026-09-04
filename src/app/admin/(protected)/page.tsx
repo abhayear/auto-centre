@@ -6,6 +6,7 @@ import {
   Car,
   Calendar,
   ClipboardList,
+  Megaphone,
   MessageSquare,
   Wrench,
 } from "lucide-react";
@@ -97,6 +98,23 @@ export default async function AdminDashboardPage() {
             <p className="font-semibold text-white">Cloud Vitals</p>
             <p className="text-sm text-slate-400">
               Site health, traffic load, and performance — scale before heavy visits cause issues.
+            </p>
+          </div>
+        </div>
+      </Link>
+
+      <Link
+        href="/admin/offers"
+        className="mb-8 block rounded-xl border border-amber-500/30 bg-amber-950/20 p-5 transition-colors hover:border-amber-500/50 hover:bg-amber-950/30"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-amber-600/20 p-3 text-amber-400">
+            <Megaphone className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-semibold text-white">Offers and pricing</p>
+            <p className="text-sm text-slate-400">
+              Festival and monsoon homepage offers, plus suggested model prices from sold history.
             </p>
           </div>
         </div>

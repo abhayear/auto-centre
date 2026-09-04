@@ -26,7 +26,8 @@ export default function RefundPolicyPage() {
         <p>
           Some e-scooter models require an online booking payment to confirm your booking. This
           amount is shown on the vehicle page or booking form before you pay. Payments are processed
-          securely through Razorpay (UPI, cards, net banking, or wallets as available).
+          securely through Razorpay (UPI, cards, EMI, Pay Later, net banking, or wallets as available
+          on the live account).
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
