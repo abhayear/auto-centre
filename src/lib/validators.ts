@@ -480,6 +480,44 @@ export const createWorkItemSchema = z.object({
   assigneeId: workItemFields.assigneeId.optional(),
 });
 
+export const CAMPAIGN_KINDS = ["festival", "monsoon", "custom"] as const;
+
+export const campaignFieldsSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(120),
+  summary: z.string().trim().min(1, "Summary is required").max(500),
+  kind: z.enum(CAMPAIGN_KINDS),
+  badgeLabel: z.string().trim().max(40).optional().nullable(),
+  ctaHref: z.string().trim().max(2048).optional().default("/vehicles"),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date(),
+  published: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().default(0),
+});
+
+export const campaignSchema = campaignFieldsSchema.refine((data) => data.endsAt > data.startsAt, {
+  message: "End date must be after start date",
+  path: ["endsAt"],
+});
+
+export const campaignPatchSchema = campaignFieldsSchema.partial().refine(
+  (data) => !data.startsAt || !data.endsAt || data.endsAt > data.startsAt,
+  {
+    message: "End date must be after start date",
+    path: ["endsAt"],
+  },
+);
+
+export const applyPriceUpdatesSchema = z.object({
+  updates: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        price: z.number().positive(),
+      }),
+    )
+    .min(1, "Select at least one vehicle"),
+});
+
 export const patchWorkItemSchema = z
   .object({
     id: z.string().min(1, "Work item id is required"),

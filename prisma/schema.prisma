@@ -270,6 +270,24 @@ model StaffWorkItem {
   @@index([assigneeId, status])
 }
 
+model SiteCampaign {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  kind        String
+  badgeLabel  String?
+  ctaHref     String   @default("/vehicles")
+  startsAt    DateTime
+  endsAt      DateTime
+  published   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  updatedByEmail String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, startsAt, endsAt])
+}
+
 model JobPosting {
   id             String           @id @default(cuid())
   title          String

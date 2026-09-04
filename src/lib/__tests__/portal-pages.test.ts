@@ -19,9 +19,9 @@ describe("homeRedirectForRole", () => {
 
 describe("assertStaffPageAccess", () => {
   it.each(["admin", "manager"] as const)(
-    "allows %s to access operations pages",
+    "allows %s to access offers and pricing",
     (role) => {
-      expect(assertStaffPageAccess("/admin/vehicles", role)).toBeNull();
+      expect(assertStaffPageAccess("/admin/offers", role)).toBeNull();
     },
   );
 

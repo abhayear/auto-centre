@@ -176,6 +176,20 @@ You should see: `Seed completed successfully.`
 
 ---
 
+## Razorpay payment methods (live)
+
+Checkout enables UPI first, then cards, **EMI**, **Pay Later**, net banking, and wallets.
+
+Razorpay still hides a method if it is not activated on the **live** account:
+
+1. Open **https://dashboard.razorpay.com** → **Account & Settings** → **Payment methods**
+2. Enable **UPI**, **Cards**, **EMI**, **Cardless EMI / Pay Later**, **Netbanking**, and **Wallets**
+3. EMI also needs a live KYC-approved account and usually a minimum order amount (service bookings may be too small for EMI even when the method is enabled)
+
+Test keys (`rzp_test_`) only show **card** (and hide UPI). EMI will not appear in test mode.
+
+---
+
 ## Auto-deploy from Git (already configured)
 
 Every push to `master` on GitHub will:

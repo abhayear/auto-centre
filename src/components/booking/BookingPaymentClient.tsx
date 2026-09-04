@@ -261,13 +261,14 @@ export function BookingPaymentClient({ initialTestMode = false }: BookingPayment
             </p>
             <p className="mt-2">
               If UPI still fails, UPI may not be activated on your Razorpay live account yet — use
-              card or netbanking, or complete UPI setup in Razorpay Dashboard.
+              card, EMI, Pay Later, or netbanking, or complete those methods in Razorpay Dashboard.
             </p>
           </div>
         )}
 
         <p className="mt-4 text-xs text-slate-500">
-          Secure payment via Razorpay — UPI, cards, and net banking accepted.
+          Secure payment via Razorpay — UPI, cards, EMI, Pay Later, wallets, and net banking as
+          enabled on the live account.
         </p>
       </div>
 
