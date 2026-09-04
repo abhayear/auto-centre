@@ -9,6 +9,7 @@ import {
   loginSchema,
   changePasswordSchema,
   createManagerSchema,
+  createStaffSchema,
   serviceSchema,
   vehicleSchema,
 } from "../validators";
@@ -155,6 +156,26 @@ describe("createManagerSchema", () => {
     const result = createManagerSchema.safeParse({
       email: "manager@autogalaxy.in",
       password: "short",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("createStaffSchema", () => {
+  it("accepts valid staff credentials with role", () => {
+    const result = createStaffSchema.safeParse({
+      email: "dev@autogalaxy.in",
+      password: "securepass",
+      role: "senior_developer",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid role", () => {
+    const result = createStaffSchema.safeParse({
+      email: "dev@autogalaxy.in",
+      password: "securepass",
+      role: "intern",
     });
     expect(result.success).toBe(false);
   });

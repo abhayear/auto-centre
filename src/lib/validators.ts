@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STAFF_ROLES } from "@/lib/admin-roles";
 import {
   REPLACEMENT_ITEM_SIDES,
   REPLACEMENT_ITEM_TYPES,
@@ -213,6 +214,19 @@ export const updateManagerSchema = z.object({
   id: z.string().min(1),
   active: z.boolean().optional(),
   password: z.string().min(8, "Password must be at least 8 characters").optional(),
+});
+
+export const createStaffSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(STAFF_ROLES),
+});
+
+export const updateStaffSchema = z.object({
+  id: z.string().min(1),
+  active: z.boolean().optional(),
+  password: z.string().min(8).optional(),
+  role: z.enum(STAFF_ROLES).optional(),
 });
 
 export const bookingStatusSchema = z.object({
