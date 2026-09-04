@@ -460,6 +460,41 @@ export const trainingResourceSchema = z.object({
   sortOrder: z.coerce.number().int().default(0),
 });
 
+export const workItemStatusSchema = z.enum(["open", "in_progress", "done"]);
+
+const workItemFields = {
+  title: z.string().trim().min(1, "Title is required"),
+  notes: z.string(),
+  status: workItemStatusSchema,
+  githubPrUrl: z.string().url().max(2048).nullable(),
+  previewUrl: z.string().url().max(2048).nullable(),
+  assigneeId: z.string().min(1).nullable(),
+};
+
+export const createWorkItemSchema = z.object({
+  title: workItemFields.title,
+  notes: workItemFields.notes,
+  status: workItemFields.status.optional().default("open"),
+  githubPrUrl: workItemFields.githubPrUrl.optional(),
+  previewUrl: workItemFields.previewUrl.optional(),
+  assigneeId: workItemFields.assigneeId.optional(),
+});
+
+export const patchWorkItemSchema = z
+  .object({
+    id: z.string().min(1, "Work item id is required"),
+    title: workItemFields.title.optional(),
+    notes: workItemFields.notes.optional(),
+    status: workItemFields.status.optional(),
+    githubPrUrl: workItemFields.githubPrUrl.optional(),
+    previewUrl: workItemFields.previewUrl.optional(),
+    assigneeId: workItemFields.assigneeId.optional(),
+  })
+  .refine(
+    (data) => Object.keys(data).some((key) => key !== "id"),
+    "At least one work item field is required",
+  );
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
