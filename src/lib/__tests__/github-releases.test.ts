@@ -20,7 +20,7 @@ describe("listOpenPullRequests", () => {
           html_url: "https://github.com/acme/app/pull/42",
           user: { login: "octocat" },
           body: null,
-          mergeable: null,
+          mergeable: true,
         },
       ],
     }) as unknown as typeof fetch;

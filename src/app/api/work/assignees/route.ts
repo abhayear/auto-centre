@@ -11,7 +11,12 @@ async function getHandler() {
   }
 
   const staff = await prisma.adminUser.findMany({
-    where: { active: true },
+    where: {
+      active: true,
+      role: {
+        in: ["admin", "senior_developer", "junior_developer"],
+      },
+    },
     orderBy: { email: "asc" },
     select: { id: true, email: true, role: true },
   });

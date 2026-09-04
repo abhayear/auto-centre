@@ -13,7 +13,6 @@ type GitHubPullRequest = {
   html_url: string;
   user: { login: string };
   body: string | null;
-  mergeable: boolean | null;
 };
 
 const githubHeaders = (token: string) => ({
@@ -65,7 +64,7 @@ export async function listOpenPullRequests(input: {
     htmlUrl: pullRequest.html_url,
     author: pullRequest.user.login,
     previewUrl: firstVercelPreviewUrl(pullRequest.body),
-    mergeable: pullRequest.mergeable,
+    mergeable: null,
   }));
 }
 

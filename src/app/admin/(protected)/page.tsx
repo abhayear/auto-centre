@@ -10,20 +10,12 @@ import {
   Wrench,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { canUseOpsPortal, type StaffRole } from "@/lib/admin-roles";
 import { requireStaffSession } from "@/lib/auth";
+import { homeRedirectForRole } from "@/lib/portal-pages";
 import { prisma } from "@/lib/prisma";
 import { safeDbQuery } from "@/lib/safe-db";
 
 export const dynamic = "force-dynamic";
-
-function homeRedirectForRole(role: StaffRole): string | null {
-  if (canUseOpsPortal(role)) return null;
-  if (role === "senior_developer") return "/admin/releases";
-  if (role === "junior_developer") return "/admin/work";
-  if (role === "sales" || role === "mechanic") return "/admin/training";
-  return "/admin/training";
-}
 
 export default async function AdminDashboardPage() {
   const session = await requireStaffSession();

@@ -45,7 +45,12 @@ describe("/api/work/assignees", () => {
       },
     ]);
     expect(findMany).toHaveBeenCalledWith({
-      where: { active: true },
+      where: {
+        active: true,
+        role: {
+          in: ["admin", "senior_developer", "junior_developer"],
+        },
+      },
       orderBy: { email: "asc" },
       select: { id: true, email: true, role: true },
     });

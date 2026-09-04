@@ -94,6 +94,19 @@ describe("/api/releases", () => {
     });
   });
 
+  it("returns a bad gateway response when listing pull requests fails", async () => {
+    vi.stubEnv("GITHUB_RELEASES_TOKEN", "secret-token");
+    listOpenPullRequests.mockRejectedValue(new Error("Forbidden"));
+
+    const response = await GET(request(), undefined);
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      error: "GitHub request failed",
+      message: "Forbidden",
+    });
+  });
+
   it("forbids staff without release merge access", async () => {
     vi.stubEnv("GITHUB_RELEASES_TOKEN", "secret-token");
     requireStaffSession.mockResolvedValue({

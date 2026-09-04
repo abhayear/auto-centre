@@ -31,8 +31,17 @@ async function getHandler() {
     return NextResponse.json({ configured: false, pullRequests: [] });
   }
 
-  const pullRequests = await listOpenPullRequests({ repo, token });
-  return NextResponse.json({ configured: true, pullRequests });
+  try {
+    const pullRequests = await listOpenPullRequests({ repo, token });
+    return NextResponse.json({ configured: true, pullRequests });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown GitHub error";
+    return NextResponse.json(
+      { error: "GitHub request failed", message },
+      { status: 502 },
+    );
+  }
 }
 
 async function postHandler(request: NextRequest) {
