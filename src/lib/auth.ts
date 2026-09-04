@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import authConfig from "./auth.config";
 import { MANAGER_ROLE, type StaffRole } from "./admin-roles";
+import { assertOpsRole } from "./auth-guards";
 import { prisma } from "./prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -44,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 });
 
-export async function requireAdmin() {
+export async function requireStaffSession() {
   const session = await auth();
   if (!session?.user?.email) {
     return null;
@@ -68,9 +69,20 @@ export async function requireAdmin() {
   };
 }
 
+/** Pure guard re-exported for callers that need the helper. */
+export { assertOpsRole } from "./auth-guards";
+
+export async function requireOpsPortal() {
+  const session = await requireStaffSession();
+  if (!session) return null;
+  const role = session.user.role;
+  if (!assertOpsRole(role)) return null;
+  return session;
+}
+
 /** Full admin only — for appointing managers and staff management. */
 export async function requireAdminRole() {
-  const session = await requireAdmin();
+  const session = await requireStaffSession();
   if (!session || session.user.role !== "admin") {
     return null;
   }

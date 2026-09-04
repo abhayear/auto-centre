@@ -6,7 +6,7 @@ import {
   generateTrackingCode,
 } from "@/lib/applicant-tracking";
 import { validateScreeningResponses } from "@/lib/job-role-evaluation";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   formatZodErrors,
@@ -28,7 +28,7 @@ async function createUniqueTrackingCode(): Promise<string> {
 }
 
  async function getHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -129,7 +129,7 @@ async function createUniqueTrackingCode(): Promise<string> {
 }
 
  async function patchHandler(request: NextRequest) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

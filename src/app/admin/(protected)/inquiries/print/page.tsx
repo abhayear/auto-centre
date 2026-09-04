@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { InquiryPrintClient } from "@/components/inquiries/InquiryPrintClient";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseShowroomDateInput } from "@/lib/showroom-walk-ins";
 
@@ -9,7 +9,7 @@ type PageProps = {
 };
 
 export default async function InquiriesPrintPage({ searchParams }: PageProps) {
-  const session = await requireAdmin();
+  const session = await requireStaffSession();
   if (!session) {
     redirect("/admin/login");
   }

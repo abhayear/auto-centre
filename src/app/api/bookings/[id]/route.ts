@@ -1,13 +1,13 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireOpsPortal } from "@/lib/auth";
 import { bookingStatusSchema } from "@/lib/validators";
 
 type Params = { params: Promise<{ id: string }> };
 
  async function patchHandler(request: Request, { params }: Params) {
-  const session = await requireAdmin();
+  const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

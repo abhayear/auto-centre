@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { MovementReportPrintClient } from "@/components/replacement-parts/MovementReportPrintClient";
 import { ReplacementPartsPrintClient } from "@/components/replacement-parts/ReplacementPartsPrintClient";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   LETTER_ELIGIBLE_STATUSES,
@@ -23,7 +23,7 @@ type PageProps = {
 };
 
 export default async function ReplacementPartsPrintPage({ searchParams }: PageProps) {
-  const session = await requireAdmin();
+  const session = await requireStaffSession();
   if (!session) {
     redirect("/admin/login");
   }
