@@ -37,6 +37,12 @@ describe("buildRazorpayMethodConfig", () => {
 
   it("prioritizes UPI in live mode", () => {
     const config = buildRazorpayMethodConfig(false);
+    expect(config.method).toEqual({
+      upi: true,
+      card: true,
+      netbanking: true,
+      wallet: true,
+    });
     expect(config.config?.display?.sequence?.[0]).toBe("upi");
   });
 });

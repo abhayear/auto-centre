@@ -19,21 +19,6 @@ type ServiceSchedulePageClientProps = {
   content: string;
 };
 
-type PrintScope = "due-dates" | "maintenance-guide";
-
-const printScopeOptions: { value: PrintScope; label: string; description: string }[] = [
-  {
-    value: "due-dates",
-    label: "Service due dates only",
-    description: "Customer details and personalized due-date table",
-  },
-  {
-    value: "maintenance-guide",
-    label: "Complete maintenance guide",
-    description: "Full paid/free service and periodical maintenance checklist",
-  },
-];
-
 function formatDeliveryDateInput(value: string): string {
   if (!value) return "—";
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -50,7 +35,6 @@ export function ServiceSchedulePageClient({
   const [billNo, setBillNo] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [lastCompleted, setLastCompleted] = useState("");
-  const [printScope, setPrintScope] = useState<PrintScope>("due-dates");
 
   const lastCompletedLabel = useMemo(() => {
     if (!lastCompleted) return "None completed yet";
@@ -88,8 +72,9 @@ export function ServiceSchedulePageClient({
           Print customer schedule
         </h2>
         <p className="mt-1 text-sm text-slate-400">
-          Fill customer details and delivery date below, then print the paid & free service and
-          periodical maintenance schedule for this customer.
+          Fill customer details and delivery date, then print a single A4 page with this
+          customer&apos;s free and paid service due dates (and dealer stamp lines). In the print
+          dialog, choose A4 and turn off headers and footers.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Input
@@ -107,44 +92,20 @@ export function ServiceSchedulePageClient({
             placeholder="e.g. AG-2026-0142"
           />
         </div>
-        <fieldset className="mt-4">
-          <legend className="mb-2 text-sm font-medium text-slate-300">What to print</legend>
-          <div className="space-y-2">
-            {printScopeOptions.map((option) => (
-              <label
-                key={option.value}
-                className="flex cursor-pointer gap-3 rounded-lg border border-slate-700/50 bg-slate-900/40 p-3 has-[:checked]:border-red-600/50 has-[:checked]:bg-red-950/20"
-              >
-                <input
-                  type="radio"
-                  name="printScope"
-                  value={option.value}
-                  checked={printScope === option.value}
-                  onChange={() => setPrintScope(option.value)}
-                  className="mt-1 accent-red-600"
-                />
-                <span>
-                  <span className="block text-sm font-medium text-white">{option.label}</span>
-                  <span className="block text-xs text-slate-400">{option.description}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <div className="mt-4">
           <Button type="button" onClick={handlePrint} className="inline-flex items-center gap-2">
             <Printer className="h-4 w-4" />
-            Print schedule
+            Print one A4
           </Button>
         </div>
       </div>
 
       <div
         id="service-schedule-print"
-        className={`print:text-black ${printScope === "due-dates" ? "print-scope-due-dates" : "print-scope-maintenance-guide"}`}
+        className="print-scope-due-dates print:text-black"
       >
-        <div className="mb-8 hidden border-b-2 border-black pb-4 print:block">
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        <div className="mb-8 hidden border-b-2 border-black pb-4 print:mb-2 print:block print:pb-2">
+          <dl className="grid gap-2 text-sm sm:grid-cols-2 print:gap-1 print:text-xs">
             <div>
               <dt className="font-semibold">Customer name</dt>
               <dd>{customerName.trim() || "—"}</dd>
