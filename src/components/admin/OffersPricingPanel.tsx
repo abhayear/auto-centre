@@ -25,7 +25,9 @@ export function OffersPricingPanel() {
   const [applying, setApplying] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SiteCampaign | undefined>();
-  const [useSeasonDraft, setUseSeasonDraft] = useState(false);
+  const [seasonDraft, setSeasonDraft] = useState<ReturnType<typeof campaignDraftFromSeason> | null>(
+    null,
+  );
 
   async function load() {
     const [campaignRes, suggestionRes] = await Promise.all([
@@ -110,8 +112,6 @@ export function OffersPricingPanel() {
     );
   }
 
-  const seasonDraft = season ? campaignDraftFromSeason(season) : null;
-
   return (
     <div className="space-y-10">
       <div>
@@ -134,22 +134,22 @@ export function OffersPricingPanel() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Homepage offers</h2>
           <div className="flex flex-wrap gap-2">
-            {seasonDraft ? (
+            {season ? (
               <Button
                 variant="secondary"
                 onClick={() => {
                   setEditing(undefined);
-                  setUseSeasonDraft(true);
+                  setSeasonDraft(campaignDraftFromSeason(season, new Date()));
                   setShowForm(true);
                 }}
               >
-                Draft from {season?.label}
+                Draft from {season.label}
               </Button>
             ) : null}
             <Button
               onClick={() => {
                 setEditing(undefined);
-                setUseSeasonDraft(false);
+                setSeasonDraft(null);
                 setShowForm(true);
               }}
             >
@@ -197,7 +197,7 @@ export function OffersPricingPanel() {
                           size="sm"
                           onClick={() => {
                             setEditing(campaign);
-                            setUseSeasonDraft(false);
+                            setSeasonDraft(null);
                             setShowForm(true);
                           }}
                         >
@@ -296,7 +296,7 @@ export function OffersPricingPanel() {
         <CampaignForm
           campaign={editing}
           defaults={
-            !editing && useSeasonDraft && seasonDraft
+            !editing && seasonDraft
               ? {
                   title: seasonDraft.title,
                   summary: seasonDraft.summary,
@@ -310,11 +310,13 @@ export function OffersPricingPanel() {
           onSuccess={() => {
             setShowForm(false);
             setEditing(undefined);
+            setSeasonDraft(null);
             void load();
           }}
           onCancel={() => {
             setShowForm(false);
             setEditing(undefined);
+            setSeasonDraft(null);
           }}
         />
       ) : null}

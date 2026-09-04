@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { CAMPAIGN_KINDS } from "@/lib/validators";
 
-function toLocalInput(value: Date | string): string {
+function toLocalInput(value: Date | string | undefined): string | undefined {
+  if (!value) return undefined;
   const date = new Date(value);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -31,11 +32,6 @@ type CampaignFormProps = {
 export function CampaignForm({ campaign, defaults, onSuccess, onCancel }: CampaignFormProps) {
   const [loading, setLoading] = useState(false);
   const isEdit = Boolean(campaign);
-  const startsAt = campaign?.startsAt ?? defaults?.startsAt ?? new Date();
-  const endsAt =
-    campaign?.endsAt ??
-    defaults?.endsAt ??
-    new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -135,7 +131,7 @@ export function CampaignForm({ campaign, defaults, onSuccess, onCancel }: Campai
             label="Starts"
             type="datetime-local"
             required
-            defaultValue={toLocalInput(startsAt)}
+            defaultValue={toLocalInput(campaign?.startsAt ?? defaults?.startsAt)}
           />
           <Input
             id="endsAt"
@@ -143,7 +139,7 @@ export function CampaignForm({ campaign, defaults, onSuccess, onCancel }: Campai
             label="Ends"
             type="datetime-local"
             required
-            defaultValue={toLocalInput(endsAt)}
+            defaultValue={toLocalInput(campaign?.endsAt ?? defaults?.endsAt)}
           />
         </div>
         <Input
