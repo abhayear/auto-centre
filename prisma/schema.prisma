@@ -231,6 +231,43 @@ model AdminUser {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  assignedWork StaffWorkItem[] @relation("WorkAssignee")
+  createdWork  StaffWorkItem[] @relation("WorkCreatedBy")
+}
+
+model TrainingResource {
+  id              String   @id @default(cuid())
+  audience        String
+  kind            String
+  title           String
+  summary         String?
+  body            String   @db.Text
+  linkUrl         String?
+  fileUrl         String?
+  published       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  updatedByEmail  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([audience, published])
+}
+
+model StaffWorkItem {
+  id           String    @id @default(cuid())
+  title        String
+  notes        String    @db.Text
+  status       String    @default("open")
+  githubPrUrl  String?
+  previewUrl   String?
+  assigneeId   String?
+  assignee     AdminUser? @relation("WorkAssignee", fields: [assigneeId], references: [id])
+  createdById  String
+  createdBy    AdminUser  @relation("WorkCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([assigneeId, status])
 }
 
 model JobPosting {
