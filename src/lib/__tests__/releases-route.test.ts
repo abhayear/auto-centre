@@ -118,6 +118,18 @@ describe("/api/releases", () => {
     },
   );
 
+  it("rejects a merge when GitHub releases are not configured", async () => {
+    vi.stubEnv("GITHUB_RELEASES_TOKEN", "");
+
+    const response = await POST(request("POST", { number: 1 }), undefined);
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "GitHub releases are not configured",
+    });
+    expect(mergePullRequest).not.toHaveBeenCalled();
+  });
+
   it("returns a bad gateway response when GitHub does not merge", async () => {
     vi.stubEnv("GITHUB_RELEASES_TOKEN", "secret-token");
     mergePullRequest.mockResolvedValue({

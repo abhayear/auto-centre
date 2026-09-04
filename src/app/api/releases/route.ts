@@ -60,6 +60,13 @@ async function postHandler(request: NextRequest) {
   }
 
   const { repo, token } = githubConfig();
+  if (!token) {
+    return NextResponse.json(
+      { error: "GitHub releases are not configured" },
+      { status: 503 },
+    );
+  }
+
   const result = await mergePullRequest({
     repo,
     token,
