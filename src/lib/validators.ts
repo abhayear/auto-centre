@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { STAFF_ROLES } from "@/lib/admin-roles";
+import { TRAINING_AUDIENCES, TRAINING_KINDS } from "@/lib/training-access";
 import {
   REPLACEMENT_ITEM_SIDES,
   REPLACEMENT_ITEM_TYPES,
@@ -445,6 +446,18 @@ export const replacementClaimUpdateSchema = replacementClaimSchema.partial().ext
 export const replacementStatusUpdateSchema = z.object({
   id: z.string().min(1),
   status: z.enum(REPLACEMENT_STATUSES),
+});
+
+export const trainingResourceSchema = z.object({
+  audience: z.enum(TRAINING_AUDIENCES),
+  kind: z.enum(TRAINING_KINDS),
+  title: z.string().min(1, "Title is required"),
+  summary: z.string().optional().nullable(),
+  body: z.string().min(1, "Body is required"),
+  linkUrl: z.string().max(2048).optional().nullable(),
+  fileUrl: z.string().max(2048).optional().nullable(),
+  published: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().default(0),
 });
 
 export type VehicleInput = z.infer<typeof vehicleSchema>;
