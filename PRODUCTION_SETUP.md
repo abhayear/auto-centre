@@ -52,6 +52,30 @@ Follow these steps in order. Your repo is already on GitHub and CI is passing.
 | `VERCEL_TEAM_ID` | optional |
 | `VERCEL_PROJECT_ID` | optional |
 
+### Releases and GitHub environment variables
+
+Add these to the same Vercel **Environment Variables** list (Production and
+Preview). The repo is already connected as **`abhayear/auto-centre`**.
+
+| Name | Value |
+|------|--------|
+| `GITHUB_REPO` | `abhayear/auto-centre` |
+| `GITHUB_RELEASES_TOKEN` | GitHub PAT with **repo**, **pull requests read**, and **pull requests write** |
+
+Example (replace the token with your real PAT):
+
+```
+GITHUB_REPO=abhayear/auto-centre
+GITHUB_RELEASES_TOKEN=<github PAT: repo pull requests read/write>
+```
+
+Create the PAT under **GitHub → Settings → Developer settings → Fine-grained
+personal access tokens** (or classic token). Grant access to `abhayear/auto-centre`
+with `Contents: Read and write` and `Pull requests: Read and write`. The admin
+**Releases** page uses this token to list open PRs against `master` and to
+merge approved changes. If the token is missing, the page shows a setup message
+and merge is disabled.
+
 `CRON_SECRET` must exist in the Vercel project environment. Vercel then
 automatically sends `Authorization: Bearer $CRON_SECRET` with cron requests, as
 required by the protected operations endpoint.
@@ -88,6 +112,39 @@ instructions:
 Do not put `CRON_SECRET` or SMTP passwords in a Cursor automation prompt. The
 automation uses the public health endpoint only; it must not call the protected
 operations endpoint.
+
+### GitHub branch protection and preview deploys
+
+**Branch protection (`master`):**
+
+1. GitHub → **`abhayear/auto-centre`** → **Settings** → **Branches** → **Add
+   rule** (or edit the existing rule for `master`).
+2. Enable **Require a pull request before merging**.
+3. Enable **Require approvals** and set **Required approving reviews** to **1**.
+4. Optionally restrict who can dismiss reviews and disable force pushes.
+
+Only senior developers (or admin) should approve production PRs. Map GitHub
+usernames to senior developers like this:
+
+1. In the admin portal (**Staff**), create a login with role **Senior
+   developer** for each person who may approve merges.
+2. On GitHub, add those people's GitHub usernames as **required reviewers** on
+   the `master` branch rule, or add a `.github/CODEOWNERS` file listing their
+   handles for `*`.
+3. When a junior opens a PR, a mapped senior developer (or admin) reviews on
+   GitHub or merges from **Admin → Releases** after checking the preview.
+
+**Vercel preview deployments:**
+
+1. Vercel → project → **Settings** → **Git**.
+2. Set **Production Branch** to `master`.
+3. Enable **Preview Deployments** for pull requests (and all branches if you
+   want feature-branch previews).
+4. Each PR gets a preview URL; the Releases page shows it when GitHub/Vercel
+   expose it. Staff can also paste a preview link on a work ticket.
+
+After merge to `master`, Vercel production redeploys automatically (same as
+Step 2).
 
 ---
 
