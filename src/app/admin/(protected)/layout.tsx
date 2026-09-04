@@ -15,7 +15,7 @@ export default async function AdminLayout({
     redirect("/admin/login");
   }
 
-  const pathname = (await headers()).get("x-pathname") ?? "/admin";
+  const pathname = (await headers()).get("x-pathname");
   const accessRedirect = assertStaffPageAccess(pathname, session.user.role);
   if (accessRedirect) {
     redirect(accessRedirect);

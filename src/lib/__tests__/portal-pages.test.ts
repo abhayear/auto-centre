@@ -78,4 +78,25 @@ describe("assertStaffPageAccess", () => {
   it("leaves dashboard redirects to the dashboard page", () => {
     expect(assertStaffPageAccess("/admin", "sales")).toBeNull();
   });
+
+  it.each([
+    ["sales", "/admin/training"],
+    ["mechanic", "/admin/training"],
+  ] as const)(
+    "redirects %s when pathname header is missing or empty",
+    (role, expected) => {
+      for (const pathname of [null, undefined, ""]) {
+        expect(assertStaffPageAccess(pathname, role)).toBe(expected);
+      }
+    },
+  );
+
+  it.each(["admin", "manager"] as const)(
+    "allows %s when pathname header is missing or empty",
+    (role) => {
+      for (const pathname of [null, undefined, ""]) {
+        expect(assertStaffPageAccess(pathname, role)).toBeNull();
+      }
+    },
+  );
 });

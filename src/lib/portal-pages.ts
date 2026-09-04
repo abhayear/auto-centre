@@ -24,9 +24,13 @@ function fallbackRedirectForRole(role: StaffRole): string {
 }
 
 export function assertStaffPageAccess(
-  pathname: string,
+  pathname: string | null | undefined,
   role: StaffRole,
 ): string | null {
+  if (!pathname) {
+    return canUseOpsPortal(role) ? null : fallbackRedirectForRole(role);
+  }
+
   if (pathname === "/admin") return null;
 
   if (isPage(pathname, "/admin/change-password")) return null;
