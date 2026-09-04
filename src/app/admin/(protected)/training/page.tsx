@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
+import { TrainingLibrary } from "@/components/admin/TrainingLibrary";
 
 export const metadata: Metadata = {
   title: "Training",
 };
 
 export default function TrainingPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-white">Training</h1>
-    </div>
-  );
+  return <TrainingLibrary />;
 }
