@@ -71,6 +71,91 @@ describe("listOpenPullRequests", () => {
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
+  it("strips Markdown link wrapping from a Vercel preview URL", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          number: 8,
+          title: "Markdown preview",
+          html_url: "https://github.com/acme/app/pull/8",
+          user: { login: "developer" },
+          body: "[Preview](https://demo.vercel.app)",
+          mergeable: true,
+        },
+      ],
+    }) as unknown as typeof fetch;
+
+    const [pullRequest] = await listOpenPullRequests({
+      repo: "acme/app",
+      token: "secret",
+      fetchFn,
+    });
+
+    expect(pullRequest.previewUrl).toBe("https://demo.vercel.app");
+  });
+
+  it("strips trailing prose punctuation from Vercel preview URLs", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          number: 9,
+          title: "Punctuated previews",
+          html_url: "https://github.com/acme/app/pull/9",
+          user: { login: "developer" },
+          body:
+            "Deploy https://foo.vercel.app. Alternate https://foo.vercel.app/path)",
+          mergeable: true,
+        },
+        {
+          number: 10,
+          title: "Punctuated path",
+          html_url: "https://github.com/acme/app/pull/10",
+          user: { login: "developer" },
+          body: "Deploy https://foo.vercel.app/path)",
+          mergeable: true,
+        },
+      ],
+    }) as unknown as typeof fetch;
+
+    const pullRequests = await listOpenPullRequests({
+      repo: "acme/app",
+      token: "secret",
+      fetchFn,
+    });
+
+    expect(pullRequests.map(({ previewUrl }) => previewUrl)).toEqual([
+      "https://foo.vercel.app",
+      "https://foo.vercel.app/path",
+    ]);
+  });
+
+  it("rejects hostnames that only contain the Vercel suffix", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          number: 11,
+          title: "Untrusted preview",
+          html_url: "https://github.com/acme/app/pull/11",
+          user: { login: "developer" },
+          body:
+            "Ignore https://evil.vercel.app.evil.com and use https://safe.vercel.app",
+          mergeable: true,
+        },
+      ],
+    }) as unknown as typeof fetch;
+
+    const [pullRequest] = await listOpenPullRequests({
+      repo: "acme/app",
+      token: "secret",
+      fetchFn,
+    });
+
+    expect(pullRequest.previewUrl).toBe("https://safe.vercel.app");
+  });
+
   it("throws the response status text when listing fails", async () => {
     const fetchFn = vi.fn().mockResolvedValue({
       ok: false,

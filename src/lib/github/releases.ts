@@ -25,7 +25,7 @@ function firstVercelPreviewUrl(body: string | null): string | null {
   if (!body) return null;
 
   for (const match of body.matchAll(/https:\/\/[^\s<>"']+/g)) {
-    const candidate = match[0];
+    const candidate = match[0].replace(/[\])}.,;:!?]+$/, "");
 
     try {
       if (new URL(candidate).hostname.endsWith(".vercel.app")) {
