@@ -50,6 +50,11 @@ body {
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
   body {
     background: white !important;
     color: #0f172a !important;
@@ -67,6 +72,11 @@ body {
 
   #service-schedule-print {
     color: #0f172a;
+    max-height: 281mm;
+    overflow: hidden;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   #service-schedule-print a {
@@ -79,7 +89,7 @@ body {
     display: none !important;
   }
 
-  .print-scope-maintenance-guide [data-print-section="due-dates"] {
+  .print-scope-due-dates [data-print-hide-on-a4] {
     display: none !important;
   }
 }
