@@ -12,6 +12,8 @@ import {
   Car,
   ClipboardList,
   Clock,
+  FileSpreadsheet,
+  GitCompare,
   IndianRupee,
   KeyRound,
   LayoutDashboard,
@@ -25,7 +27,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
+import { GSTR1_CONSOLIDATOR_URL, GST_ITC_MATCHER_URL, ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
@@ -44,6 +46,8 @@ const navItems = [
   { href: "/admin/service-areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/site-settings", label: "Site Settings", icon: Clock },
   { href: ONLINE_STORE_URL, label: "Online Store", icon: Store, external: true },
+  { href: GSTR1_CONSOLIDATOR_URL, label: "GSTR-1", icon: FileSpreadsheet, external: true },
+  { href: GST_ITC_MATCHER_URL, label: "GST ITC Matcher", icon: GitCompare, external: true },
   { href: "/admin/service-schedule", label: "Service Schedule", icon: CalendarClock },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase },
   { href: "/admin/job-applications", label: "Applicant Tracking", icon: ClipboardList },

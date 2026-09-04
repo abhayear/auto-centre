@@ -11,6 +11,12 @@ export const SITE_ADDRESS =
 export const ONLINE_STORE_URL =
   "https://api1.vyaparapp.in/store/autogalaxyonline";
 
+export const GSTR1_CONSOLIDATOR_URL =
+  "https://gstr1-consolidator.streamlit.app/";
+
+export const GST_ITC_MATCHER_URL =
+  "https://gst-itc-matcher.streamlit.app/";
+
 /** Auto Galaxy showroom — used for map centre & contact page */
 export const STORE_LOCATION = {
   lat: 25.386945,
