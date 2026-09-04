@@ -167,6 +167,7 @@ export function TrainingLibrary() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [audienceFilter, setAudienceFilter] = useState<string>("all");
@@ -279,6 +280,36 @@ export function TrainingLibrary() {
     closeForm();
     setLoading(true);
     await loadResources();
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("category", "training");
+
+    try {
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        body: uploadData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to upload training file");
+        return;
+      }
+      setForm((prev) => ({ ...prev, fileUrl: data.url }));
+      setErrors((prev) => ({ ...prev, fileUrl: "" }));
+      toast.success("Training file uploaded");
+    } catch {
+      toast.error("Failed to upload training file");
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
+    }
   }
 
   async function handleDelete(id: string) {
@@ -568,16 +599,44 @@ export function TrainingLibrary() {
             />
           ) : null}
           {form.kind === "file" ? (
-            <Input
-              id="training-file-url"
-              name="fileUrl"
-              type="url"
-              label="File URL"
-              value={form.fileUrl}
-              onChange={(e) => setForm((prev) => ({ ...prev, fileUrl: e.target.value }))}
-              placeholder="https://..."
-              error={errors.fileUrl}
-            />
+            <div>
+              <label
+                htmlFor="training-file"
+                className="mb-1 block text-sm font-medium text-slate-300"
+              >
+                File
+              </label>
+              <input
+                id="training-file"
+                name="file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                onChange={handleFileUpload}
+                disabled={uploadingFile}
+                className="block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-red-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-red-500 disabled:opacity-60"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                {uploadingFile
+                  ? "Uploading…"
+                  : "Upload a JPEG, PNG, WebP, GIF, or PDF file (maximum 5 MB)."}
+              </p>
+              {form.fileUrl ? (
+                <p className="mt-2 break-all text-xs text-slate-400">
+                  Uploaded file:{" "}
+                  <a
+                    href={form.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    {form.fileUrl.split("/").pop() || form.fileUrl}
+                  </a>
+                </p>
+              ) : null}
+              {errors.fileUrl ? (
+                <p className="mt-1 text-xs text-red-400">{errors.fileUrl}</p>
+              ) : null}
+            </div>
           ) : null}
           {(form.kind === "script" || form.kind === "sop") && (
             <Input
@@ -621,7 +680,7 @@ export function TrainingLibrary() {
             <Button type="button" variant="ghost" onClick={closeForm}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || uploadingFile}>
               {saving ? "Saving…" : editingId ? "Save Changes" : "Create Resource"}
             </Button>
           </div>

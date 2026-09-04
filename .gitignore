@@ -53,6 +53,8 @@ yarn-error.log*
 !/public/uploads/services/.gitkeep
 /public/uploads/customers/*
 !/public/uploads/customers/.gitkeep
+/public/uploads/training/*
+!/public/uploads/training/.gitkeep
 
 # typescript
 *.tsbuildinfo
