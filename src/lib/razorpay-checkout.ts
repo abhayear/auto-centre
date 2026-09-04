@@ -68,6 +68,12 @@ export function buildRazorpayMethodConfig(testMode: boolean): RazorpayCheckoutMe
   }
 
   return {
+    method: {
+      upi: true,
+      card: true,
+      netbanking: true,
+      wallet: true,
+    },
     config: {
       display: {
         sequence: ["upi", "card", "netbanking", "wallet"],
