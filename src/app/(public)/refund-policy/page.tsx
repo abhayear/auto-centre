@@ -4,7 +4,7 @@ import { SITE_ADDRESS, SITE_EMAIL, SITE_NAME, SITE_PHONE } from "@/lib/constants
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cancellation & Refund Policy",
+  title: "Cancellation and Refund",
   description: `Cancellation and refund policy for online bookings, services, and purchases at ${SITE_NAME}.`,
 };
 
@@ -12,7 +12,7 @@ const LAST_UPDATED = "12 August 2026";
 
 export default function RefundPolicyPage() {
   return (
-    <PolicyLayout title="Cancellation & Refund Policy" lastUpdated={LAST_UPDATED}>
+    <PolicyLayout title="Cancellation and Refund" lastUpdated={LAST_UPDATED}>
       <PolicySection title="1. Overview">
         <p>
           This policy explains cancellations and refunds for {SITE_NAME} regarding online e-scooter

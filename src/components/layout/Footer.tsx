@@ -101,14 +101,20 @@ export function Footer() {
             &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <Link href="/terms" className="hover:text-red-400">
+              Terms and Conditions
+            </Link>
             <Link href="/privacy" className="hover:text-red-400">
               Privacy Policy
             </Link>
             <Link href="/refund-policy" className="hover:text-red-400">
-              Cancellation & Refund Policy
+              Cancellation and Refund
+            </Link>
+            <Link href="/shipping" className="hover:text-red-400">
+              Shipping and Exchange
             </Link>
             <Link href="/contact" className="hover:text-red-400">
-              Contact
+              Contact Us
             </Link>
             <Link href="/sitemap" className="hover:text-red-400">
               Sitemap
