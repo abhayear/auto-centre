@@ -13,8 +13,8 @@ import { getSiteSettings } from "@/lib/site-settings";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Contact",
-  description: `Get in touch with ${SITE_NAME}.`,
+  title: "Contact Us",
+  description: `Contact ${SITE_NAME} — showroom address, phone, email, and enquiry forms in Lalitpur.`,
 };
 
 export default async function ContactPage() {

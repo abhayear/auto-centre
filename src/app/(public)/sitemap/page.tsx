@@ -19,9 +19,11 @@ const mainPages = [
   { href: "/test-drive", label: "Test Ride" },
   { href: "/service-schedule", label: "Service Schedule" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/contact", label: "Contact Us" },
+  { href: "/terms", label: "Terms and Conditions" },
   { href: "/privacy", label: "Privacy Policy" },
-  { href: "/refund-policy", label: "Cancellation & Refund Policy" },
+  { href: "/refund-policy", label: "Cancellation and Refund" },
+  { href: "/shipping", label: "Shipping and Exchange" },
   { href: "/careers", label: "Careers" },
   { href: "/investment", label: "Investment Proposal" },
 ];
