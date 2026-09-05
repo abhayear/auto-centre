@@ -19,6 +19,7 @@ const mainPages = [
   { href: "/test-drive", label: "Test Ride" },
   { href: "/service-schedule", label: "Service Schedule" },
   { href: "/about", label: "About" },
+  { href: "/policies", label: "Policies" },
   { href: "/contact", label: "Contact Us" },
   { href: "/terms", label: "Terms and Conditions" },
   { href: "/privacy", label: "Privacy Policy" },

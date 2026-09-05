@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Zap, Menu, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import { LEGAL_PAGE_LINKS } from "@/lib/legal-pages";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -14,7 +15,8 @@ const navLinks = [
   { href: "/careers", label: "Careers" },
   { href: "/book-service", label: "Book Service" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/policies", label: "Policies" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
 export function Navbar() {
@@ -89,6 +91,19 @@ export function Navbar() {
             >
               Book Online
             </Link>
+            <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Policies
+            </p>
+            {LEGAL_PAGE_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </nav>
       )}
