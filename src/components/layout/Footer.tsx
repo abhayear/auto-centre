@@ -7,12 +7,13 @@ import {
   SITE_PHONES,
   SITE_TAGLINE,
 } from "@/lib/constants";
+import { LEGAL_PAGE_LINKS } from "@/lib/legal-pages";
 
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-slate-800 bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="mb-4 flex items-center gap-2">
               <Zap className="h-6 w-6 text-red-500" />
@@ -71,6 +72,21 @@ export function Footer() {
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-300">
+              Policies
+            </h3>
+            <ul className="space-y-2 text-sm text-slate-400">
+              {LEGAL_PAGE_LINKS.map((page) => (
+                <li key={page.href}>
+                  <Link href={page.href} className="hover:text-red-400">
+                    {page.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-300">
               Contact
             </h3>
             <ul className="space-y-3 text-sm text-slate-400">
@@ -101,21 +117,11 @@ export function Footer() {
             &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link href="/terms" className="hover:text-red-400">
-              Terms and Conditions
-            </Link>
-            <Link href="/privacy" className="hover:text-red-400">
-              Privacy Policy
-            </Link>
-            <Link href="/refund-policy" className="hover:text-red-400">
-              Cancellation and Refund
-            </Link>
-            <Link href="/shipping" className="hover:text-red-400">
-              Shipping and Exchange
-            </Link>
-            <Link href="/contact" className="hover:text-red-400">
-              Contact Us
-            </Link>
+            {LEGAL_PAGE_LINKS.map((page) => (
+              <Link key={page.href} href={page.href} className="hover:text-red-400">
+                {page.label}
+              </Link>
+            ))}
             <Link href="/sitemap" className="hover:text-red-400">
               Sitemap
             </Link>
