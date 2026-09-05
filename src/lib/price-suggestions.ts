@@ -63,8 +63,8 @@ export function buildPriceSuggestions(
       const sold = soldAverages.get(key);
       const soldAverage = sold ? sold.total / sold.count : null;
       const suggestedPrice = suggestPrice(vehicle.price, soldAverage, season);
-      const historyBit = soldAverage
-        ? `Sold-average for ${vehicle.make} ${vehicle.model} is ₹${roundInr(soldAverage)} from ${sold.count} sale${sold.count === 1 ? "" : "s"}.`
+      const historyBit = sold
+        ? `Sold-average for ${vehicle.make} ${vehicle.model} is ₹${roundInr(soldAverage ?? 0)} from ${sold.count} sale${sold.count === 1 ? "" : "s"}.`
         : "No sold units of this model yet — suggestion uses the current list price.";
 
       return {
