@@ -431,6 +431,7 @@ export const replacementCompanyReceiptSchema = z.object({
   companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
   companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
   result: z.enum(REPLACEMENT_STOCK_RESULTS).default("repaired"),
+  destination: z.enum(REPLACEMENT_DESTINATIONS).default("company"),
   returnToCustomerNow: z.boolean().optional(),
   returnedToCustomerDate: replacementDateSchema.optional(),
   items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),

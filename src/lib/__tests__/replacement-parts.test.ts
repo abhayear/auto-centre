@@ -624,6 +624,27 @@ describe("replacement-parts helpers", () => {
 });
 
 describe("company receipt validators", () => {
+  it("accepts received-from Plant or Company on a receipt", () => {
+    const plant = replacementCompanyReceiptSchema.safeParse({
+      id: "claim-1",
+      companyReceivedDate: "2026-08-16",
+      destination: "plant",
+      items: [{ itemType: "battery", side: "new", quantity: 1 }],
+    });
+    expect(plant.success).toBe(true);
+    if (plant.success) {
+      expect(plant.data.destination).toBe("plant");
+    }
+
+    const company = replacementCompanyReceiptSchema.safeParse({
+      id: "claim-1",
+      companyReceivedDate: "2026-08-16",
+      destination: "company",
+      items: [{ itemType: "charger", side: "new", quantity: 1 }],
+    });
+    expect(company.success).toBe(true);
+  });
+
   it("accepts a receipt without invoice or delivery note", () => {
     const result = replacementCompanyReceiptSchema.safeParse({
       id: "claim-1",

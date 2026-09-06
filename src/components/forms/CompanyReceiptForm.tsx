@@ -14,7 +14,10 @@ import {
   pendingFromCompanySummary,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
-import { REPLACEMENT_STOCK_RESULTS } from "@/lib/warranty-allocation";
+import {
+  REPLACEMENT_RECEIVED_FROM_OPTIONS,
+  REPLACEMENT_STOCK_RESULTS,
+} from "@/lib/warranty-allocation";
 
 type ItemDraft = {
   key: string;
@@ -82,6 +85,7 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
       companyInvoiceNumber: formData.get("companyInvoiceNumber") || undefined,
       companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
       result: formData.get("result") || "repaired",
+      destination: formData.get("destination") || claim.destination || "company",
       returnToCustomerNow: returnNow,
       returnedToCustomerDate: returnNow
         ? formData.get("returnedToCustomerDate") || formData.get("companyReceivedDate")
@@ -113,7 +117,7 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
       }
 
       toast.success(
-        returnNow ? "Received from company and returned to customer" : "Company receipt recorded",
+        returnNow ? "Received and returned to customer" : "Receipt recorded",
       );
       onSuccess();
     } catch {
@@ -143,11 +147,18 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <Select
+            id="destination"
+            name="destination"
+            label="Received from"
+            defaultValue={claim.destination === "plant" ? "plant" : "company"}
+            options={REPLACEMENT_RECEIVED_FROM_OPTIONS}
+          />
           <Input
             id="companyReceivedDate"
             name="companyReceivedDate"
             type="date"
-            label="Received from company date"
+            label="Received date"
             defaultValue={claim.companyReceivedDate ?? today}
             required
           />

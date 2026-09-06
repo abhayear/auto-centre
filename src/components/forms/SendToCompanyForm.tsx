@@ -10,7 +10,7 @@ import {
   formatReplacementItemType,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
-import { REPLACEMENT_DESTINATION_LABELS } from "@/lib/warranty-allocation";
+import { REPLACEMENT_DESTINATION_OPTIONS } from "@/lib/warranty-allocation";
 
 interface SendToCompanyFormProps {
   claims: SerializedReplacementClaim[];
@@ -94,10 +94,7 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
           name="destination"
           label="Send to"
           defaultValue={claims[0]?.destination === "plant" ? "plant" : "company"}
-          options={[
-            { value: "plant", label: REPLACEMENT_DESTINATION_LABELS.plant },
-            { value: "company", label: REPLACEMENT_DESTINATION_LABELS.company },
-          ]}
+          options={REPLACEMENT_DESTINATION_OPTIONS}
         />
         <Input
           id="sentToCompanyDate"

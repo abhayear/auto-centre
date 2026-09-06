@@ -370,7 +370,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
           : existing.status === "sent_to_company"
             ? "received_from_company"
             : existing.status;
-      const source = existing.destination === "plant" ? "plant" : "company";
+      const source = receiptData.destination ?? (existing.destination === "plant" ? "plant" : "company");
       const receivedDate = parseReplacementDateInput(receiptData.companyReceivedDate);
 
       const record = await prisma.$transaction(async (tx) => {
@@ -378,6 +378,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
           where: { id: receiptData.id },
           data: {
             companyReceivedDate: receivedDate,
+            destination: source,
             companyInvoiceNumber: receiptData.companyInvoiceNumber?.trim() || null,
             companyDeliveryNote: receiptData.companyDeliveryNote?.trim() || null,
             status: nextStatus,

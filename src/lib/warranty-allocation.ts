@@ -11,6 +11,16 @@ export const REPLACEMENT_DESTINATION_LABELS: Record<ReplacementDestination, stri
   company: "Company",
 };
 
+export const REPLACEMENT_DESTINATION_OPTIONS = REPLACEMENT_DESTINATIONS.map((value) => ({
+  value,
+  label: REPLACEMENT_DESTINATION_LABELS[value],
+}));
+
+export const REPLACEMENT_RECEIVED_FROM_OPTIONS = REPLACEMENT_DESTINATIONS.map((value) => ({
+  value,
+  label: value === "plant" ? "Received from Plant" : "Received from Company",
+}));
+
 export const REPLACEMENT_STOCK_RESULTS = ["repaired", "replacement", "rejected"] as const;
 export type ReplacementStockResult = (typeof REPLACEMENT_STOCK_RESULTS)[number];
 
