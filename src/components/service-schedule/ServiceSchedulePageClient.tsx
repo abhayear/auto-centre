@@ -1,17 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { CalendarClock, Printer } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, FileDown } from "lucide-react";
 import { MarkdownContent } from "@/components/content/MarkdownContent";
 import { ServiceDueCalculator } from "@/components/service-schedule/ServiceDueCalculator";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import {
   ELECTRIC_SCOOTER_MILESTONES,
   formatScheduleDate,
 } from "@/lib/electric-scooter-service-schedule";
 import { splitServiceScheduleContent } from "@/lib/service-schedule-content";
+import {
+  SERVICE_SCHEDULE_PAPER_OPTIONS,
+  isServiceSchedulePaperSize,
+  serviceSchedulePrintMaxHeightMm,
+  type ServiceSchedulePaperSize,
+} from "@/lib/service-schedule-paper";
 
 type ServiceSchedulePageClientProps = {
   title: string;
@@ -35,6 +42,7 @@ export function ServiceSchedulePageClient({
   const [billNo, setBillNo] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [lastCompleted, setLastCompleted] = useState("");
+  const [paperSize, setPaperSize] = useState<ServiceSchedulePaperSize>("A4");
 
   const lastCompletedLabel = useMemo(() => {
     if (!lastCompleted) return "None completed yet";
@@ -58,7 +66,21 @@ export function ServiceSchedulePageClient({
     [content],
   );
 
-  function handlePrint() {
+  const printMaxHeightMm = serviceSchedulePrintMaxHeightMm(paperSize);
+
+  useEffect(() => {
+    document.documentElement.dataset.schedulePaper = paperSize;
+    document.documentElement.style.setProperty(
+      "--service-schedule-print-max-height",
+      `${printMaxHeightMm}mm`,
+    );
+    return () => {
+      delete document.documentElement.dataset.schedulePaper;
+      document.documentElement.style.removeProperty("--service-schedule-print-max-height");
+    };
+  }, [paperSize, printMaxHeightMm]);
+
+  function handleSaveAsPdf() {
     window.print();
   }
 
@@ -69,12 +91,12 @@ export function ServiceSchedulePageClient({
         data-print-hide
       >
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">
-          Print customer schedule
+          Save customer schedule as PDF
         </h2>
         <p className="mt-1 text-sm text-slate-400">
-          Fill customer details and delivery date, then print a single A4 page with this
-          customer&apos;s free and paid service due dates (and dealer stamp lines). In the print
-          dialog, choose A4 and turn off headers and footers.
+          Fill customer details and delivery date, pick a paper size, then save as PDF. In the
+          dialog, choose &quot;Save as PDF&quot; as the destination and turn off headers and
+          footers.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Input
@@ -92,14 +114,28 @@ export function ServiceSchedulePageClient({
             placeholder="e.g. AG-2026-0142"
           />
         </div>
-        <div className="mt-4">
-          <Button type="button" onClick={handlePrint} className="inline-flex items-center gap-2">
-            <Printer className="h-4 w-4" />
-            Print one A4
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="w-full sm:w-48">
+            <Select
+              id="paperSize"
+              label="Paper size"
+              value={paperSize}
+              options={SERVICE_SCHEDULE_PAPER_OPTIONS}
+              onChange={(e) => {
+                if (isServiceSchedulePaperSize(e.target.value)) {
+                  setPaperSize(e.target.value);
+                }
+              }}
+            />
+          </div>
+          <Button type="button" onClick={handleSaveAsPdf} className="inline-flex items-center gap-2">
+            <FileDown className="h-4 w-4" />
+            Save as PDF
           </Button>
         </div>
       </div>
 
+      <style>{`@media print { @page { size: ${paperSize} portrait; margin: 8mm; } }`}</style>
       <div
         id="service-schedule-print"
         className="print-scope-due-dates print:text-black"

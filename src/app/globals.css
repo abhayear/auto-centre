@@ -51,7 +51,6 @@ body {
 
 @media print {
   @page {
-    size: A4 portrait;
     margin: 8mm;
   }
 
@@ -72,7 +71,7 @@ body {
 
   #service-schedule-print {
     color: #0f172a;
-    max-height: 281mm;
+    max-height: var(--service-schedule-print-max-height, 281mm);
     overflow: hidden;
     page-break-after: avoid;
     page-break-inside: avoid;
@@ -89,7 +88,8 @@ body {
     display: none !important;
   }
 
-  .print-scope-due-dates [data-print-hide-on-a4] {
+  html[data-schedule-paper="A4"] .print-scope-due-dates [data-print-hide-on-a4],
+  html[data-schedule-paper="A5"] .print-scope-due-dates [data-print-hide-on-a4] {
     display: none !important;
   }
 }
