@@ -13,9 +13,9 @@ describe("service-schedule paper sizes", () => {
   });
 
   it("sizes printable content to one page minus 8mm margins", () => {
-    expect(serviceSchedulePrintMaxHeightMm("A4")).toBe(281);
-    expect(serviceSchedulePrintMaxHeightMm("A5")).toBe(194);
-    expect(serviceSchedulePrintMaxHeightMm("A3")).toBe(404);
+    expect(serviceSchedulePrintMaxHeightMm("A4")).toBe(285);
+    expect(serviceSchedulePrintMaxHeightMm("A5")).toBe(198);
+    expect(serviceSchedulePrintMaxHeightMm("A3")).toBe(408);
   });
 
   it("treats A4 and A5 as compact one-page sheets", () => {

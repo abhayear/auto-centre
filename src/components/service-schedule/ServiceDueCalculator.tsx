@@ -25,7 +25,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const dealerStampColumnClass =
-  "min-w-[10rem] px-3 py-2 print:min-w-[6rem] print:border print:border-black print:px-1.5 print:py-1 print:text-xs";
+  "min-w-[10rem] w-[32%] px-3 py-2 print:min-w-0 print:border print:border-black print:px-2 print:py-2 print:text-sm";
 
 function DealerStampHeader() {
   return (
@@ -37,7 +37,7 @@ function DealerStampCell() {
   return (
     <td className={`${dealerStampColumnClass} align-bottom`}>
       <div
-        className="flex min-h-12 flex-col justify-end print:min-h-8"
+        className="flex h-full min-h-12 flex-col justify-end print:min-h-[2.75rem]"
         aria-hidden="true"
       >
         <div className="border-b border-slate-600 print:border-black" />
@@ -160,35 +160,35 @@ export function ServiceDueCalculator({
       ) : null}
 
       {milestones ? (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-slate-700/50 print:mt-3 print:border-black">
-          <table className="min-w-full text-left text-sm">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-slate-700/50 print-stretch-table-wrap print:mt-3 print:flex-1 print:overflow-visible print:border-black">
+          <table className="min-w-full text-left text-sm print:h-full print:w-full">
             <thead className="bg-slate-800/80 text-slate-200 print:bg-white print:text-black">
               <tr>
-                <th className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                <th className="w-[34%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Service
                 </th>
-                <th className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                <th className="w-[12%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Day
                 </th>
-                <th className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                <th className="w-[22%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Due date
                 </th>
                 <DealerStampHeader />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50 print:divide-black">
+            <tbody className="divide-y divide-slate-700/50 print:h-full print:divide-black">
               {milestones.map((m) => (
-                <tr key={m.id} className="text-slate-300 print:text-black">
-                  <td className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                <tr key={m.id} className="text-slate-300 print:h-[1%] print:text-black">
+                  <td className="px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                     {m.shortLabel}
                     <span className="ml-1 text-xs text-slate-500 print:text-black">
                       ({m.type === "free" ? "Free" : "Paid"})
                     </span>
                   </td>
-                  <td className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                  <td className="px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                     {m.days}
                   </td>
-                  <td className="px-3 py-2 print:border print:border-black print:px-1.5 print:py-1 print:text-xs">
+                  <td className="px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                     {formatScheduleDate(m.dueDate)}
                   </td>
                   <DealerStampCell />

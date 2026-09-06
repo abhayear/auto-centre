@@ -12,7 +12,7 @@ export const SERVICE_SCHEDULE_PAPER_HEIGHT_MM: Record<ServiceSchedulePaperSize, 
   A0: 1189,
 };
 
-export const SERVICE_SCHEDULE_PRINT_MARGIN_MM = 8;
+export const SERVICE_SCHEDULE_PRINT_MARGIN_MM = 6;
 
 export const SERVICE_SCHEDULE_PAPER_OPTIONS = SERVICE_SCHEDULE_PAPER_SIZES.map((size) => ({
   value: size,

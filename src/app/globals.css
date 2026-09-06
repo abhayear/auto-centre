@@ -51,12 +51,21 @@ body {
 
 @media print {
   @page {
-    margin: 8mm;
+    margin: 6mm;
+  }
+
+  html,
+  body {
+    height: 100% !important;
+    min-height: 100% !important;
+    width: 100%;
+    background: white !important;
+    color: #0f172a !important;
   }
 
   body {
-    background: white !important;
-    color: #0f172a !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   body > header,
@@ -66,13 +75,32 @@ body {
   }
 
   main {
+    display: flex !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  .service-schedule-print-page {
+    box-sizing: border-box;
+    width: 100% !important;
+    height: 100%;
+    max-width: none !important;
     padding: 0 !important;
   }
 
   #service-schedule-print {
     color: #0f172a;
-    max-height: var(--service-schedule-print-max-height, 281mm);
-    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: var(--service-schedule-print-max-height, 285mm);
+    max-height: none;
+    flex-direction: column;
+    overflow: visible;
     page-break-after: avoid;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -88,8 +116,37 @@ body {
     display: none !important;
   }
 
-  html[data-schedule-paper="A4"] .print-scope-due-dates [data-print-hide-on-a4],
-  html[data-schedule-paper="A5"] .print-scope-due-dates [data-print-hide-on-a4] {
-    display: none !important;
+  #service-schedule-print [data-print-section="due-dates"] {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  #service-schedule-print [data-print-section="due-dates"] > section {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin-bottom: 0 !important;
+  }
+
+  #service-schedule-print .print-stretch-table-wrap {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  #service-schedule-print .print-stretch-table-wrap table {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 100%;
+    table-layout: fixed;
+  }
+
+  #service-schedule-print .print-stretch-table-wrap tbody tr {
+    height: 1%;
   }
 }

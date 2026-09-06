@@ -135,13 +135,13 @@ export function ServiceSchedulePageClient({
         </div>
       </div>
 
-      <style>{`@media print { @page { size: ${paperSize} portrait; margin: 8mm; } }`}</style>
+      <style>{`@media print { @page { size: ${paperSize} portrait; margin: 6mm; } }`}</style>
       <div
         id="service-schedule-print"
         className="print-scope-due-dates print:text-black"
       >
-        <div className="mb-8 hidden border-b-2 border-black pb-4 print:mb-2 print:block print:pb-2">
-          <dl className="grid gap-2 text-sm sm:grid-cols-2 print:gap-1 print:text-xs">
+        <div className="mb-8 hidden border-b-2 border-black pb-4 print:mb-3 print:block print:pb-3">
+          <dl className="grid gap-2 text-sm sm:grid-cols-2 print:gap-2 print:text-sm">
             <div>
               <dt className="font-semibold">Customer name</dt>
               <dd>{customerName.trim() || "—"}</dd>
