@@ -47,6 +47,7 @@ export type AllocationClaim = {
   receivedDate: string;
   sentToCompanyDate?: string | null;
   allocatedStockId: string | null;
+  returnedToCustomerDate?: string | null;
   items: AllocationItem[];
 };
 
@@ -78,12 +79,25 @@ export type DashboardTypeCounts = {
   total: number;
 };
 
+export type DashboardOutcomeCounts = {
+  pending: number;
+  allocated: number;
+  returned: number;
+  given: number;
+};
+
 export type WarrantyDashboard = {
   rows: Record<ReplacementItemType, DashboardTypeCounts>;
   totals: DashboardTypeCounts;
+  customersByType: Record<ReplacementItemType, DashboardTypeCounts>;
+  customerHeadcount: DashboardTypeCounts;
+  outcomes: Record<ReplacementItemType, DashboardOutcomeCounts>;
+  outcomeTotals: DashboardOutcomeCounts;
   plantPending: DashboardListRow[];
   companyPending: DashboardListRow[];
   customerPending: DashboardCustomerRow[];
+  allocatedCustomers: DashboardCustomerRow[];
+  returnedCustomers: DashboardListRow[];
   availableStock: AllocationStockItem[];
 };
 
@@ -91,6 +105,7 @@ export type DashboardListRow = {
   claimId: string;
   customerName: string;
   modelCode: string | null;
+  date: string;
   daysPending: number;
 };
 
@@ -99,6 +114,7 @@ export type DashboardCustomerRow = {
   caseNumber: string | null;
   customerName: string;
   modelCode: string | null;
+  date: string;
   remainingMonths: number | null;
   urgent: boolean;
   recommendation: AllocationRecommendation;
@@ -245,6 +261,45 @@ function emptyCounts(): DashboardTypeCounts {
   return { customerPending: 0, autogalaxy: 0, plant: 0, company: 0, total: 0 };
 }
 
+function emptyOutcome(): DashboardOutcomeCounts {
+  return { pending: 0, allocated: 0, returned: 0, given: 0 };
+}
+
+function emptyOutcomeRows(): Record<ReplacementItemType, DashboardOutcomeCounts> {
+  return {
+    battery: emptyOutcome(),
+    charger: emptyOutcome(),
+    motor: emptyOutcome(),
+    controller: emptyOutcome(),
+  };
+}
+
+function addOldItemQty(
+  outcomes: Record<ReplacementItemType, DashboardOutcomeCounts>,
+  items: AllocationItem[],
+  field: "pending" | "allocated" | "returned",
+) {
+  for (const item of items) {
+    if (item.side !== "old") continue;
+    outcomes[asItemType(item.itemType)][field] += item.quantity || 1;
+  }
+}
+
+function finalizeOutcomes(
+  outcomes: Record<ReplacementItemType, DashboardOutcomeCounts>,
+): DashboardOutcomeCounts {
+  const totals = emptyOutcome();
+  for (const type of LETTER_ITEM_TYPE_ORDER) {
+    const row = outcomes[type];
+    row.given = row.allocated + row.returned;
+    totals.pending += row.pending;
+    totals.allocated += row.allocated;
+    totals.returned += row.returned;
+    totals.given += row.given;
+  }
+  return totals;
+}
+
 function asItemType(value: string): ReplacementItemType {
   return LETTER_ITEM_TYPE_ORDER.includes(value as ReplacementItemType)
     ? (value as ReplacementItemType)
@@ -253,6 +308,46 @@ function asItemType(value: string): ReplacementItemType {
 
 function isOpenClaim(claim: AllocationClaim): boolean {
   return !CLOSED_STATUSES.has(claim.status);
+}
+
+function emptyIdSets() {
+  return {
+    customerPending: new Set<string>(),
+    autogalaxy: new Set<string>(),
+    plant: new Set<string>(),
+    company: new Set<string>(),
+    total: new Set<string>(),
+  };
+}
+
+function countsFromSets(sets: ReturnType<typeof emptyIdSets>): DashboardTypeCounts {
+  return {
+    customerPending: sets.customerPending.size,
+    autogalaxy: sets.autogalaxy.size,
+    plant: sets.plant.size,
+    company: sets.company.size,
+    total: sets.total.size,
+  };
+}
+
+function sortByDateThenName<T extends { date: string; customerName: string }>(rows: T[]): T[] {
+  return rows.sort((left, right) => {
+    const byDate = left.date.localeCompare(right.date);
+    if (byDate !== 0) return byDate;
+    return left.customerName.localeCompare(right.customerName);
+  });
+}
+
+function addCustomerToSets(
+  sets: ReturnType<typeof emptyIdSets>,
+  claimId: string,
+  location: { autogalaxy?: boolean; plant?: boolean; company?: boolean },
+) {
+  sets.customerPending.add(claimId);
+  sets.total.add(claimId);
+  if (location.autogalaxy) sets.autogalaxy.add(claimId);
+  if (location.plant) sets.plant.add(claimId);
+  if (location.company) sets.company.add(claimId);
 }
 
 function daysBetween(from: string, today: string): number {
@@ -276,6 +371,7 @@ export function claimToAllocationClaim(claim: {
   receivedDate: string;
   sentToCompanyDate?: string | null;
   allocatedStockId?: string | null;
+  returnedToCustomerDate?: string | null;
   items: AllocationItem[];
 }): AllocationClaim {
   return {
@@ -289,6 +385,7 @@ export function claimToAllocationClaim(claim: {
     receivedDate: claim.receivedDate,
     sentToCompanyDate: claim.sentToCompanyDate ?? null,
     allocatedStockId: claim.allocatedStockId ?? null,
+    returnedToCustomerDate: claim.returnedToCustomerDate ?? null,
     items: claim.items,
   };
 }
@@ -308,26 +405,67 @@ export function buildWarrantyDashboard(
   const plantPending: DashboardListRow[] = [];
   const companyPending: DashboardListRow[] = [];
   const customerPending: DashboardCustomerRow[] = [];
+  const allocatedCustomers: DashboardCustomerRow[] = [];
+  const returnedCustomers: DashboardListRow[] = [];
+  const customerIds = emptyIdSets();
+  const customersByTypeSets = {
+    battery: emptyIdSets(),
+    charger: emptyIdSets(),
+    motor: emptyIdSets(),
+    controller: emptyIdSets(),
+  } as Record<ReplacementItemType, ReturnType<typeof emptyIdSets>>;
   const available = availableStock(stockItems);
+  const outcomes = emptyOutcomeRows();
 
   for (const claim of claims) {
+    if (claim.status === "returned_to_customer" || claim.returnedToCustomerDate) {
+      returnedCustomers.push({
+        claimId: claim.id,
+        customerName: claim.customerName,
+        modelCode: oldModelCode(claim),
+        date: claim.returnedToCustomerDate ?? claim.receivedDate,
+        daysPending: daysBetween(claim.returnedToCustomerDate ?? claim.receivedDate, today),
+      });
+      addOldItemQty(outcomes, claim.items, "returned");
+      continue;
+    }
+
     if (!isOpenClaim(claim)) continue;
 
     const recommendation = recommendAllocation(claim, stockItems, today);
     const remainingMonths = recommendation.remainingMonths;
-    customerPending.push({
+    const customerRow = {
       claimId: claim.id,
       caseNumber: claim.caseNumber,
       customerName: claim.customerName,
       modelCode: oldModelCode(claim),
+      date: claim.receivedDate,
       remainingMonths,
       urgent: recommendation.urgent,
       recommendation,
-    });
+    };
 
     const atShowroom = claim.status === "received_from_customer";
     const outbound = claim.status === "sent_to_company";
-    const destination = claim.destination === "plant" ? "plant" : outbound ? "company" : null;
+    const atPlant = outbound && claim.destination === "plant";
+    const atCompany = outbound && !atPlant;
+    const atAutogalaxy = Boolean(claim.allocatedStockId) || atShowroom;
+    const location = { autogalaxy: atAutogalaxy, plant: atPlant, company: atCompany };
+
+    addCustomerToSets(customerIds, claim.id, location);
+    for (const item of claim.items) {
+      if (item.side !== "old") continue;
+      addCustomerToSets(customersByTypeSets[asItemType(item.itemType)], claim.id, location);
+    }
+
+    if (claim.allocatedStockId) {
+      allocatedCustomers.push(customerRow);
+      addOldItemQty(outcomes, claim.items, "allocated");
+      continue;
+    }
+
+    customerPending.push(customerRow);
+    addOldItemQty(outcomes, claim.items, "pending");
 
     for (const item of claim.items) {
       if (item.side !== "old") continue;
@@ -335,21 +473,23 @@ export function buildWarrantyDashboard(
       const qty = item.quantity || 1;
       rows[type].customerPending += qty;
       if (atShowroom) rows[type].autogalaxy += qty;
-      if (outbound && destination === "plant") {
+      if (atPlant) {
         rows[type].plant += qty;
         plantPending.push({
           claimId: claim.id,
           customerName: claim.customerName,
           modelCode: item.modelCode,
+          date: claim.sentToCompanyDate ?? claim.receivedDate,
           daysPending: daysBetween(claim.sentToCompanyDate ?? claim.receivedDate, today),
         });
       }
-      if (outbound && destination === "company") {
+      if (atCompany) {
         rows[type].company += qty;
         companyPending.push({
           claimId: claim.id,
           customerName: claim.customerName,
           modelCode: item.modelCode,
+          date: claim.sentToCompanyDate ?? claim.receivedDate,
           daysPending: daysBetween(claim.sentToCompanyDate ?? claim.receivedDate, today),
         });
       }
@@ -370,14 +510,36 @@ export function buildWarrantyDashboard(
     totals.total += rows[type].total;
   }
 
-  customerPending.sort((a, b) => Number(b.urgent) - Number(a.urgent));
+  sortByDateThenName(customerPending);
+  sortByDateThenName(allocatedCustomers);
+  sortByDateThenName(plantPending);
+  sortByDateThenName(companyPending);
+  sortByDateThenName(returnedCustomers);
+
+  const customersByType = {
+    battery: countsFromSets(customersByTypeSets.battery),
+    charger: countsFromSets(customersByTypeSets.charger),
+    motor: countsFromSets(customersByTypeSets.motor),
+    controller: countsFromSets(customersByTypeSets.controller),
+  } as Record<ReplacementItemType, DashboardTypeCounts>;
 
   return {
     rows,
     totals,
+    customersByType,
+    customerHeadcount: countsFromSets(customerIds),
+    outcomes,
+    outcomeTotals: finalizeOutcomes(outcomes),
     plantPending,
     companyPending,
     customerPending,
+    allocatedCustomers,
+    returnedCustomers,
     availableStock: oldestFirst(available),
   };
+}
+
+export function warrantySummaryComment(headcount: DashboardTypeCounts): string {
+  const customerWord = headcount.total === 1 ? "customer" : "customers";
+  return `${headcount.total} ${customerWord} pending for replacement. Autogalaxy ${headcount.autogalaxy}, Plant ${headcount.plant}, Company ${headcount.company}.`;
 }

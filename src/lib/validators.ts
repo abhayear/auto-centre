@@ -437,17 +437,29 @@ export const replacementCompanyReceiptSchema = z.object({
   items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),
 });
 
+const replacementPieceCountRowSchema = z.object({
+  id: z.string().min(1),
+  quantity: z.coerce.number().int().min(1),
+});
+
 export const replacementSendToCompanySchema = z.object({
   ids: z.array(z.string().min(1)).min(1, "Select at least one claim"),
   sentToCompanyDate: replacementDateSchema,
   destination: z.enum(REPLACEMENT_DESTINATIONS).default("company"),
   courierNote: z.string().trim().max(200).optional().or(z.literal("")),
+  quantities: z.array(replacementPieceCountRowSchema).optional(),
 });
 
 export const replacementAllocateSchema = z.object({
   allocateStock: z.literal(true),
   claimId: z.string().min(1),
   stockId: z.string().min(1),
+  quantity: z.coerce.number().int().min(1).optional(),
+});
+
+export const replacementPieceCountsSchema = z.object({
+  updatePieceCounts: z.literal(true),
+  quantities: z.array(replacementPieceCountRowSchema).min(1),
 });
 
 export const replacementReturnToCustomerSchema = z.object({

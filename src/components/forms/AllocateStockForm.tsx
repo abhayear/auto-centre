@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { PieceCountInput } from "@/components/replacement-parts/PieceCountInput";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
@@ -34,6 +35,7 @@ export function AllocateStockForm({
 }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [manualByClaim, setManualByClaim] = useState<Record<string, string>>({});
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
   const today = todayStamp();
 
   const pending = useMemo(
@@ -51,13 +53,22 @@ export function AllocateStockForm({
     [stock],
   );
 
-  async function allocate(claimId: string, stockId: string) {
-    setLoadingId(claimId);
+  function pieceValue(claim: SerializedReplacementClaim) {
+    return quantities[claim.id] ?? String(Math.max(1, claimPieceCount(claim)));
+  }
+
+  async function allocate(claim: SerializedReplacementClaim, stockId: string) {
+    setLoadingId(claim.id);
     try {
       const res = await fetch("/api/replacement-parts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allocateStock: true, claimId, stockId }),
+        body: JSON.stringify({
+          allocateStock: true,
+          claimId: claim.id,
+          stockId,
+          quantity: Math.max(1, Math.trunc(Number(pieceValue(claim)) || 0)),
+        }),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -103,12 +114,16 @@ export function AllocateStockForm({
                       claim={claim}
                       recommendation={recommendation}
                       available={available}
+                      quantity={pieceValue(claim)}
                       manualStockId={manualByClaim[claim.id] ?? ""}
                       loading={loadingId === claim.id}
+                      onQuantityChange={(value) =>
+                        setQuantities((current) => ({ ...current, [claim.id]: value }))
+                      }
                       onManualChange={(value) =>
                         setManualByClaim((current) => ({ ...current, [claim.id]: value }))
                       }
-                      onAllocate={(stockId) => void allocate(claim.id, stockId)}
+                      onAllocate={(stockId) => void allocate(claim, stockId)}
                     />
                   );
                 })}
@@ -130,16 +145,20 @@ function AllocationRow({
   claim,
   recommendation,
   available,
+  quantity,
   manualStockId,
   loading,
+  onQuantityChange,
   onManualChange,
   onAllocate,
 }: {
   claim: SerializedReplacementClaim;
   recommendation: AllocationRecommendation;
   available: SerializedReplacementStockItem[];
+  quantity: string;
   manualStockId: string;
   loading: boolean;
+  onQuantityChange: (value: string) => void;
   onManualChange: (value: string) => void;
   onAllocate: (stockId: string) => void;
 }) {
@@ -172,7 +191,13 @@ function AllocationRow({
           ? `${formatReplacementItemType(oldItem.itemType)} · ${oldItem.modelCode ?? "No code"}`
           : "No submitted item"}
       </td>
-      <td className="px-3 py-3 align-top font-medium text-white">{claimPieceCount(claim)}</td>
+      <td className="px-3 py-3 align-top">
+        <PieceCountInput
+          id={`pieces-${claim.id}`}
+          value={quantity}
+          onChange={onQuantityChange}
+        />
+      </td>
       <td className="px-3 py-3 align-top">
         <p>{recommendation.reason}</p>
         {recommendation.kind === "wait" && available.length > 0 && (

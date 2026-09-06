@@ -9,10 +9,13 @@ import {
   claimMovementLocation,
   claimMovementQuantities,
   claimPieceCount,
+  oldItemQuantityUpdates,
   filterPendingFromCompanyClaims,
   isAtShowroom,
   isPendingFromCompany,
+  isAllocatedWaitingReturn,
   isReadyForCustomer,
+  isReturnedToCustomer,
   formatLetterQuantitySummary,
   sumLetterQuantities,
   formatItemSpecs,
@@ -28,6 +31,7 @@ import {
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
   replacementAllocateSchema,
+  replacementPieceCountsSchema,
   replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
@@ -123,8 +127,23 @@ describe("replacement-parts validators", () => {
       allocateStock: true,
       claimId: "claim-1",
       stockId: "stock-1",
+      quantity: 2,
     });
     expect(allocate.success).toBe(true);
+
+    const sendWithQty = replacementSendToCompanySchema.safeParse({
+      ids: ["claim-1"],
+      sentToCompanyDate: "2026-08-16",
+      destination: "plant",
+      quantities: [{ id: "claim-1", quantity: 3 }],
+    });
+    expect(sendWithQty.success).toBe(true);
+
+    const pieceCounts = replacementPieceCountsSchema.safeParse({
+      updatePieceCounts: true,
+      quantities: [{ id: "claim-1", quantity: 4 }],
+    });
+    expect(pieceCounts.success).toBe(true);
   });
 
   it("rejects invalid item type", () => {
@@ -155,6 +174,45 @@ describe("replacement-parts helpers", () => {
         ],
       }),
     ).toBe(3);
+  });
+
+  it("maps an edited piece count onto the old item", () => {
+    expect(
+      oldItemQuantityUpdates(
+        [
+          { id: "old-1", side: "old" },
+          { id: "new-1", side: "new" },
+        ],
+        4,
+      ),
+    ).toEqual([{ id: "old-1", quantity: 4 }]);
+  });
+
+  it("puts leftover pieces on the first old item when a claim has several", () => {
+    expect(
+      oldItemQuantityUpdates(
+        [
+          { id: "old-1", side: "old" },
+          { id: "old-2", side: "old" },
+          { id: "old-3", side: "old" },
+        ],
+        5,
+      ),
+    ).toEqual([
+      { id: "old-1", quantity: 3 },
+      { id: "old-2", quantity: 1 },
+      { id: "old-3", quantity: 1 },
+    ]);
+  });
+
+  it("clamps an edited piece count to at least one", () => {
+    expect(oldItemQuantityUpdates([{ id: "old-1", side: "old" }], 0)).toEqual([
+      { id: "old-1", quantity: 1 },
+    ]);
+  });
+
+  it("returns no quantity updates when a claim has no old items", () => {
+    expect(oldItemQuantityUpdates([{ id: "new-1", side: "new" }], 2)).toEqual([]);
   });
 
   it("parses date-only input as UTC midnight", () => {
@@ -576,8 +634,66 @@ describe("replacement-parts helpers", () => {
     expect(buildMovementReport([atShowroom, sent, returned], "received").rows.map((row) => row.claimId)).toEqual([
       "claim-returned",
     ]);
+    expect(buildMovementReport([atShowroom, sent, returned], "returned").rows.map((row) => row.claimId)).toEqual([
+      "claim-returned",
+    ]);
     expect(report.rows[1].location).toBe("Pending at company");
     expect(isReadyForCustomer(returned)).toBe(false);
+    expect(isReturnedToCustomer(returned)).toBe(true);
+    expect(isReturnedToCustomer(atShowroom)).toBe(false);
+  });
+
+  it("treats allocated stock as waiting for return, not still pending allocation", () => {
+    const allocated = serializeReplacementClaim({
+      id: "claim-allocated",
+      receivedDate: new Date("2026-09-01T00:00:00.000Z"),
+      customerName: "Allocated Customer",
+      customerPhone: null,
+      billNumber: null,
+      status: "received_from_company",
+      sentToCompanyDate: new Date("2026-09-02T00:00:00.000Z"),
+      companyReceivedDate: new Date("2026-09-10T00:00:00.000Z"),
+      notes: null,
+      createdAt: new Date("2026-09-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-09-10T00:00:00.000Z"),
+      items: [
+        {
+          id: "old-alloc",
+          itemType: "battery",
+          side: "old",
+          modelCode: "LMKN/F2S/WB/12M",
+          serialNumber: null,
+          ah: 33.9,
+          voltage: null,
+          quantity: 2,
+          notes: null,
+          sortOrder: 0,
+        },
+      ],
+      sourcedStock: [],
+      allocatedStock: [
+        {
+          id: "stock-alloc",
+          itemType: "battery",
+          modelCode: "LMKN/F2S/WB/12M",
+          serialNumber: null,
+          ah: 33.9,
+          voltage: null,
+          result: "repaired",
+          source: "plant",
+          sourceClaimId: null,
+          status: "allocated",
+          receivedDate: new Date("2026-09-10T00:00:00.000Z"),
+          allocatedClaimId: "claim-allocated",
+          allocatedAt: new Date("2026-09-11T00:00:00.000Z"),
+          notes: null,
+        },
+      ],
+    });
+
+    expect(isAllocatedWaitingReturn(allocated)).toBe(true);
+    expect(isReadyForCustomer(allocated)).toBe(true);
+    expect(isReturnedToCustomer(allocated)).toBe(false);
   });
 
   it("uses quantity equations when only some replacements come back", () => {

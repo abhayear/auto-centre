@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
+import { PieceCountInput } from "@/components/replacement-parts/PieceCountInput";
 import {
   claimPieceCount,
   formatReplacementItemType,
@@ -29,8 +30,15 @@ function summarizeItems(claim: SerializedReplacementClaim): string {
     .join(", ");
 }
 
+function initialQuantities(claims: SerializedReplacementClaim[]) {
+  return Object.fromEntries(
+    claims.map((claim) => [claim.id, String(Math.max(1, claimPieceCount(claim)))]),
+  );
+}
+
 export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompanyFormProps) {
   const [loading, setLoading] = useState(false);
+  const [quantities, setQuantities] = useState(() => initialQuantities(claims));
   const today = new Date().toISOString().slice(0, 10);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -44,6 +52,10 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
       sentToCompanyDate: formData.get("sentToCompanyDate"),
       destination: formData.get("destination") || "company",
       courierNote: formData.get("courierNote") || undefined,
+      quantities: claims.map((claim) => ({
+        id: claim.id,
+        quantity: Math.max(1, Math.trunc(Number(quantities[claim.id]) || 0)),
+      })),
     };
 
     try {
@@ -89,7 +101,15 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
                 <tr key={claim.id}>
                   <td className="px-3 py-2 font-medium">{claim.customerName}</td>
                   <td className="px-3 py-2">{summarizeItems(claim) || "—"}</td>
-                  <td className="px-3 py-2">{claimPieceCount(claim)}</td>
+                  <td className="px-3 py-2">
+                    <PieceCountInput
+                      id={`pieces-${claim.id}`}
+                      value={quantities[claim.id] ?? "1"}
+                      onChange={(value) =>
+                        setQuantities((current) => ({ ...current, [claim.id]: value }))
+                      }
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,9 +1,11 @@
-import { Package, PackageCheck, Plus, Truck, UserCheck } from "lucide-react";
+import { ClipboardList, Package, PackageCheck, Plus, Truck, Undo2, UserCheck } from "lucide-react";
+import { ReplacementTrackingCharts } from "@/components/replacement-parts/ReplacementTrackingCharts";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   LETTER_ITEM_TYPE_ORDER,
   REPLACEMENT_ITEM_TYPE_LABELS,
+  formatReplacementDate,
   formatReplacementItemType,
 } from "@/lib/replacement-parts";
 import type { WarrantyDashboard as WarrantyDashboardData } from "@/lib/warranty-allocation";
@@ -13,23 +15,30 @@ const ACTIONS = [
   { id: "send" as const, label: "Send to Plant / Company", icon: Truck },
   { id: "receive" as const, label: "Receive back", icon: PackageCheck },
   { id: "allocate" as const, label: "Allocate", icon: UserCheck },
+  { id: "return" as const, label: "Return", icon: Undo2 },
 ];
 
 export function WarrantyDashboard({
   dashboard,
   allocateWaiting,
+  returnWaiting,
   onAction,
+  onReport,
 }: {
   dashboard: WarrantyDashboardData;
   allocateWaiting: number;
+  returnWaiting: number;
   onAction: (action: (typeof ACTIONS)[number]["id"]) => void;
+  onReport: () => void;
 }) {
   return (
     <div className="mb-6 space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {ACTIONS.map((action) => {
           const Icon = action.icon;
-          const highlight = action.id === "allocate" && allocateWaiting > 0;
+          const waiting =
+            action.id === "allocate" ? allocateWaiting : action.id === "return" ? returnWaiting : 0;
+          const highlight = waiting > 0;
           return (
             <Button
               key={action.id}
@@ -40,12 +49,21 @@ export function WarrantyDashboard({
               <Icon className="h-4 w-4" />
               <span>
                 {action.label}
-                {action.id === "allocate" && allocateWaiting > 0 ? ` · ${allocateWaiting} waiting` : ""}
+                {waiting > 0 ? ` · ${waiting} waiting` : ""}
               </span>
             </Button>
           );
         })}
       </div>
+
+      <div className="flex justify-end">
+        <Button onClick={onReport}>
+          <ClipboardList className="h-4 w-4" />
+          Report
+        </Button>
+      </div>
+
+      <ReplacementTrackingCharts dashboard={dashboard} />
 
       <div className="overflow-x-auto rounded-xl border border-slate-700/50">
         <table className="min-w-full text-left text-sm">
@@ -65,20 +83,43 @@ export function WarrantyDashboard({
                 <td className="px-4 py-3 font-medium text-white">
                   {REPLACEMENT_ITEM_TYPE_LABELS[type]}
                 </td>
-                <td className="px-4 py-3">{dashboard.rows[type].customerPending}</td>
-                <td className="px-4 py-3">{dashboard.rows[type].autogalaxy}</td>
-                <td className="px-4 py-3">{dashboard.rows[type].plant}</td>
-                <td className="px-4 py-3">{dashboard.rows[type].company}</td>
-                <td className="px-4 py-3">{dashboard.rows[type].total}</td>
+                <CountCell
+                  items={dashboard.rows[type].customerPending}
+                  customers={dashboard.customersByType[type].customerPending}
+                />
+                <CountCell
+                  items={dashboard.rows[type].autogalaxy}
+                  customers={dashboard.customersByType[type].autogalaxy}
+                />
+                <CountCell
+                  items={dashboard.rows[type].plant}
+                  customers={dashboard.customersByType[type].plant}
+                />
+                <CountCell
+                  items={dashboard.rows[type].company}
+                  customers={dashboard.customersByType[type].company}
+                />
+                <CountCell
+                  items={dashboard.rows[type].total}
+                  customers={dashboard.customersByType[type].total}
+                />
               </tr>
             ))}
             <tr className="font-semibold text-white">
-              <td className="px-4 py-3">TOTAL</td>
+              <td className="px-4 py-3">TOTAL items</td>
               <td className="px-4 py-3">{dashboard.totals.customerPending}</td>
               <td className="px-4 py-3">{dashboard.totals.autogalaxy}</td>
               <td className="px-4 py-3">{dashboard.totals.plant}</td>
               <td className="px-4 py-3">{dashboard.totals.company}</td>
               <td className="px-4 py-3">{dashboard.totals.total}</td>
+            </tr>
+            <tr className="font-semibold text-white">
+              <td className="px-4 py-3">No. of customers pending</td>
+              <td className="px-4 py-3">{dashboard.customerHeadcount.customerPending}</td>
+              <td className="px-4 py-3">{dashboard.customerHeadcount.autogalaxy}</td>
+              <td className="px-4 py-3">{dashboard.customerHeadcount.plant}</td>
+              <td className="px-4 py-3">{dashboard.customerHeadcount.company}</td>
+              <td className="px-4 py-3">{dashboard.customerHeadcount.total}</td>
             </tr>
           </tbody>
         </table>
@@ -90,8 +131,9 @@ export function WarrantyDashboard({
           empty="No items at plant"
           rows={dashboard.plantPending.map((row) => ({
             key: `${row.claimId}-plant`,
-            title: `${row.modelCode ?? "—"} — ${row.customerName}`,
-            detail: `${row.daysPending} day${row.daysPending === 1 ? "" : "s"}`,
+            date: row.date,
+            title: row.customerName,
+            detail: `${row.modelCode ?? "—"} · ${row.daysPending} day${row.daysPending === 1 ? "" : "s"}`,
           }))}
         />
         <PendingList
@@ -99,21 +141,40 @@ export function WarrantyDashboard({
           empty="No items at company"
           rows={dashboard.companyPending.map((row) => ({
             key: `${row.claimId}-company`,
-            title: `${row.modelCode ?? "—"} — ${row.customerName}`,
-            detail: `${row.daysPending} day${row.daysPending === 1 ? "" : "s"}`,
+            date: row.date,
+            title: row.customerName,
+            detail: `${row.modelCode ?? "—"} · ${row.daysPending} day${row.daysPending === 1 ? "" : "s"}`,
           }))}
         />
         <PendingList
-          title="Customer pending"
+          title="Customers waiting"
           empty="No customers waiting"
           rows={dashboard.customerPending.map((row) => ({
             key: row.claimId,
-            title: `${row.caseNumber ?? "—"} — ${row.customerName} — ${row.modelCode ?? "—"}`,
-            detail:
-              row.remainingMonths == null
-                ? "Warranty not entered"
-                : `${row.remainingMonths} month${row.remainingMonths === 1 ? "" : "s"} left`,
+            date: row.date,
+            title: row.customerName,
+            detail: `${row.caseNumber ?? "—"} · ${row.modelCode ?? "—"}`,
             urgent: row.urgent,
+          }))}
+        />
+        <PendingList
+          title="Allocated customers"
+          empty="No customers allocated"
+          rows={dashboard.allocatedCustomers.map((row) => ({
+            key: row.claimId,
+            date: row.date,
+            title: row.customerName,
+            detail: `${row.caseNumber ?? "—"} · Ready to return`,
+          }))}
+        />
+        <PendingList
+          title="Returned to customer"
+          empty="No returns recorded"
+          rows={dashboard.returnedCustomers.map((row) => ({
+            key: row.claimId,
+            date: row.date,
+            title: row.customerName,
+            detail: row.modelCode ?? "—",
           }))}
         />
         <PendingList
@@ -131,6 +192,31 @@ export function WarrantyDashboard({
   );
 }
 
+function CountCell({ items, customers }: { items: number; customers: number }) {
+  return (
+    <td className="px-4 py-3 align-top">
+      <p>{items}</p>
+      <p className="text-xs font-normal text-slate-400">
+        {customers} customer{customers === 1 ? "" : "s"}
+      </p>
+    </td>
+  );
+}
+
+function groupRowsByDate<T extends { date?: string }>(rows: T[]): { date: string; rows: T[] }[] {
+  const groups: { date: string; rows: T[] }[] = [];
+  for (const row of rows) {
+    const date = row.date || "";
+    const last = groups[groups.length - 1];
+    if (last && last.date === date) {
+      last.rows.push(row);
+    } else {
+      groups.push({ date, rows: [row] });
+    }
+  }
+  return groups;
+}
+
 function PendingList({
   title,
   empty,
@@ -140,8 +226,9 @@ function PendingList({
   title: string;
   empty: string;
   icon?: boolean;
-  rows: { key: string; title: string; detail: string; urgent?: boolean }[];
+  rows: { key: string; date?: string; title: string; detail: string; urgent?: boolean }[];
 }) {
+  const groups = groupRowsByDate(rows);
   return (
     <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
       <div className="mb-2 flex items-center gap-2">
@@ -151,17 +238,28 @@ function PendingList({
       {rows.length === 0 ? (
         <p className="text-sm text-slate-500">{empty}</p>
       ) : (
-        <ul className="space-y-2 text-sm text-slate-300">
-          {rows.map((row) => (
-            <li key={row.key} className="flex flex-wrap items-center justify-between gap-2">
-              <span>{row.title}</span>
-              <span className="flex items-center gap-2 text-xs text-slate-400">
-                {row.urgent ? <Badge variant="danger">Urgent</Badge> : null}
-                {row.detail}
-              </span>
-            </li>
+        <div className="space-y-3">
+          {groups.map((group) => (
+            <div key={group.date || title}>
+              {group.date ? (
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {formatReplacementDate(group.date)}
+                </p>
+              ) : null}
+              <ul className="space-y-2 text-sm text-slate-300">
+                {group.rows.map((row) => (
+                  <li key={row.key} className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-white">{row.title}</span>
+                    <span className="flex items-center gap-2 text-xs text-slate-400">
+                      {row.urgent ? <Badge variant="danger">Urgent</Badge> : null}
+                      {row.detail}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

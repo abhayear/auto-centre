@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { MovementReportPrintClient } from "@/components/replacement-parts/MovementReportPrintClient";
 import { ReplacementPartsPrintClient } from "@/components/replacement-parts/ReplacementPartsPrintClient";
+import { WarrantySummaryPrintClient } from "@/components/replacement-parts/WarrantySummaryPrintClient";
 import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -8,6 +9,8 @@ import {
   isMovementReportKind,
   parseReplacementDateInput,
   serializeReplacementClaim,
+  serializeReplacementStockItem,
+  type SerializedReplacementStockItem,
 } from "@/lib/replacement-parts";
 
 type PageProps = {
@@ -29,8 +32,9 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
   }
 
   const { from, to, auto, ids, letter, report, itemType } = await searchParams;
+  const isSummaryReport = report === "summary";
   const reportKind = isMovementReportKind(report) ? report : null;
-  const isStageReport = reportKind != null;
+  const isStageReport = reportKind != null || isSummaryReport;
 
   const receivedDate: { gte?: Date; lte?: Date } = {};
   if (from) receivedDate.gte = parseReplacementDateInput(from);
@@ -65,15 +69,45 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     where.items = { some: { itemType, side: "old" } };
   }
 
-  const records = await prisma.replacementClaim.findMany({
-    where: Object.keys(where).length > 0 ? where : undefined,
-    include: {
-      items: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-    },
-    orderBy: [{ receivedDate: "asc" }, { createdAt: "asc" }],
-  });
+  const listWhere = Object.keys(where).length > 0 ? where : undefined;
+  const listOrder = [{ receivedDate: "asc" as const }, { createdAt: "asc" as const }];
+  const itemsInclude = {
+    items: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
+  };
+  let records;
+  try {
+    records = await prisma.replacementClaim.findMany({
+      where: listWhere,
+      include: { ...itemsInclude, sourcedStock: true, allocatedStock: true },
+      orderBy: listOrder,
+    });
+  } catch {
+    records = await prisma.replacementClaim.findMany({
+      where: listWhere,
+      include: itemsInclude,
+      orderBy: listOrder,
+    });
+  }
 
   const claims = records.map(serializeReplacementClaim);
+
+  if (isSummaryReport) {
+    let stock: SerializedReplacementStockItem[] = [];
+    try {
+      stock = (await prisma.replacementStockItem.findMany()).map(serializeReplacementStockItem);
+    } catch {
+      stock = [];
+    }
+
+    return (
+      <WarrantySummaryPrintClient
+        claims={claims}
+        stock={stock}
+        from={from}
+        to={to}
+      />
+    );
+  }
 
   if (reportKind) {
     return (

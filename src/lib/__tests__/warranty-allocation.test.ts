@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildWarrantyDashboard,
   nextWarrantyCaseNumber,
+  warrantySummaryComment,
   normalizeItemCode,
   recommendAllocation,
   remainingWarrantyMonths,
@@ -212,5 +213,128 @@ describe("buildWarrantyDashboard", () => {
     expect(dashboard.companyPending).toHaveLength(1);
     expect(dashboard.availableStock).toHaveLength(1);
     expect(dashboard.customerPending.some((row) => row.urgent)).toBe(true);
+    expect(dashboard.allocatedCustomers).toEqual([]);
+    expect(dashboard.returnedCustomers).toEqual([]);
+    expect(dashboard.customerHeadcount).toEqual({
+      customerPending: 3,
+      autogalaxy: 1,
+      plant: 1,
+      company: 1,
+      total: 3,
+    });
+    expect(dashboard.customersByType.battery).toEqual({
+      customerPending: 2,
+      autogalaxy: 1,
+      plant: 1,
+      company: 0,
+      total: 2,
+    });
+    expect(dashboard.customersByType.charger).toEqual({
+      customerPending: 1,
+      autogalaxy: 0,
+      plant: 0,
+      company: 1,
+      total: 1,
+    });
+    expect(dashboard.outcomes.battery.pending).toBe(2);
+    expect(dashboard.outcomes.charger.pending).toBe(1);
+    expect(dashboard.outcomeTotals).toEqual({
+      pending: 3,
+      allocated: 0,
+      returned: 0,
+      given: 0,
+    });
+  });
+
+  it("lists allocated customers separately from returned customers", () => {
+    const dashboard = buildWarrantyDashboard(
+      [
+        claim({
+          id: "c-waiting",
+          status: "received_from_customer",
+          destination: null,
+        }),
+        claim({
+          id: "c-allocated",
+          customerName: "Allocated Raj",
+          status: "received_from_company",
+          allocatedStockId: "stock-9",
+        }),
+        claim({
+          id: "c-returned",
+          customerName: "Returned Raj",
+          status: "returned_to_customer",
+          allocatedStockId: "stock-8",
+          returnedToCustomerDate: "2026-10-05",
+        }),
+      ],
+      [],
+      today,
+    );
+
+    expect(dashboard.allocatedCustomers.map((row) => row.claimId)).toEqual(["c-allocated"]);
+    expect(dashboard.returnedCustomers.map((row) => row.claimId)).toEqual(["c-returned"]);
+    expect(dashboard.customerPending.map((row) => row.claimId)).toEqual(["c-waiting"]);
+    expect(dashboard.customerHeadcount.customerPending).toBe(2);
+    expect(dashboard.customerHeadcount.autogalaxy).toBe(2);
+    expect(dashboard.customerHeadcount.total).toBe(2);
+    expect(dashboard.outcomes.battery).toEqual({
+      pending: 1,
+      allocated: 1,
+      returned: 1,
+      given: 2,
+    });
+    expect(dashboard.outcomeTotals).toEqual({
+      pending: 1,
+      allocated: 1,
+      returned: 1,
+      given: 2,
+    });
+  });
+
+  it("lists waiting customer names oldest date first", () => {
+    const dashboard = buildWarrantyDashboard(
+      [
+        claim({
+          id: "newer",
+          customerName: "New Raj",
+          receivedDate: "2026-10-08",
+          status: "received_from_customer",
+          destination: null,
+        }),
+        claim({
+          id: "older",
+          customerName: "Old Raj",
+          receivedDate: "2026-09-01",
+          status: "received_from_customer",
+          destination: null,
+        }),
+      ],
+      [],
+      today,
+    );
+
+    expect(dashboard.customerPending.map((row) => row.customerName)).toEqual([
+      "Old Raj",
+      "New Raj",
+    ]);
+    expect(dashboard.customerPending.map((row) => row.date)).toEqual([
+      "2026-09-01",
+      "2026-10-08",
+    ]);
+  });
+});
+
+describe("warrantySummaryComment", () => {
+  it("writes a one-line customer summary for the simple report", () => {
+    expect(
+      warrantySummaryComment({
+        customerPending: 3,
+        autogalaxy: 1,
+        plant: 1,
+        company: 1,
+        total: 3,
+      }),
+    ).toBe("3 customers pending for replacement. Autogalaxy 1, Plant 1, Company 1.");
   });
 });

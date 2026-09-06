@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import {
+  claimPieceCount,
   formatReplacementItemType,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
@@ -16,38 +17,43 @@ interface ReturnToCustomerFormProps {
   onCancel: () => void;
 }
 
-function summarizeNewItems(claim: SerializedReplacementClaim): string {
-  const newItems = claim.items.filter((item) => item.side === "new");
-  if (newItems.length === 0) return "—";
-  return newItems
-    .map(
-      (item) =>
-        `${formatReplacementItemType(item.itemType)}${item.modelCode ? ` (${item.modelCode})` : ""}${item.serialNumber ? ` / ${item.serialNumber}` : ""}`,
-    )
-    .join(", ");
+function todayStamp() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function summarizeHandoverItem(claim: SerializedReplacementClaim): string {
+  const allocated = claim.allocatedStock[0];
+  if (allocated) {
+    return `${formatReplacementItemType(allocated.itemType)} · ${allocated.modelCode ?? "No code"}`;
+  }
+  const newItem = claim.items.find((item) => item.side === "new");
+  if (newItem) {
+    return `${formatReplacementItemType(newItem.itemType)}${newItem.modelCode ? ` · ${newItem.modelCode}` : ""}${newItem.serialNumber ? ` / ${newItem.serialNumber}` : ""}`;
+  }
+  const oldItem = claim.items.find((item) => item.side === "old");
+  return oldItem
+    ? `${formatReplacementItemType(oldItem.itemType)} · ${oldItem.modelCode ?? "No code"}`
+    : "No item";
 }
 
 export function ReturnToCustomerForm({ claims, onSuccess, onCancel }: ReturnToCustomerFormProps) {
-  const [loading, setLoading] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [returnedToCustomerDate, setReturnedToCustomerDate] = useState(todayStamp);
+  const [handoverNote, setHandoverNote] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const payload = {
-      returnToCustomer: true,
-      ids: claims.map((claim) => claim.id),
-      returnedToCustomerDate: formData.get("returnedToCustomerDate"),
-      handoverNote: formData.get("handoverNote") || undefined,
-    };
-
+  async function returnClaim(claimIds: string[]) {
+    const key = claimIds.length === 1 ? claimIds[0] : "all";
+    setLoadingId(key);
     try {
       const res = await fetch("/api/replacement-parts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          returnToCustomer: true,
+          ids: claimIds,
+          returnedToCustomerDate,
+          handoverNote: handoverNote.trim() || undefined,
+        }),
       });
       const result = await res.json();
 
@@ -65,34 +71,62 @@ export function ReturnToCustomerForm({ claims, onSuccess, onCancel }: ReturnToCu
     } catch {
       toast.error("Something went wrong");
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   }
 
   return (
     <Modal open title="Return replacement to customer" onClose={onCancel}>
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-          <p className="font-medium">
-            {claims.length === 1
-              ? claims[0].customerName
-              : `${claims.length} customers waiting for handover`}
-          </p>
-          <ul className="mt-2 space-y-1 text-xs text-emerald-200/80">
-            {claims.map((claim) => (
-              <li key={claim.id}>
-                {claim.customerName}: {summarizeNewItems(claim)}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+        {claims.length === 0 ? (
+          <p className="text-sm text-slate-400">No allocated customers are waiting for return.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-700/50">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-800/80 text-slate-300">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Customer</th>
+                  <th className="px-3 py-2 font-medium">Item</th>
+                  <th className="px-3 py-2 font-medium">No. of pieces</th>
+                  <th className="px-3 py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/50 text-slate-300">
+                {claims.map((claim) => (
+                  <tr key={claim.id}>
+                    <td className="px-3 py-3 align-top">
+                      <p className="font-medium text-white">
+                        {claim.caseNumber ?? "—"} · {claim.customerName}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 align-top">{summarizeHandoverItem(claim)}</td>
+                    <td className="px-3 py-3 align-top font-medium text-white">
+                      {Math.max(1, claimPieceCount(claim))}
+                    </td>
+                    <td className="px-3 py-3 align-top">
+                      <Button
+                        type="button"
+                        size="sm"
+                        loading={loadingId === claim.id}
+                        onClick={() => void returnClaim([claim.id])}
+                      >
+                        Return
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <Input
           id="returnedToCustomerDate"
           name="returnedToCustomerDate"
           type="date"
           label="Returned to customer date"
-          defaultValue={today}
+          value={returnedToCustomerDate}
+          onChange={(event) => setReturnedToCustomerDate(event.target.value)}
           required
         />
         <Input
@@ -100,21 +134,29 @@ export function ReturnToCustomerForm({ claims, onSuccess, onCancel }: ReturnToCu
           name="handoverNote"
           label="Handover note (optional)"
           placeholder="e.g. Customer collected from showroom"
+          value={handoverNote}
+          onChange={(event) => setHandoverNote(event.target.value)}
         />
 
         <p className="text-xs text-slate-400">
-          This closes the replacement cycle: received from company → handed back to customer.
+          Return marks the allocated item as handed back and closes the warranty case.
         </p>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
+            Close
           </Button>
-          <Button type="submit" loading={loading}>
-            Mark as returned
-          </Button>
+          {claims.length > 1 ? (
+            <Button
+              type="button"
+              loading={loadingId === "all"}
+              onClick={() => void returnClaim(claims.map((claim) => claim.id))}
+            >
+              Return all
+            </Button>
+          ) : null}
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }

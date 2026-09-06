@@ -55,7 +55,9 @@ export function MovementReportPrintClient({
       ? "No items sent to company for this period."
       : kind === "received"
         ? "No items received from company for this period."
-        : "No replacement claims found for this period.";
+        : kind === "returned"
+          ? "No items returned to customers for this period."
+          : "No replacement claims found for this period.";
 
   useEffect(() => {
     if (autoPrint) {
@@ -211,7 +213,9 @@ export function MovementReportPrintClient({
               ? `Sent ${report.stages.sentToCompany.total}, received back ${report.stages.receivedFromCompany.total}, pending at company ${report.stages.pendingAtCompany.total}.`
               : kind === "received"
                 ? `Received from company ${report.stages.receivedFromCompany.total}, returned to customer ${report.stages.returnedToCustomer.total}, pending with us ${report.stages.pendingWithUs.total}.`
-                : `Pending at company ${report.stages.pendingAtCompany.total} = sent ${report.stages.sentToCompany.total} − received from company ${report.stages.receivedFromCompany.total}. Pending with us ${report.stages.pendingWithUs.total} = (received from customer ${report.stages.receivedFromCustomer.total} − sent ${report.stages.sentToCompany.total}) + (received from company ${report.stages.receivedFromCompany.total} − returned ${report.stages.returnedToCustomer.total}).`}
+                : kind === "returned"
+                  ? `Returned to customer ${report.stages.returnedToCustomer.total}.`
+                  : `Pending at company ${report.stages.pendingAtCompany.total} = sent ${report.stages.sentToCompany.total} − received from company ${report.stages.receivedFromCompany.total}. Pending with us ${report.stages.pendingWithUs.total} = (received from customer ${report.stages.receivedFromCustomer.total} − sent ${report.stages.sentToCompany.total}) + (received from company ${report.stages.receivedFromCompany.total} − returned ${report.stages.returnedToCustomer.total}).`}
           </p>
           <p className="mt-8">For {SITE_NAME}</p>
           <p className="mt-12">Authorised Signatory</p>

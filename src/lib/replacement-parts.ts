@@ -186,6 +186,23 @@ export function claimPieceCount(claim: {
   return sumItemQuantities(claim.items, "old");
 }
 
+export function oldItemQuantityUpdates(
+  items: { id: string; side: string }[],
+  pieceCount: number,
+): { id: string; quantity: number }[] {
+  const oldItems = items.filter((item) => item.side === "old");
+  if (oldItems.length === 0) return [];
+
+  const quantity = Math.max(1, Math.trunc(Number(pieceCount) || 0));
+  const remainderCount = oldItems.length - 1;
+  const firstQuantity = Math.max(1, quantity - remainderCount);
+
+  return oldItems.map((item, index) => ({
+    id: item.id,
+    quantity: index === 0 ? firstQuantity : 1,
+  }));
+}
+
 /** Items still waiting to arrive from Yakuza / company */
 export function isPendingFromCompany(claim: SerializedReplacementClaim): boolean {
   if (claim.status === "cancelled" || claim.status === "closed" || claim.status === "returned_to_customer") {
@@ -245,6 +262,26 @@ export function filterReadyForCustomerClaims(
   claims: SerializedReplacementClaim[],
 ): SerializedReplacementClaim[] {
   return claims.filter(isReadyForCustomer);
+}
+
+export function isAllocatedWaitingReturn(claim: SerializedReplacementClaim): boolean {
+  return Boolean(claim.allocatedStockId) && isReadyForCustomer(claim);
+}
+
+export function filterAllocatedWaitingReturnClaims(
+  claims: SerializedReplacementClaim[],
+): SerializedReplacementClaim[] {
+  return claims.filter(isAllocatedWaitingReturn);
+}
+
+export function isReturnedToCustomer(claim: SerializedReplacementClaim): boolean {
+  return claim.status === "returned_to_customer" || Boolean(claim.returnedToCustomerDate);
+}
+
+export function filterReturnedToCustomerClaims(
+  claims: SerializedReplacementClaim[],
+): SerializedReplacementClaim[] {
+  return claims.filter(isReturnedToCustomer);
 }
 
 function normalizeItemType(value: string): ReplacementItemType {
@@ -516,19 +553,21 @@ export const MOVEMENT_STAGE_LABELS: Record<MovementStage, string> = {
   pendingWithUs: "Pending with us",
 };
 
-export const MOVEMENT_REPORT_KINDS = ["movement", "sent", "received"] as const;
+export const MOVEMENT_REPORT_KINDS = ["movement", "sent", "received", "returned"] as const;
 export type MovementReportKind = (typeof MOVEMENT_REPORT_KINDS)[number];
 
 export const MOVEMENT_REPORT_TITLES: Record<MovementReportKind, string> = {
   movement: "Replaced items movement report",
   sent: "Sent to company report",
   received: "Received from company report",
+  returned: "Returned to customer report",
 };
 
 export const MOVEMENT_REPORT_STAGES: Record<MovementReportKind, MovementStage[]> = {
   movement: [...MOVEMENT_STAGES],
   sent: ["sentToCompany", "receivedFromCompany", "pendingAtCompany"],
   received: ["receivedFromCompany", "returnedToCustomer", "pendingWithUs"],
+  returned: ["returnedToCustomer"],
 };
 
 export function isMovementReportKind(value: string | null | undefined): value is MovementReportKind {
@@ -698,6 +737,9 @@ export function claimMatchesMovementReport(
   if (kind === "movement") return true;
   const quantities = claimMovementQuantities(claim);
   if (kind === "sent") return quantities.sentToCompany.total > 0;
+  if (kind === "returned") {
+    return isReturnedToCustomer(claim) || quantities.returnedToCustomer.total > 0;
+  }
   return quantities.receivedFromCompany.total > 0;
 }
 

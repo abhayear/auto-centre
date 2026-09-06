@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck, UserCheck } from "lucide-react";
+import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck, Undo2, UserCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
 import { AllocateStockForm } from "@/components/forms/AllocateStockForm";
@@ -12,6 +12,7 @@ import {
   ReplacementClaimForm,
   type ReplacementClaimView,
 } from "@/components/forms/ReplacementClaimForm";
+import { EditablePieceCount } from "@/components/replacement-parts/PieceCountInput";
 import { WarrantyDashboard } from "@/components/replacement-parts/WarrantyDashboard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -27,6 +28,7 @@ import {
   isAtShowroom,
   isPendingFromCompany,
   isReadyForCustomer,
+  isReturnedToCustomer,
   pendingFromCompanySummary,
   replacementStatusVariant,
   type SerializedReplacementStockItem,
@@ -177,7 +179,12 @@ export default function AdminReplacementPartsPage() {
     [claims],
   );
 
-  function handleDashboardAction(action: "submit" | "send" | "receive" | "allocate") {
+  const returnedClaims = useMemo(
+    () => claims.filter(isReturnedToCustomer),
+    [claims],
+  );
+
+  function handleDashboardAction(action: "submit" | "send" | "receive" | "allocate" | "return") {
     if (action === "submit") {
       setEditingClaim(undefined);
       setShowForm(true);
@@ -197,6 +204,14 @@ export default function AdminReplacementPartsPage() {
         return;
       }
       setReceiptClaim(pendingClaims[0]);
+      return;
+    }
+    if (action === "return") {
+      if (readyClaims.length === 0) {
+        toast.error("No allocated customers waiting to be returned");
+        return;
+      }
+      setReturnClaims(readyClaims);
       return;
     }
     setShowAllocate(true);
@@ -295,13 +310,15 @@ export default function AdminReplacementPartsPage() {
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
 
-  function openMovementReport(kind: "movement" | "sent" | "received" = "movement") {
+  function openMovementReport(kind: "movement" | "sent" | "received" | "returned" | "summary" = "movement") {
     const params = buildListParams(fromDate, toDate, "", itemTypeFilter);
     if (selectedIds.length > 0) {
       params.set("ids", selectedIds.join(","));
     }
     params.set("report", kind);
-    params.set("auto", "1");
+    if (kind !== "summary") {
+      params.set("auto", "1");
+    }
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
 
@@ -328,6 +345,10 @@ export default function AdminReplacementPartsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <Button onClick={() => openMovementReport("summary")}>
+            <ClipboardList className="h-4 w-4" />
+            Report
+          </Button>
           <Button variant="outline" onClick={() => openLetterPrint()}>
             <FileText className="h-4 w-4" />
             Generate letter
@@ -343,6 +364,10 @@ export default function AdminReplacementPartsPage() {
           <Button variant="outline" onClick={() => openMovementReport("received")}>
             <PackageCheck className="h-4 w-4" />
             Received from company
+          </Button>
+          <Button variant="outline" onClick={() => openMovementReport("returned")}>
+            <Undo2 className="h-4 w-4" />
+            Returned to customer
           </Button>
           <Button variant="outline" onClick={handleExportPdf}>
             <FileDown className="h-4 w-4" />
@@ -363,7 +388,9 @@ export default function AdminReplacementPartsPage() {
       <WarrantyDashboard
         dashboard={dashboard}
         allocateWaiting={allocateWaiting}
+        returnWaiting={readyClaims.length}
         onAction={handleDashboardAction}
+        onReport={() => openMovementReport("summary")}
       />
 
       <DateRangeBulkBar
@@ -424,7 +451,13 @@ export default function AdminReplacementPartsPage() {
                   <tr key={claim.id}>
                     <td className="px-4 py-2 font-medium">{claim.customerName}</td>
                     <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
-                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
+                    <td className="px-4 py-2">
+                      <EditablePieceCount
+                        claimId={claim.id}
+                        initial={claimPieceCount(claim)}
+                        onSaved={() => void refreshClaims()}
+                      />
+                    </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatReplacementDate(claim.receivedDate)}
                     </td>
@@ -484,7 +517,13 @@ export default function AdminReplacementPartsPage() {
                   <tr key={claim.id}>
                     <td className="px-4 py-2 font-medium">{claim.customerName}</td>
                     <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
-                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
+                    <td className="px-4 py-2">
+                      <EditablePieceCount
+                        claimId={claim.id}
+                        initial={claimPieceCount(claim)}
+                        onSaved={() => void refreshClaims()}
+                      />
+                    </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatReplacementDate(claim.sentToCompanyDate ?? claim.receivedDate)}
                     </td>
@@ -508,16 +547,22 @@ export default function AdminReplacementPartsPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-emerald-100">
-                Ready for customer ({readyClaims.length})
+                Allocated customers ({readyClaims.length})
               </h2>
               <p className="text-sm text-emerald-200/80">
-                Allocated or legacy replacements waiting to be handed back.
+                Stock allocated and waiting to be returned to the customer.
               </p>
             </div>
-            <Button onClick={() => setReturnClaims(readyClaims)}>
-              <UserCheck className="h-4 w-4" />
-              Return all to customers
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => openMovementReport("returned")}>
+                <Undo2 className="h-4 w-4" />
+                Returned report
+              </Button>
+              <Button onClick={() => setReturnClaims(readyClaims)}>
+                <Undo2 className="h-4 w-4" />
+                Return all
+              </Button>
+            </div>
           </div>
           <div className="overflow-x-auto rounded-lg border border-emerald-500/20">
             <table className="min-w-full text-left text-sm">
@@ -525,6 +570,7 @@ export default function AdminReplacementPartsPage() {
                 <tr>
                   <th className="px-4 py-2 font-medium">Customer</th>
                   <th className="px-4 py-2 font-medium">New items</th>
+                  <th className="px-4 py-2 font-medium">No. of pieces</th>
                   <th className="px-4 py-2 font-medium">From company</th>
                   <th className="px-4 py-2 font-medium">Action</th>
                 </tr>
@@ -534,14 +580,60 @@ export default function AdminReplacementPartsPage() {
                   <tr key={claim.id}>
                     <td className="px-4 py-2 font-medium">{claim.customerName}</td>
                     <td className="px-4 py-2">{summarizeNewItems(claim)}</td>
+                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatReplacementDate(claim.companyReceivedDate)}
                     </td>
                     <td className="px-4 py-2">
                       <Button size="sm" onClick={() => setReturnClaims([claim])}>
-                        <UserCheck className="h-4 w-4" />
-                        Return to customer
+                        <Undo2 className="h-4 w-4" />
+                        Return
                       </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {returnedClaims.length > 0 && (
+        <div className="mb-6 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-violet-100">
+                Returned to customer ({returnedClaims.length})
+              </h2>
+              <p className="text-sm text-violet-200/80">
+                Customers who have already collected their replacement.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => openMovementReport("returned")}>
+              <Undo2 className="h-4 w-4" />
+              Returned to customer report
+            </Button>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-violet-500/20">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-violet-500/10 text-violet-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Customer</th>
+                  <th className="px-4 py-2 font-medium">Items</th>
+                  <th className="px-4 py-2 font-medium">No. of pieces</th>
+                  <th className="px-4 py-2 font-medium">Returned</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-violet-500/10 text-violet-50">
+                {returnedClaims.map((claim) => (
+                  <tr key={claim.id}>
+                    <td className="px-4 py-2 font-medium">
+                      {claim.caseNumber ?? "—"} · {claim.customerName}
+                    </td>
+                    <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
+                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      {formatReplacementDate(claim.returnedToCustomerDate ?? claim.updatedAt)}
                     </td>
                   </tr>
                 ))}

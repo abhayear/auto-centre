@@ -8,6 +8,7 @@ import {
   filterPendingFromCompanyClaims,
   filterReadyForCustomerClaims,
   isReadyForCustomer,
+  oldItemQuantityUpdates,
   parseReplacementDateInput,
   serializeReplacementClaim,
   serializeReplacementStockItem,
@@ -17,6 +18,7 @@ import {
   replacementAllocateSchema,
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementPieceCountsSchema,
   replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
@@ -131,6 +133,22 @@ function companyReceiptFields(data: {
       ? { returnedToCustomerDate: optionalDateInput(data.returnedToCustomerDate) }
       : {}),
   };
+}
+
+async function persistPieceCounts(
+  claims: { id: string; items: { id: string; side: string }[] }[],
+  quantities: { id: string; quantity: number }[] | undefined,
+  updateItem: (id: string, quantity: number) => Promise<unknown>,
+) {
+  if (!quantities?.length) return;
+  const qtyByClaim = new Map(quantities.map((row) => [row.id, row.quantity]));
+  for (const claim of claims) {
+    const pieceCount = qtyByClaim.get(claim.id);
+    if (pieceCount == null) continue;
+    for (const update of oldItemQuantityUpdates(claim.items, pieceCount)) {
+      await updateItem(update.id, update.quantity);
+    }
+  }
 }
 
 function toItemCreateData(
@@ -286,6 +304,34 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
   try {
     const body = await request.json();
 
+    if (body.updatePieceCounts) {
+      const pieceData = replacementPieceCountsSchema.parse(body);
+      const existing = await prisma.replacementClaim.findMany({
+        where: { id: { in: pieceData.quantities.map((row) => row.id) } },
+        include: { items: true },
+      });
+
+      if (existing.length === 0) {
+        return NextResponse.json({ error: "No claims found to update" }, { status: 404 });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await persistPieceCounts(existing, pieceData.quantities, (id, quantity) =>
+          tx.replacementClaimItem.update({ where: { id }, data: { quantity } }),
+        );
+      });
+
+      const updated = await prisma.replacementClaim.findMany({
+        where: { id: { in: existing.map((claim) => claim.id) } },
+        include: claimInclude,
+      });
+
+      return NextResponse.json({
+        updated: existing.length,
+        claims: updated.map(serializeReplacementClaim),
+      });
+    }
+
     if (body.sendToCompany) {
       const sendData = replacementSendToCompanySchema.parse(body);
       const sentToCompanyDate = parseReplacementDateInput(sendData.sentToCompanyDate);
@@ -293,6 +339,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
 
       const existing = await prisma.replacementClaim.findMany({
         where: { id: { in: sendData.ids } },
+        include: { items: true },
       });
 
       const eligible = existing.filter((claim) => claim.status === "received_from_customer");
@@ -303,9 +350,13 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
         );
       }
 
-      await prisma.$transaction(
-        eligible.map((claim) =>
-          prisma.replacementClaim.update({
+      await prisma.$transaction(async (tx) => {
+        await persistPieceCounts(eligible, sendData.quantities, (id, quantity) =>
+          tx.replacementClaimItem.update({ where: { id }, data: { quantity } }),
+        );
+
+        for (const claim of eligible) {
+          await tx.replacementClaim.update({
             where: { id: claim.id },
             data: {
               status: "sent_to_company",
@@ -317,9 +368,9 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
                   }
                 : {}),
             },
-          }),
-        ),
-      );
+          });
+        }
+      });
 
       const updated = await prisma.replacementClaim.findMany({
         where: { id: { in: eligible.map((claim) => claim.id) } },
@@ -454,13 +505,23 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
         return NextResponse.json({ error: "That stock item is no longer available" }, { status: 400 });
       }
 
-      await prisma.replacementStockItem.update({
-        where: { id: stock.id },
-        data: {
-          status: "allocated",
-          allocatedClaimId: claim.id,
-          allocatedAt: new Date(),
-        },
+      await prisma.$transaction(async (tx) => {
+        if (allocateData.quantity != null) {
+          await persistPieceCounts(
+            [claim],
+            [{ id: claim.id, quantity: allocateData.quantity }],
+            (id, quantity) => tx.replacementClaimItem.update({ where: { id }, data: { quantity } }),
+          );
+        }
+
+        await tx.replacementStockItem.update({
+          where: { id: stock.id },
+          data: {
+            status: "allocated",
+            allocatedClaimId: claim.id,
+            allocatedAt: new Date(),
+          },
+        });
       });
 
       const updated = await prisma.replacementClaim.findUniqueOrThrow({
