@@ -14,6 +14,7 @@ import {
   pendingFromCompanySummary,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
+import { REPLACEMENT_STOCK_RESULTS } from "@/lib/warranty-allocation";
 
 type ItemDraft = {
   key: string;
@@ -80,6 +81,7 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
       companyReceivedDate: formData.get("companyReceivedDate"),
       companyInvoiceNumber: formData.get("companyInvoiceNumber") || undefined,
       companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
+      result: formData.get("result") || "repaired",
       returnToCustomerNow: returnNow,
       returnedToCustomerDate: returnNow
         ? formData.get("returnedToCustomerDate") || formData.get("companyReceivedDate")
@@ -122,7 +124,7 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
   }
 
   return (
-    <Modal open title="Record items received from company" onClose={onCancel}>
+    <Modal open title="Record items received from Plant / Company" onClose={onCancel}>
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
           <p className="font-medium">{claim.customerName}</p>
@@ -162,6 +164,16 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
             label="Delivery note no. (optional)"
             placeholder="If no invoice, enter delivery note"
             defaultValue={claim.companyDeliveryNote ?? ""}
+          />
+          <Select
+            id="result"
+            name="result"
+            label="Result"
+            defaultValue="repaired"
+            options={REPLACEMENT_STOCK_RESULTS.map((value) => ({
+              value,
+              label: value === "repaired" ? "Repaired" : value === "replacement" ? "Replacement" : "Rejected",
+            }))}
           />
         </div>
 

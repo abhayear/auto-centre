@@ -7,6 +7,10 @@ import {
   REPLACEMENT_STATUSES,
   REPLACEMENT_VOLTAGES,
 } from "@/lib/replacement-parts";
+import {
+  REPLACEMENT_DESTINATIONS,
+  REPLACEMENT_STOCK_RESULTS,
+} from "@/lib/warranty-allocation";
 import { SHOWROOM_PAYMENT_MODES } from "@/lib/showroom-walk-ins";
 
 export function formatZodErrors(error: z.ZodError) {
@@ -407,6 +411,10 @@ export const replacementClaimSchema = z.object({
   customerName: z.string().trim().min(2, "Customer name is required"),
   customerPhone: z.string().trim().optional().or(z.literal("")),
   billNumber: z.string().trim().optional().or(z.literal("")),
+  billDate: optionalReplacementDateSchema,
+  warrantyMonths: z.coerce.number().int().min(1).max(120).optional().nullable(),
+  fault: z.string().trim().max(500).optional().or(z.literal("")),
+  destination: z.enum(REPLACEMENT_DESTINATIONS).optional().nullable(),
   status: z.enum(REPLACEMENT_STATUSES).default("received_from_customer"),
   sentToCompanyDate: optionalReplacementDateSchema,
   companyReceivedDate: optionalReplacementDateSchema,
@@ -422,6 +430,7 @@ export const replacementCompanyReceiptSchema = z.object({
   companyReceivedDate: replacementDateSchema,
   companyInvoiceNumber: z.string().trim().max(100).optional().or(z.literal("")),
   companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
+  result: z.enum(REPLACEMENT_STOCK_RESULTS).default("repaired"),
   returnToCustomerNow: z.boolean().optional(),
   returnedToCustomerDate: replacementDateSchema.optional(),
   items: z.array(replacementClaimItemSchema).min(1, "Add at least one replacement item"),
@@ -430,7 +439,14 @@ export const replacementCompanyReceiptSchema = z.object({
 export const replacementSendToCompanySchema = z.object({
   ids: z.array(z.string().min(1)).min(1, "Select at least one claim"),
   sentToCompanyDate: replacementDateSchema,
+  destination: z.enum(REPLACEMENT_DESTINATIONS).default("company"),
   courierNote: z.string().trim().max(200).optional().or(z.literal("")),
+});
+
+export const replacementAllocateSchema = z.object({
+  allocateStock: z.literal(true),
+  claimId: z.string().min(1),
+  stockId: z.string().min(1),
 });
 
 export const replacementReturnToCustomerSchema = z.object({

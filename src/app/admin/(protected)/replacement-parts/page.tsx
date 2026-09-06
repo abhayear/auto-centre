@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, FileDown, FileText, Package, PackageCheck, Pencil, Plus, Trash2, Truck, UserCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { DateRangeBulkBar } from "@/components/admin/DateRangeBulkBar";
+import { AllocateStockForm } from "@/components/forms/AllocateStockForm";
 import { CompanyReceiptForm } from "@/components/forms/CompanyReceiptForm";
 import { ReturnToCustomerForm } from "@/components/forms/ReturnToCustomerForm";
 import { SendToCompanyForm } from "@/components/forms/SendToCompanyForm";
@@ -11,6 +12,7 @@ import {
   ReplacementClaimForm,
   type ReplacementClaimView,
 } from "@/components/forms/ReplacementClaimForm";
+import { WarrantyDashboard } from "@/components/replacement-parts/WarrantyDashboard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -26,7 +28,12 @@ import {
   isReadyForCustomer,
   pendingFromCompanySummary,
   replacementStatusVariant,
+  type SerializedReplacementStockItem,
 } from "@/lib/replacement-parts";
+import {
+  buildWarrantyDashboard,
+  claimToAllocationClaim,
+} from "@/lib/warranty-allocation";
 
 function buildListParams(
   fromDate: string,
@@ -95,6 +102,8 @@ export default function AdminReplacementPartsPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [stock, setStock] = useState<SerializedReplacementStockItem[]>([]);
+  const [showAllocate, setShowAllocate] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -102,21 +111,24 @@ export default function AdminReplacementPartsPage() {
     async function load() {
       setLoading(true);
       const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-      const [listRes, pendingRes, showroomRes, readyRes] = await Promise.all([
+      const [listRes, pendingRes, showroomRes, readyRes, stockRes] = await Promise.all([
         fetch(`/api/replacement-parts?${params}`),
         fetch("/api/replacement-parts?pendingFromCompany=1"),
         fetch("/api/replacement-parts?pendingAtShowroom=1"),
         fetch("/api/replacement-parts?readyForCustomer=1"),
+        fetch("/api/replacement-parts?stock=1"),
       ]);
       const listData = await listRes.json();
       const pendingData = await pendingRes.json();
       const showroomData = await showroomRes.json();
       const readyData = await readyRes.json();
+      const stockData = await stockRes.json();
       if (active) {
         setClaims(Array.isArray(listData) ? listData : []);
         setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
         setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
         setReadyClaims(Array.isArray(readyData) ? readyData : []);
+        setStock(Array.isArray(stockData) ? stockData : []);
         setSelectedIds([]);
         setLoading(false);
       }
@@ -130,20 +142,63 @@ export default function AdminReplacementPartsPage() {
 
   async function refreshClaims() {
     const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
-    const [listRes, pendingRes, showroomRes, readyRes] = await Promise.all([
+    const [listRes, pendingRes, showroomRes, readyRes, stockRes] = await Promise.all([
       fetch(`/api/replacement-parts?${params}`),
       fetch("/api/replacement-parts?pendingFromCompany=1"),
       fetch("/api/replacement-parts?pendingAtShowroom=1"),
       fetch("/api/replacement-parts?readyForCustomer=1"),
+      fetch("/api/replacement-parts?stock=1"),
     ]);
     setClaims(await listRes.json());
     const pendingData = await pendingRes.json();
     const showroomData = await showroomRes.json();
     const readyData = await readyRes.json();
+    const stockData = await stockRes.json();
     setPendingClaims(Array.isArray(pendingData) ? pendingData : []);
     setShowroomClaims(Array.isArray(showroomData) ? showroomData : []);
     setReadyClaims(Array.isArray(readyData) ? readyData : []);
+    setStock(Array.isArray(stockData) ? stockData : []);
     setSelectedIds([]);
+  }
+
+  const dashboard = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return buildWarrantyDashboard(claims.map(claimToAllocationClaim), stock, today);
+  }, [claims, stock]);
+
+  const allocateWaiting = useMemo(
+    () =>
+      claims.filter(
+        (claim) =>
+          !["returned_to_customer", "closed", "cancelled"].includes(claim.status) &&
+          !claim.allocatedStockId,
+      ).length,
+    [claims],
+  );
+
+  function handleDashboardAction(action: "submit" | "send" | "receive" | "allocate") {
+    if (action === "submit") {
+      setEditingClaim(undefined);
+      setShowForm(true);
+      return;
+    }
+    if (action === "send") {
+      if (showroomClaims.length === 0) {
+        toast.error("No showroom items to send");
+        return;
+      }
+      setSendClaims(showroomClaims);
+      return;
+    }
+    if (action === "receive") {
+      if (pendingClaims.length === 0) {
+        toast.error("No Plant / Company items waiting to be received");
+        return;
+      }
+      setReceiptClaim(pendingClaims[0]);
+      return;
+    }
+    setShowAllocate(true);
   }
 
   const visibleClaims = useMemo(
@@ -265,10 +320,10 @@ export default function AdminReplacementPartsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Replacement Parts Tracker</h1>
+          <h1 className="text-2xl font-bold text-white">Replacement warranty</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Track faulty battery, charger, controller, and motor replacements from customers to
-            Yakuza.
+            Submit customers, send to Plant or Company, receive repaired stock, and allocate the
+            best match.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -304,6 +359,12 @@ export default function AdminReplacementPartsPage() {
         </div>
       </div>
 
+      <WarrantyDashboard
+        dashboard={dashboard}
+        allocateWaiting={allocateWaiting}
+        onAction={handleDashboardAction}
+      />
+
       <DateRangeBulkBar
         fromDate={fromDate}
         toDate={toDate}
@@ -329,7 +390,7 @@ export default function AdminReplacementPartsPage() {
                 At showroom — not yet sent ({showroomClaims.length})
               </h2>
               <p className="text-sm text-sky-200/80">
-                Faulty items received from customers. Send them to Yakuza when the parcel is ready.
+                Faulty items received from customers. Send them to Plant or Company when the parcel is ready.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -342,7 +403,7 @@ export default function AdminReplacementPartsPage() {
               </Button>
               <Button onClick={() => setSendClaims(showroomClaims)}>
                 <Truck className="h-4 w-4" />
-                Send all to company
+                Send all
               </Button>
             </div>
           </div>
@@ -393,10 +454,10 @@ export default function AdminReplacementPartsPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-amber-100">
-                Pending from company ({pendingClaims.length})
+                Pending from Plant / Company ({pendingClaims.length})
               </h2>
               <p className="text-sm text-amber-200/80">
-                Items sent to Yakuza but not yet fully received back.
+                Items sent out but not yet fully received back.
               </p>
             </div>
             <Button variant="outline" onClick={() => setShowPendingOnly((current) => !current)}>
@@ -445,7 +506,7 @@ export default function AdminReplacementPartsPage() {
                 Ready for customer ({readyClaims.length})
               </h2>
               <p className="text-sm text-emerald-200/80">
-                Replacements received from Yakuza. Hand them back to the customer.
+                Allocated or legacy replacements waiting to be handed back.
               </p>
             </div>
             <Button onClick={() => setReturnClaims(readyClaims)}>
@@ -544,6 +605,7 @@ export default function AdminReplacementPartsPage() {
                   />
                 </th>
                 <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium">Case</th>
                 <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Bill No</th>
@@ -570,6 +632,7 @@ export default function AdminReplacementPartsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {formatReplacementDate(claim.receivedDate)}
                     </td>
+                    <td className="px-4 py-3 whitespace-nowrap">{claim.caseNumber ?? "—"}</td>
                     <td className="px-4 py-3 font-medium text-white">{claim.customerName}</td>
                     <td className="px-4 py-3">{claim.customerPhone ?? "—"}</td>
                     <td className="px-4 py-3">{claim.billNumber ?? "—"}</td>
@@ -714,6 +777,17 @@ export default function AdminReplacementPartsPage() {
             refreshClaims();
           }}
           onCancel={() => setReturnClaims(undefined)}
+        />
+      )}
+
+      {showAllocate && (
+        <AllocateStockForm
+          claims={claims}
+          stock={stock}
+          onSuccess={() => {
+            void refreshClaims();
+          }}
+          onCancel={() => setShowAllocate(false)}
         />
       )}
     </div>

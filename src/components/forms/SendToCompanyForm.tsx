@@ -5,10 +5,12 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
 import {
   formatReplacementItemType,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
+import { REPLACEMENT_DESTINATION_LABELS } from "@/lib/warranty-allocation";
 
 interface SendToCompanyFormProps {
   claims: SerializedReplacementClaim[];
@@ -39,6 +41,7 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
       sendToCompany: true,
       ids: claims.map((claim) => claim.id),
       sentToCompanyDate: formData.get("sentToCompanyDate"),
+      destination: formData.get("destination") || "company",
       courierNote: formData.get("courierNote") || undefined,
     };
 
@@ -57,8 +60,8 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
 
       toast.success(
         result.updated === 1
-          ? "Item marked as sent to company"
-          : `${result.updated} claims marked as sent to company`,
+          ? "Item marked as sent"
+          : `${result.updated} claims marked as sent`,
       );
       onSuccess();
     } catch {
@@ -69,7 +72,7 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
   }
 
   return (
-    <Modal open title="Send showroom items to company" onClose={onCancel}>
+    <Modal open title="Send showroom items to Plant / Company" onClose={onCancel}>
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
         <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-sky-100">
           <p className="font-medium">
@@ -86,11 +89,21 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
           </ul>
         </div>
 
+        <Select
+          id="destination"
+          name="destination"
+          label="Send to"
+          defaultValue={claims[0]?.destination === "plant" ? "plant" : "company"}
+          options={[
+            { value: "plant", label: REPLACEMENT_DESTINATION_LABELS.plant },
+            { value: "company", label: REPLACEMENT_DESTINATION_LABELS.company },
+          ]}
+        />
         <Input
           id="sentToCompanyDate"
           name="sentToCompanyDate"
           type="date"
-          label="Sent to company date"
+          label="Send date"
           defaultValue={today}
           required
         />
@@ -102,8 +115,8 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
         />
 
         <p className="text-xs text-slate-400">
-          After you save, these items move from At showroom to Pending from company. Print the
-          company letter before or after sending.
+          After you save, these items move from At showroom to Plant or Company pending. Print the
+          letter before or after sending.
         </p>
 
         <div className="flex justify-end gap-3 pt-2">

@@ -26,6 +26,7 @@ import {
 import {
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
+  replacementAllocateSchema,
   replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
@@ -90,6 +91,39 @@ describe("replacement-parts validators", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts warranty bill date, months, and send destination", () => {
+    const claim = replacementClaimSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      billDate: "2026-01-10",
+      warrantyMonths: 12,
+      fault: "Not charging",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          modelCode: "LMKN/F2S/WB/12M",
+          quantity: 1,
+        },
+      ],
+    });
+    expect(claim.success).toBe(true);
+
+    const send = replacementSendToCompanySchema.safeParse({
+      ids: ["claim-1"],
+      sentToCompanyDate: "2026-08-16",
+      destination: "plant",
+    });
+    expect(send.success).toBe(true);
+
+    const allocate = replacementAllocateSchema.safeParse({
+      allocateStock: true,
+      claimId: "claim-1",
+      stockId: "stock-1",
+    });
+    expect(allocate.success).toBe(true);
   });
 
   it("rejects invalid item type", () => {
@@ -323,6 +357,84 @@ describe("replacement-parts helpers", () => {
 
     expect(isPendingFromCompany(claim)).toBe(true);
     expect(pendingFromCompanySummary(claim)).toBe("1 item pending from company");
+  });
+
+  it("does not mark a received claim ready until stock is allocated", () => {
+    const items = [
+      {
+        id: "old-1",
+        itemType: "battery",
+        side: "old",
+        modelCode: "LMKN/F2S/WB/12M",
+        serialNumber: null,
+        ah: 33.9,
+        voltage: null,
+        quantity: 1,
+        notes: null,
+        sortOrder: 0,
+      },
+      {
+        id: "new-1",
+        itemType: "battery",
+        side: "new",
+        modelCode: "LMKN/F2S/WB/12M",
+        serialNumber: null,
+        ah: 33.9,
+        voltage: null,
+        quantity: 1,
+        notes: null,
+        sortOrder: 1,
+      },
+    ];
+    const stock = {
+      id: "stock-1",
+      itemType: "battery",
+      modelCode: "LMKN/F2S/WB/12M",
+      serialNumber: null,
+      ah: 33.9,
+      voltage: null,
+      result: "repaired",
+      source: "plant",
+      sourceClaimId: "claim-stock",
+      status: "available",
+      receivedDate: new Date("2026-10-01T00:00:00.000Z"),
+      allocatedClaimId: null as string | null,
+      allocatedAt: null as Date | null,
+      notes: null,
+    };
+    const base = {
+      id: "claim-stock",
+      receivedDate: new Date("2026-08-16T00:00:00.000Z"),
+      customerName: "Raj",
+      customerPhone: null,
+      billNumber: null,
+      status: "received_from_company",
+      notes: null,
+      createdAt: new Date("2026-08-16T00:00:00.000Z"),
+      updatedAt: new Date("2026-08-16T00:00:00.000Z"),
+      items,
+    };
+
+    expect(
+      isReadyForCustomer(serializeReplacementClaim({ ...base, sourcedStock: [stock] })),
+    ).toBe(false);
+
+    expect(
+      isReadyForCustomer(
+        serializeReplacementClaim({
+          ...base,
+          sourcedStock: [stock],
+          allocatedStock: [
+            {
+              ...stock,
+              status: "allocated",
+              allocatedClaimId: "claim-stock",
+              allocatedAt: new Date("2026-10-02T00:00:00.000Z"),
+            },
+          ],
+        }),
+      ),
+    ).toBe(true);
   });
 
   it("builds a movement report with stage totals and ledger rows", () => {

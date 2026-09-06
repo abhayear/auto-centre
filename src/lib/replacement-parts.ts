@@ -123,12 +123,34 @@ export type SerializedReplacementClaimItem = {
   sortOrder: number;
 };
 
+export type SerializedReplacementStockItem = {
+  id: string;
+  itemType: ReplacementItemType;
+  modelCode: string | null;
+  serialNumber: string | null;
+  ah: number | null;
+  voltage: ReplacementVoltage | null;
+  result: string;
+  source: string;
+  sourceClaimId: string | null;
+  status: string;
+  receivedDate: string;
+  allocatedClaimId: string | null;
+  allocatedAt: string | null;
+  notes: string | null;
+};
+
 export type SerializedReplacementClaim = {
   id: string;
+  caseNumber: string | null;
   receivedDate: string;
   customerName: string;
   customerPhone: string | null;
   billNumber: string | null;
+  billDate: string | null;
+  warrantyMonths: number | null;
+  fault: string | null;
+  destination: string | null;
   status: ReplacementStatus;
   sentToCompanyDate: string | null;
   companyReceivedDate: string | null;
@@ -136,7 +158,10 @@ export type SerializedReplacementClaim = {
   companyDeliveryNote: string | null;
   returnedToCustomerDate: string | null;
   notes: string | null;
+  allocatedStockId: string | null;
   items: SerializedReplacementClaimItem[];
+  sourcedStock: SerializedReplacementStockItem[];
+  allocatedStock: SerializedReplacementStockItem[];
   createdAt: string;
   updatedAt: string;
 };
@@ -202,6 +227,11 @@ export function filterAtShowroomClaims(
 
 /** Replacement has arrived from company and is waiting to be given to the customer */
 export function isReadyForCustomer(claim: SerializedReplacementClaim): boolean {
+  if (claim.status === "returned_to_customer" || claim.status === "closed" || claim.status === "cancelled") {
+    return false;
+  }
+  if (claim.allocatedStockId) return true;
+  if (claim.sourcedStock.length > 0) return false;
   return claim.status === "received_from_company" && !isPendingFromCompany(claim);
 }
 
@@ -262,12 +292,51 @@ export function serializeReplacementClaimItem(item: {
   };
 }
 
+export function serializeReplacementStockItem(item: {
+  id: string;
+  itemType: string;
+  modelCode: string | null;
+  serialNumber: string | null;
+  ah: number | null;
+  voltage: string | null;
+  result: string;
+  source: string;
+  sourceClaimId: string | null;
+  status: string;
+  receivedDate: Date;
+  allocatedClaimId: string | null;
+  allocatedAt?: Date | null;
+  notes: string | null;
+}): SerializedReplacementStockItem {
+  return {
+    id: item.id,
+    itemType: normalizeItemType(item.itemType),
+    modelCode: item.modelCode,
+    serialNumber: item.serialNumber,
+    ah: item.ah,
+    voltage: normalizeVoltage(item.voltage),
+    result: item.result,
+    source: item.source,
+    sourceClaimId: item.sourceClaimId,
+    status: item.status,
+    receivedDate: item.receivedDate.toISOString().slice(0, 10),
+    allocatedClaimId: item.allocatedClaimId,
+    allocatedAt: item.allocatedAt ? item.allocatedAt.toISOString() : null,
+    notes: item.notes,
+  };
+}
+
 export function serializeReplacementClaim(claim: {
   id: string;
+  caseNumber?: string | null;
   receivedDate: Date;
   customerName: string;
   customerPhone: string | null;
   billNumber: string | null;
+  billDate?: Date | null;
+  warrantyMonths?: number | null;
+  fault?: string | null;
+  destination?: string | null;
   status: string;
   sentToCompanyDate?: Date | null;
   companyReceivedDate?: Date | null;
@@ -289,13 +358,52 @@ export function serializeReplacementClaim(claim: {
     notes: string | null;
     sortOrder: number;
   }[];
+  sourcedStock?: {
+    id: string;
+    itemType: string;
+    modelCode: string | null;
+    serialNumber: string | null;
+    ah: number | null;
+    voltage: string | null;
+    result: string;
+    source: string;
+    sourceClaimId: string | null;
+    status: string;
+    receivedDate: Date;
+    allocatedClaimId: string | null;
+    allocatedAt?: Date | null;
+    notes: string | null;
+  }[];
+  allocatedStock?: {
+    id: string;
+    itemType: string;
+    modelCode: string | null;
+    serialNumber: string | null;
+    ah: number | null;
+    voltage: string | null;
+    result: string;
+    source: string;
+    sourceClaimId: string | null;
+    status: string;
+    receivedDate: Date;
+    allocatedClaimId: string | null;
+    allocatedAt?: Date | null;
+    notes: string | null;
+  }[];
 }): SerializedReplacementClaim {
+  const sourcedStock = (claim.sourcedStock ?? []).map(serializeReplacementStockItem);
+  const allocatedStock = (claim.allocatedStock ?? []).map(serializeReplacementStockItem);
   return {
     id: claim.id,
+    caseNumber: claim.caseNumber ?? null,
     receivedDate: claim.receivedDate.toISOString().slice(0, 10),
     customerName: claim.customerName,
     customerPhone: claim.customerPhone,
     billNumber: claim.billNumber,
+    billDate: formatOptionalDate(claim.billDate),
+    warrantyMonths: claim.warrantyMonths ?? null,
+    fault: claim.fault ?? null,
+    destination: claim.destination ?? null,
     status: normalizeStatus(claim.status),
     sentToCompanyDate: formatOptionalDate(claim.sentToCompanyDate),
     companyReceivedDate: formatOptionalDate(claim.companyReceivedDate),
@@ -303,10 +411,13 @@ export function serializeReplacementClaim(claim: {
     companyDeliveryNote: claim.companyDeliveryNote ?? null,
     returnedToCustomerDate: formatOptionalDate(claim.returnedToCustomerDate),
     notes: claim.notes,
+    allocatedStockId: allocatedStock[0]?.id ?? null,
     items: claim.items
       .slice()
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map(serializeReplacementClaimItem),
+    sourcedStock,
+    allocatedStock,
     createdAt: claim.createdAt.toISOString(),
     updatedAt: claim.updatedAt.toISOString(),
   };

@@ -103,6 +103,11 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
       customerName: formData.get("customerName"),
       customerPhone: formData.get("customerPhone") || undefined,
       billNumber: formData.get("billNumber") || undefined,
+      billDate: formData.get("billDate") || undefined,
+      warrantyMonths: formData.get("warrantyMonths")
+        ? Number(formData.get("warrantyMonths"))
+        : undefined,
+      fault: formData.get("fault") || undefined,
       status: formData.get("status") || "received_from_customer",
       sentToCompanyDate: formData.get("sentToCompanyDate") || undefined,
       companyReceivedDate: formData.get("companyReceivedDate") || undefined,
@@ -270,6 +275,28 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             name="billNumber"
             label="Bill number"
             defaultValue={claim?.billNumber ?? ""}
+          />
+          <Input
+            id="billDate"
+            name="billDate"
+            type="date"
+            label="Bill date"
+            defaultValue={claim?.billDate ?? ""}
+          />
+          <Input
+            id="warrantyMonths"
+            name="warrantyMonths"
+            type="number"
+            min={1}
+            max={120}
+            label="Warranty months"
+            defaultValue={claim?.warrantyMonths != null ? String(claim.warrantyMonths) : "12"}
+          />
+          <Input
+            id="fault"
+            name="fault"
+            label="Fault"
+            defaultValue={claim?.fault ?? ""}
           />
         </div>
         <div>

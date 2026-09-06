@@ -7,22 +7,54 @@ import {
   filterAtShowroomClaims,
   filterPendingFromCompanyClaims,
   filterReadyForCustomerClaims,
-  isPendingFromCompany,
+  isReadyForCustomer,
   parseReplacementDateInput,
   serializeReplacementClaim,
+  serializeReplacementStockItem,
 } from "@/lib/replacement-parts";
 import {
   formatZodErrors,
+  replacementAllocateSchema,
   replacementClaimSchema,
   replacementCompanyReceiptSchema,
   replacementReturnToCustomerSchema,
   replacementSendToCompanySchema,
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
+import { nextWarrantyCaseNumber } from "@/lib/warranty-allocation";
 
 const claimInclude = {
   items: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
+  sourcedStock: true,
+  allocatedStock: true,
 };
+
+async function nextCaseNumber() {
+  const latest = await prisma.replacementClaim.findFirst({
+    where: { caseNumber: { startsWith: "WC-" } },
+    orderBy: { caseNumber: "desc" },
+    select: { caseNumber: true },
+  });
+  return nextWarrantyCaseNumber(latest?.caseNumber ? [latest.caseNumber] : []);
+}
+
+async function backfillCaseNumbers() {
+  const missing = await prisma.replacementClaim.findMany({
+    where: { caseNumber: null },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (missing.length === 0) return;
+
+  let next = await nextCaseNumber();
+  for (const row of missing) {
+    await prisma.replacementClaim.update({
+      where: { id: row.id },
+      data: { caseNumber: next },
+    });
+    next = nextWarrantyCaseNumber([next]);
+  }
+}
 
 function buildListFilter(params: {
   from?: string | null;
@@ -48,7 +80,7 @@ function buildListFilter(params: {
   if (params.pendingAtShowroom === "1") {
     where.status = "received_from_customer";
   } else if (params.readyForCustomer === "1") {
-    where.status = "received_from_company";
+    where.status = { in: ["received_from_customer", "sent_to_company", "received_from_company"] };
   } else if (params.pendingFromCompany === "1") {
     where.status = { in: ["sent_to_company", "received_from_company"] };
   } else if (params.status) {
@@ -120,6 +152,10 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
     customerName: data.customerName.trim(),
     customerPhone: data.customerPhone?.trim() || null,
     billNumber: data.billNumber?.trim() || null,
+    billDate: optionalDateInput(data.billDate),
+    warrantyMonths: data.warrantyMonths ?? null,
+    fault: data.fault?.trim() || null,
+    destination: data.destination ?? null,
     status: data.status,
     sentToCompanyDate,
     companyReceivedDate: optionalDateInput(data.companyReceivedDate),
@@ -147,6 +183,15 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
   const pendingFromCompany = searchParams.get("pendingFromCompany");
   const pendingAtShowroom = searchParams.get("pendingAtShowroom");
   const readyForCustomer = searchParams.get("readyForCustomer");
+
+  await backfillCaseNumbers();
+
+  if (searchParams.get("stock") === "1") {
+    const stock = await prisma.replacementStockItem.findMany({
+      orderBy: [{ receivedDate: "asc" }, { createdAt: "asc" }],
+    });
+    return NextResponse.json(stock.map(serializeReplacementStockItem));
+  }
 
   const records = await prisma.replacementClaim.findMany({
     where: buildListFilter({
@@ -190,7 +235,10 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
     const data = replacementClaimSchema.parse(body);
 
     const record = await prisma.replacementClaim.create({
-      data: toCreateData(data),
+      data: {
+        ...toCreateData(data),
+        caseNumber: await nextCaseNumber(),
+      },
       include: claimInclude,
     });
 
@@ -239,6 +287,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
             data: {
               status: "sent_to_company",
               sentToCompanyDate,
+              destination: sendData.destination,
               ...(courierNote
                 ? {
                     notes: [claim.notes, `Courier: ${courierNote}`].filter(Boolean).join("\n"),
@@ -288,7 +337,9 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
         receiptData.items.reduce((total, item) => total + item.quantity, 0);
 
       const fullyReceived = newQty >= oldQty;
-      const handoverNow = Boolean(receiptData.returnToCustomerNow) && fullyReceived;
+      const result = receiptData.result;
+      const rejected = result === "rejected";
+      const handoverNow = Boolean(receiptData.returnToCustomerNow) && fullyReceived && !rejected;
       const nextStatus = handoverNow
         ? "returned_to_customer"
         : fullyReceived
@@ -296,27 +347,103 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
           : existing.status === "sent_to_company"
             ? "received_from_company"
             : existing.status;
+      const source = existing.destination === "plant" ? "plant" : "company";
+      const receivedDate = parseReplacementDateInput(receiptData.companyReceivedDate);
 
-      const record = await prisma.replacementClaim.update({
-        where: { id: receiptData.id },
-        data: {
-          companyReceivedDate: parseReplacementDateInput(receiptData.companyReceivedDate),
-          companyInvoiceNumber: receiptData.companyInvoiceNumber?.trim() || null,
-          companyDeliveryNote: receiptData.companyDeliveryNote?.trim() || null,
-          status: nextStatus,
-          ...(handoverNow
-            ? {
-                returnedToCustomerDate: parseReplacementDateInput(
-                  receiptData.returnedToCustomerDate ?? receiptData.companyReceivedDate,
-                ),
-              }
-            : {}),
-          items: { create: newItems },
-        },
-        include: claimInclude,
+      const record = await prisma.$transaction(async (tx) => {
+        const updated = await tx.replacementClaim.update({
+          where: { id: receiptData.id },
+          data: {
+            companyReceivedDate: receivedDate,
+            companyInvoiceNumber: receiptData.companyInvoiceNumber?.trim() || null,
+            companyDeliveryNote: receiptData.companyDeliveryNote?.trim() || null,
+            status: nextStatus,
+            ...(handoverNow
+              ? {
+                  returnedToCustomerDate: parseReplacementDateInput(
+                    receiptData.returnedToCustomerDate ?? receiptData.companyReceivedDate,
+                  ),
+                }
+              : {}),
+            items: { create: newItems },
+          },
+        });
+
+        const createdStock = [];
+        for (const item of receiptData.items) {
+          const quantity = item.quantity || 1;
+          for (let unit = 0; unit < quantity; unit += 1) {
+            createdStock.push(
+              await tx.replacementStockItem.create({
+                data: {
+                  itemType: item.itemType,
+                  modelCode: item.modelCode?.trim() || null,
+                  serialNumber: item.serialNumber?.trim() || null,
+                  ah: item.itemType === "battery" ? (item.ah ?? null) : null,
+                  voltage: item.itemType === "charger" ? (item.voltage ?? null) : null,
+                  result,
+                  source,
+                  sourceClaimId: updated.id,
+                  status: rejected ? "rejected" : handoverNow ? "allocated" : "available",
+                  receivedDate,
+                  allocatedClaimId: handoverNow ? updated.id : null,
+                  allocatedAt: handoverNow ? new Date() : null,
+                  notes: item.notes?.trim() || null,
+                },
+              }),
+            );
+          }
+        }
+
+        void createdStock;
+        return tx.replacementClaim.findUniqueOrThrow({
+          where: { id: updated.id },
+          include: claimInclude,
+        });
       });
 
       return NextResponse.json(serializeReplacementClaim(record));
+    }
+
+    if (body.allocateStock) {
+      const allocateData = replacementAllocateSchema.parse(body);
+      const [claim, stock] = await Promise.all([
+        prisma.replacementClaim.findUnique({
+          where: { id: allocateData.claimId },
+          include: claimInclude,
+        }),
+        prisma.replacementStockItem.findUnique({
+          where: { id: allocateData.stockId },
+        }),
+      ]);
+
+      if (!claim) {
+        return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+      }
+      if (!stock) {
+        return NextResponse.json({ error: "Stock item not found" }, { status: 404 });
+      }
+      if (["returned_to_customer", "closed", "cancelled"].includes(claim.status)) {
+        return NextResponse.json({ error: "This warranty case is already closed" }, { status: 400 });
+      }
+      if (stock.status !== "available") {
+        return NextResponse.json({ error: "That stock item is no longer available" }, { status: 400 });
+      }
+
+      await prisma.replacementStockItem.update({
+        where: { id: stock.id },
+        data: {
+          status: "allocated",
+          allocatedClaimId: claim.id,
+          allocatedAt: new Date(),
+        },
+      });
+
+      const updated = await prisma.replacementClaim.findUniqueOrThrow({
+        where: { id: claim.id },
+        include: claimInclude,
+      });
+      return NextResponse.json(serializeReplacementClaim(updated));
     }
 
     if (body.returnToCustomer) {
@@ -329,10 +456,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
         include: claimInclude,
       });
 
-      const eligible = existing.filter((claim) => {
-        const serialized = serializeReplacementClaim(claim);
-        return serialized.status === "received_from_company" && !isPendingFromCompany(serialized);
-      });
+      const eligible = existing.filter((claim) => isReadyForCustomer(serializeReplacementClaim(claim)));
 
       if (eligible.length === 0) {
         return NextResponse.json(
@@ -429,6 +553,10 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
           ...(data.billNumber !== undefined
             ? { billNumber: data.billNumber?.trim() || null }
             : {}),
+          ...(data.billDate !== undefined ? { billDate: optionalDateInput(data.billDate) } : {}),
+          ...(data.warrantyMonths !== undefined ? { warrantyMonths: data.warrantyMonths ?? null } : {}),
+          ...(data.fault !== undefined ? { fault: data.fault?.trim() || null } : {}),
+          ...(data.destination !== undefined ? { destination: data.destination ?? null } : {}),
           ...(data.status !== undefined
             ? {
                 status: data.status,

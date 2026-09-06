@@ -382,25 +382,33 @@ model CashBoxEntry {
 }
 
 model ReplacementClaim {
-  id                    String                 @id @default(cuid())
-  receivedDate          DateTime               @db.Date
-  customerName          String
-  customerPhone         String?
-  billNumber            String?
-  status                String                 @default("received_from_customer")
-  sentToCompanyDate     DateTime?              @db.Date
-  companyReceivedDate   DateTime?              @db.Date
-  companyInvoiceNumber  String?
-  companyDeliveryNote   String?
+  id                     String                 @id @default(cuid())
+  caseNumber             String?                @unique
+  receivedDate           DateTime               @db.Date
+  customerName           String
+  customerPhone          String?
+  billNumber             String?
+  billDate               DateTime?              @db.Date
+  warrantyMonths         Int?
+  fault                  String?
+  destination            String?
+  status                 String                 @default("received_from_customer")
+  sentToCompanyDate      DateTime?              @db.Date
+  companyReceivedDate    DateTime?              @db.Date
+  companyInvoiceNumber   String?
+  companyDeliveryNote    String?
   returnedToCustomerDate DateTime?              @db.Date
-  notes                 String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  items                 ReplacementClaimItem[]
+  notes                  String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  items                  ReplacementClaimItem[]
+  sourcedStock           ReplacementStockItem[] @relation("StockSource")
+  allocatedStock         ReplacementStockItem[] @relation("StockAllocation")
 
   @@index([receivedDate])
   @@index([status])
   @@index([sentToCompanyDate])
+  @@index([destination])
 }
 
 model ReplacementClaimItem {
@@ -417,4 +425,30 @@ model ReplacementClaimItem {
   notes        String?
   sortOrder    Int              @default(0)
   createdAt    DateTime         @default(now())
+}
+
+model ReplacementStockItem {
+  id               String            @id @default(cuid())
+  itemType         String
+  modelCode        String?
+  serialNumber     String?
+  ah               Float?
+  voltage          String?
+  result           String            @default("repaired")
+  source           String
+  sourceClaimId    String?
+  sourceClaim      ReplacementClaim? @relation("StockSource", fields: [sourceClaimId], references: [id], onDelete: SetNull)
+  status           String            @default("available")
+  receivedDate     DateTime          @db.Date
+  allocatedClaimId String?
+  allocatedClaim   ReplacementClaim? @relation("StockAllocation", fields: [allocatedClaimId], references: [id], onDelete: SetNull)
+  allocatedAt      DateTime?
+  notes            String?
+  createdAt        DateTime          @default(now())
+
+  @@index([status])
+  @@index([itemType])
+  @@index([receivedDate])
+  @@index([sourceClaimId])
+  @@index([allocatedClaimId])
 }
