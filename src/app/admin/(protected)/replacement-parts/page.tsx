@@ -19,6 +19,7 @@ import { Select } from "@/components/ui/Select";
 import {
   REPLACEMENT_ITEM_TYPE_OPTIONS,
   REPLACEMENT_STATUS_OPTIONS,
+  claimPieceCount,
   formatItemSpecs,
   formatReplacementDate,
   formatReplacementItemType,
@@ -413,6 +414,7 @@ export default function AdminReplacementPartsPage() {
                 <tr>
                   <th className="px-4 py-2 font-medium">Customer</th>
                   <th className="px-4 py-2 font-medium">Faulty items</th>
+                  <th className="px-4 py-2 font-medium">No. of pieces</th>
                   <th className="px-4 py-2 font-medium">Received</th>
                   <th className="px-4 py-2 font-medium">Action</th>
                 </tr>
@@ -422,6 +424,7 @@ export default function AdminReplacementPartsPage() {
                   <tr key={claim.id}>
                     <td className="px-4 py-2 font-medium">{claim.customerName}</td>
                     <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
+                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatReplacementDate(claim.receivedDate)}
                     </td>
@@ -470,6 +473,7 @@ export default function AdminReplacementPartsPage() {
                 <tr>
                   <th className="px-4 py-2 font-medium">Customer</th>
                   <th className="px-4 py-2 font-medium">Faulty items</th>
+                  <th className="px-4 py-2 font-medium">No. of pieces</th>
                   <th className="px-4 py-2 font-medium">Sent date</th>
                   <th className="px-4 py-2 font-medium">Pending</th>
                   <th className="px-4 py-2 font-medium">Action</th>
@@ -480,6 +484,7 @@ export default function AdminReplacementPartsPage() {
                   <tr key={claim.id}>
                     <td className="px-4 py-2 font-medium">{claim.customerName}</td>
                     <td className="px-4 py-2">{summarizeOldItems(claim)}</td>
+                    <td className="px-4 py-2">{claimPieceCount(claim)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatReplacementDate(claim.sentToCompanyDate ?? claim.receivedDate)}
                     </td>

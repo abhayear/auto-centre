@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import {
+  claimPieceCount,
   formatReplacementItemType,
   type SerializedReplacementClaim,
 } from "@/lib/replacement-parts";
@@ -23,7 +24,7 @@ function summarizeItems(claim: SerializedReplacementClaim): string {
     .filter((item) => item.side === "old")
     .map(
       (item) =>
-        `${formatReplacementItemType(item.itemType)}${item.modelCode ? ` (${item.modelCode})` : ""} × ${item.quantity}`,
+        `${formatReplacementItemType(item.itemType)}${item.modelCode ? ` (${item.modelCode})` : ""}`,
     )
     .join(", ");
 }
@@ -74,19 +75,25 @@ export function SendToCompanyForm({ claims, onSuccess, onCancel }: SendToCompany
   return (
     <Modal open title="Send showroom items to Plant / Company" onClose={onCancel}>
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-        <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-sky-100">
-          <p className="font-medium">
-            {claims.length === 1
-              ? claims[0].customerName
-              : `${claims.length} claims at showroom`}
-          </p>
-          <ul className="mt-2 space-y-1 text-xs text-sky-200/80">
-            {claims.map((claim) => (
-              <li key={claim.id}>
-                {claim.customerName}: {summarizeItems(claim) || "—"}
-              </li>
-            ))}
-          </ul>
+        <div className="overflow-x-auto rounded-lg border border-sky-500/30">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-sky-500/10 text-sky-100">
+              <tr>
+                <th className="px-3 py-2 font-medium">Customer</th>
+                <th className="px-3 py-2 font-medium">Items</th>
+                <th className="px-3 py-2 font-medium">No. of pieces</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-sky-500/20 text-sky-50">
+              {claims.map((claim) => (
+                <tr key={claim.id}>
+                  <td className="px-3 py-2 font-medium">{claim.customerName}</td>
+                  <td className="px-3 py-2">{summarizeItems(claim) || "—"}</td>
+                  <td className="px-3 py-2">{claimPieceCount(claim)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <Select

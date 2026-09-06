@@ -180,6 +180,12 @@ export function sumItemQuantities(
     .reduce((total, item) => total + (item.quantity ?? 1), 0);
 }
 
+export function claimPieceCount(claim: {
+  items: Pick<SerializedReplacementClaimItem, "side" | "quantity">[];
+}): number {
+  return sumItemQuantities(claim.items, "old");
+}
+
 /** Items still waiting to arrive from Yakuza / company */
 export function isPendingFromCompany(claim: SerializedReplacementClaim): boolean {
   if (claim.status === "cancelled" || claim.status === "closed" || claim.status === "returned_to_customer") {

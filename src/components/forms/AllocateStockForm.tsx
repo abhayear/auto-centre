@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import {
+  claimPieceCount,
   formatReplacementItemType,
   type SerializedReplacementClaim,
   type SerializedReplacementStockItem,
@@ -78,27 +79,42 @@ export function AllocateStockForm({
         {pending.length === 0 ? (
           <p className="text-sm text-slate-400">No pending customers need allocation.</p>
         ) : (
-          pending.map((claim) => {
-            const recommendation = recommendAllocation(
-              claimToAllocationClaim(claim),
-              available,
-              today,
-            );
-            return (
-              <AllocationRow
-                key={claim.id}
-                claim={claim}
-                recommendation={recommendation}
-                available={available}
-                manualStockId={manualByClaim[claim.id] ?? ""}
-                loading={loadingId === claim.id}
-                onManualChange={(value) =>
-                  setManualByClaim((current) => ({ ...current, [claim.id]: value }))
-                }
-                onAllocate={(stockId) => void allocate(claim.id, stockId)}
-              />
-            );
-          })
+          <div className="overflow-x-auto rounded-lg border border-slate-700/50">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-800/80 text-slate-300">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Customer</th>
+                  <th className="px-3 py-2 font-medium">Item</th>
+                  <th className="px-3 py-2 font-medium">No. of pieces</th>
+                  <th className="px-3 py-2 font-medium">Recommendation</th>
+                  <th className="px-3 py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/50 text-slate-300">
+                {pending.map((claim) => {
+                  const recommendation = recommendAllocation(
+                    claimToAllocationClaim(claim),
+                    available,
+                    today,
+                  );
+                  return (
+                    <AllocationRow
+                      key={claim.id}
+                      claim={claim}
+                      recommendation={recommendation}
+                      available={available}
+                      manualStockId={manualByClaim[claim.id] ?? ""}
+                      loading={loadingId === claim.id}
+                      onManualChange={(value) =>
+                        setManualByClaim((current) => ({ ...current, [claim.id]: value }))
+                      }
+                      onAllocate={(stockId) => void allocate(claim.id, stockId)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onCancel}>
@@ -130,56 +146,62 @@ function AllocationRow({
   const oldItem = claim.items.find((item) => item.side === "old");
   const stockId = recommendation.stockId ?? manualStockId;
   return (
-    <div className="space-y-3 rounded-lg border border-slate-700/50 bg-slate-900/50 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-medium text-white">
-            {claim.caseNumber ?? "—"} · {claim.customerName}
-          </p>
-          <p className="text-sm text-slate-400">
-            {oldItem
-              ? `${formatReplacementItemType(oldItem.itemType)} · ${oldItem.modelCode ?? "No code"}`
-              : "No submitted item"}
-          </p>
-        </div>
+    <tr>
+      <td className="px-3 py-3 align-top">
+        <p className="font-medium text-white">
+          {claim.caseNumber ?? "—"} · {claim.customerName}
+        </p>
         {recommendation.urgent ? (
-          <span className="rounded-full bg-red-900/50 px-2.5 py-0.5 text-xs font-medium text-red-300">
-            Urgent warranty
+          <p className="mt-1 text-xs text-red-300">
+            Urgent
             {recommendation.remainingMonths != null
               ? ` · ${recommendation.remainingMonths} months left`
               : ""}
-          </span>
+          </p>
         ) : (
-          <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-300">
-            Normal warranty
+          <p className="mt-1 text-xs text-green-300">
+            Normal
             {recommendation.remainingMonths != null
               ? ` · ${recommendation.remainingMonths} months left`
               : ""}
-          </span>
+          </p>
         )}
-      </div>
-      <p className="text-sm text-slate-300">{recommendation.reason}</p>
-      {recommendation.kind === "wait" && available.length > 0 && (
-        <Select
-          id={`manual-${claim.id}`}
-          label="Or pick stock manually"
-          placeholder="Select available stock"
-          value={manualStockId}
-          onChange={(event) => onManualChange(event.target.value)}
-          options={available.map((item) => ({
-            value: item.id,
-            label: `${item.modelCode ?? "No code"} · ${formatReplacementItemType(item.itemType)}`,
-          }))}
-        />
-      )}
-      <Button
-        type="button"
-        disabled={!stockId}
-        loading={loading}
-        onClick={() => stockId && onAllocate(stockId)}
-      >
-        Allocate
-      </Button>
-    </div>
+      </td>
+      <td className="px-3 py-3 align-top">
+        {oldItem
+          ? `${formatReplacementItemType(oldItem.itemType)} · ${oldItem.modelCode ?? "No code"}`
+          : "No submitted item"}
+      </td>
+      <td className="px-3 py-3 align-top font-medium text-white">{claimPieceCount(claim)}</td>
+      <td className="px-3 py-3 align-top">
+        <p>{recommendation.reason}</p>
+        {recommendation.kind === "wait" && available.length > 0 && (
+          <div className="mt-2 min-w-52">
+            <Select
+              id={`manual-${claim.id}`}
+              label="Or pick stock manually"
+              placeholder="Select available stock"
+              value={manualStockId}
+              onChange={(event) => onManualChange(event.target.value)}
+              options={available.map((item) => ({
+                value: item.id,
+                label: `${item.modelCode ?? "No code"} · ${formatReplacementItemType(item.itemType)} · 1 piece`,
+              }))}
+            />
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-3 align-top">
+        <Button
+          type="button"
+          size="sm"
+          disabled={!stockId}
+          loading={loading}
+          onClick={() => stockId && onAllocate(stockId)}
+        >
+          Allocate
+        </Button>
+      </td>
+    </tr>
   );
 }

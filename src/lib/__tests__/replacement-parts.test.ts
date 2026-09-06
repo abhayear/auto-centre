@@ -8,6 +8,7 @@ import {
   buildMovementReport,
   claimMovementLocation,
   claimMovementQuantities,
+  claimPieceCount,
   filterPendingFromCompanyClaims,
   isAtShowroom,
   isPendingFromCompany,
@@ -144,6 +145,18 @@ describe("replacement-parts validators", () => {
 });
 
 describe("replacement-parts helpers", () => {
+  it("counts old-item pieces for send and allocate lists", () => {
+    expect(
+      claimPieceCount({
+        items: [
+          { side: "old", quantity: 2 },
+          { side: "old", quantity: 1 },
+          { side: "new", quantity: 5 },
+        ],
+      }),
+    ).toBe(3);
+  });
+
   it("parses date-only input as UTC midnight", () => {
     const date = parseReplacementDateInput("2026-08-16");
     expect(date.toISOString()).toBe("2026-08-16T00:00:00.000Z");
