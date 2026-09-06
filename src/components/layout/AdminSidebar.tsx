@@ -87,7 +87,7 @@ const navItems: NavItem[] = [
   { href: "/admin/cash-box", label: "Cash Box", icon: IndianRupee, show: canUseOpsPortal },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare, show: canUseOpsPortal },
   { href: "/admin/showroom-walk-ins", label: "Walk-in Enquiries", icon: Store, show: canUseOpsPortal },
-  { href: "/admin/replacement-parts", label: "Replacement Warranty", icon: Package, show: canUseOpsPortal },
+  { href: "/admin/replacement-parts", label: "Replacement Parts", icon: Package, show: canUseOpsPortal },
   { href: "/admin/esteemed-customers", label: "Esteemed Customers", icon: Star, show: canUseOpsPortal },
   { href: "/admin/site-analytics", label: "Site Analytics", icon: BarChart3, show: canUseOpsPortal },
   { href: "/admin/services", label: "Services", icon: Wrench, show: canUseOpsPortal },

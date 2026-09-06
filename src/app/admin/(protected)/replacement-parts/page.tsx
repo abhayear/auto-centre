@@ -320,10 +320,10 @@ export default function AdminReplacementPartsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Replacement warranty</h1>
+          <h1 className="text-2xl font-bold text-white">Replacement Parts</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Submit customers, send to Plant or Company, receive repaired stock, and allocate the
-            best match.
+            Warranty tracker: submit customers, send to Plant or Company, receive repaired stock,
+            and allocate the best match.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Megaphone,
   MessageSquare,
+  Package,
   Wrench,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -30,8 +31,15 @@ export default async function AdminDashboardPage() {
     redirect(homeRedirect);
   }
 
-  const [vehicleCount, pendingBookings, newInquiries, serviceCount, openJobs, newApplications] =
-    await Promise.all([
+  const [
+    vehicleCount,
+    pendingBookings,
+    newInquiries,
+    serviceCount,
+    openJobs,
+    newApplications,
+    pendingWarranty,
+  ] = await Promise.all([
       safeDbQuery(() => prisma.vehicle.count({ where: { status: "available" } }), 0),
       safeDbQuery(() => prisma.serviceBooking.count({ where: { status: "pending" } }), 0),
       safeDbQuery(() => prisma.inquiry.count({ where: { status: "new" } }), 0),
@@ -41,6 +49,13 @@ export default async function AdminDashboardPage() {
         0,
       ),
       safeDbQuery(() => prisma.jobApplication.count({ where: { status: "new" } }), 0),
+      safeDbQuery(
+        () =>
+          prisma.replacementClaim.count({
+            where: { status: { notIn: ["returned_to_customer", "closed", "cancelled"] } },
+          }),
+        0,
+      ),
     ]);
 
   const stats = [
@@ -80,6 +95,12 @@ export default async function AdminDashboardPage() {
       icon: ClipboardList,
       color: "text-orange-400",
     },
+    {
+      label: "Warranty pending",
+      value: pendingWarranty,
+      icon: Package,
+      color: "text-sky-400",
+    },
   ];
 
   return (
@@ -115,6 +136,24 @@ export default async function AdminDashboardPage() {
             <p className="font-semibold text-white">Offers and pricing</p>
             <p className="text-sm text-slate-400">
               Festival and monsoon homepage offers, plus suggested model prices from sold history.
+            </p>
+          </div>
+        </div>
+      </Link>
+
+      <Link
+        href="/admin/replacement-parts"
+        className="mb-8 block rounded-xl border border-sky-500/30 bg-sky-950/20 p-5 transition-colors hover:border-sky-500/50 hover:bg-sky-950/30"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-sky-600/20 p-3 text-sky-400">
+            <Package className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-semibold text-white">Replacement Parts</p>
+            <p className="text-sm text-slate-400">
+              Warranty cases: submit customers, send to Plant or Company, receive stock, and
+              allocate. {pendingWarranty} pending.
             </p>
           </div>
         </div>

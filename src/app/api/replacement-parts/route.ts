@@ -23,8 +23,12 @@ import {
 } from "@/lib/validators";
 import { nextWarrantyCaseNumber } from "@/lib/warranty-allocation";
 
-const claimInclude = {
+const itemsInclude = {
   items: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
+};
+
+const claimInclude = {
+  ...itemsInclude,
   sourcedStock: true,
   allocatedStock: true,
 };
@@ -39,20 +43,24 @@ async function nextCaseNumber() {
 }
 
 async function backfillCaseNumbers() {
-  const missing = await prisma.replacementClaim.findMany({
-    where: { caseNumber: null },
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-  if (missing.length === 0) return;
-
-  let next = await nextCaseNumber();
-  for (const row of missing) {
-    await prisma.replacementClaim.update({
-      where: { id: row.id },
-      data: { caseNumber: next },
+  try {
+    const missing = await prisma.replacementClaim.findMany({
+      where: { caseNumber: null },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
     });
-    next = nextWarrantyCaseNumber([next]);
+    if (missing.length === 0) return;
+
+    let next = await nextCaseNumber();
+    for (const row of missing) {
+      await prisma.replacementClaim.update({
+        where: { id: row.id },
+        data: { caseNumber: next },
+      });
+      next = nextWarrantyCaseNumber([next]);
+    }
+  } catch {
+    // Warranty columns / stock table may not be migrated yet.
   }
 }
 
@@ -187,25 +195,40 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
   await backfillCaseNumbers();
 
   if (searchParams.get("stock") === "1") {
-    const stock = await prisma.replacementStockItem.findMany({
-      orderBy: [{ receivedDate: "asc" }, { createdAt: "asc" }],
-    });
-    return NextResponse.json(stock.map(serializeReplacementStockItem));
+    try {
+      const stock = await prisma.replacementStockItem.findMany({
+        orderBy: [{ receivedDate: "asc" }, { createdAt: "asc" }],
+      });
+      return NextResponse.json(stock.map(serializeReplacementStockItem));
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 
-  const records = await prisma.replacementClaim.findMany({
-    where: buildListFilter({
-      from,
-      to,
-      status,
-      itemType,
-      pendingFromCompany,
-      pendingAtShowroom,
-      readyForCustomer,
-    }),
-    include: claimInclude,
-    orderBy: [{ receivedDate: "desc" }, { createdAt: "desc" }],
+  const listWhere = buildListFilter({
+    from,
+    to,
+    status,
+    itemType,
+    pendingFromCompany,
+    pendingAtShowroom,
+    readyForCustomer,
   });
+  const listOrder = [{ receivedDate: "desc" as const }, { createdAt: "desc" as const }];
+  let records;
+  try {
+    records = await prisma.replacementClaim.findMany({
+      where: listWhere,
+      include: claimInclude,
+      orderBy: listOrder,
+    });
+  } catch {
+    records = await prisma.replacementClaim.findMany({
+      where: listWhere,
+      include: itemsInclude,
+      orderBy: listOrder,
+    });
+  }
 
   const serialized = records.map(serializeReplacementClaim);
 

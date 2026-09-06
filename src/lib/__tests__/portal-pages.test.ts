@@ -25,6 +25,13 @@ describe("assertStaffPageAccess", () => {
     },
   );
 
+  it.each(["admin", "manager"] as const)(
+    "allows %s to access replacement parts",
+    (role) => {
+      expect(assertStaffPageAccess("/admin/replacement-parts", role)).toBeNull();
+    },
+  );
+
   it.each([
     ["sales", "/admin/training"],
     ["mechanic", "/admin/training"],
