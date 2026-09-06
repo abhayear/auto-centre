@@ -26,10 +26,18 @@ const ITEM_COLORS = {
 };
 
 const LOCATION_COLORS = {
+  customerPending: "#f59e0b",
   autogalaxy: "#f87171",
   plant: "#fbbf24",
   company: "#38bdf8",
 };
+
+const LOCATION_SERIES = [
+  { key: "customerPending" as const, label: "Customer pending", color: LOCATION_COLORS.customerPending, bar: "bg-amber-500" },
+  { key: "autogalaxy" as const, label: "Autogalaxy", color: LOCATION_COLORS.autogalaxy, bar: "bg-red-400" },
+  { key: "plant" as const, label: "Plant", color: LOCATION_COLORS.plant, bar: "bg-amber-400" },
+  { key: "company" as const, label: "Company", color: LOCATION_COLORS.company, bar: "bg-sky-400" },
+];
 
 export function ReplacementTrackingCharts({ dashboard }: { dashboard: WarrantyDashboard }) {
   const statusSlices: Slice[] = [
@@ -88,6 +96,21 @@ export function ReplacementTrackingCharts({ dashboard }: { dashboard: WarrantyDa
 
   return (
     <div className="space-y-4">
+      <ChartCard
+        title="Items by type at each location"
+        subtitle="How many battery, charger, motor, and controller pieces are pending with customers, at Autogalaxy, at plant, or at company"
+      >
+        <LocationByTypeChart
+          rows={LETTER_ITEM_TYPE_ORDER.map((type) => ({
+            label: REPLACEMENT_ITEM_TYPE_LABELS[type],
+            customerPending: dashboard.rows[type].customerPending,
+            autogalaxy: dashboard.rows[type].autogalaxy,
+            plant: dashboard.rows[type].plant,
+            company: dashboard.rows[type].company,
+          }))}
+        />
+      </ChartCard>
+
       <div className="grid gap-4 lg:grid-cols-3">
         <ChartCard
           title="Given vs pending"
@@ -206,6 +229,64 @@ function SliceLegend({ slices, total }: { slices: Slice[]; total: number }) {
         );
       })}
     </ul>
+  );
+}
+
+function LocationByTypeChart({
+  rows,
+}: {
+  rows: {
+    label: string;
+    customerPending: number;
+    autogalaxy: number;
+    plant: number;
+    company: number;
+  }[];
+}) {
+  const max = Math.max(
+    1,
+    ...rows.flatMap((row) => [row.customerPending, row.autogalaxy, row.plant, row.company]),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-4 text-xs text-slate-400">
+        {LOCATION_SERIES.map((series) => (
+          <span key={series.key} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: series.color }} />
+            {series.label}
+          </span>
+        ))}
+      </div>
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+              <span className="font-medium text-white">{row.label}</span>
+              <span className="tabular-nums text-slate-400">
+                {row.customerPending} pending · {row.autogalaxy} Autogalaxy · {row.plant} plant ·{" "}
+                {row.company} company
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {LOCATION_SERIES.map((series) => (
+                <div key={series.key} className="space-y-1">
+                  <Bar
+                    value={row[series.key]}
+                    max={max}
+                    color={series.bar}
+                    label={`${row.label} ${series.label}`}
+                  />
+                  <p className="text-[10px] tabular-nums text-slate-500">
+                    {row[series.key]} {series.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
