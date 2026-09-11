@@ -24,13 +24,31 @@ const statusStyles: Record<string, string> = {
   completed: "border-emerald-700/40 bg-emerald-950/20 text-emerald-300",
 };
 
+const blankFillColumnClass =
+  "min-w-[6.5rem] w-[16%] px-3 py-2 print:min-w-0 print:border print:border-black print:px-2 print:py-2 print:text-sm";
+
 const dealerStampColumnClass =
-  "min-w-[10rem] w-[32%] px-3 py-2 print:min-w-0 print:border print:border-black print:px-2 print:py-2 print:text-sm";
+  "min-w-[8rem] w-[18%] px-3 py-2 print:min-w-0 print:border print:border-black print:px-2 print:py-2 print:text-sm";
+
+function BlankFillHeader({ label }: { label: string }) {
+  return <th className={blankFillColumnClass}>{label}</th>;
+}
+
+function BlankFillCell({ label }: { label: string }) {
+  return (
+    <td className={`${blankFillColumnClass} align-bottom`}>
+      <div
+        className="flex h-full min-h-12 flex-col justify-end print:min-h-[2.75rem]"
+        aria-label={label}
+      >
+        <div className="border-b border-slate-600 print:border-black" />
+      </div>
+    </td>
+  );
+}
 
 function DealerStampHeader() {
-  return (
-    <th className={dealerStampColumnClass}>Dealer stamp / signature</th>
-  );
+  return <th className={dealerStampColumnClass}>Dealer stamp / signature</th>;
 }
 
 function DealerStampCell() {
@@ -164,16 +182,18 @@ export function ServiceDueCalculator({
           <table className="min-w-full text-left text-sm print:h-full print:w-full">
             <thead className="bg-slate-800/80 text-slate-200 print:bg-white print:text-black">
               <tr>
-                <th className="w-[34%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
+                <th className="w-[26%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Service
                 </th>
-                <th className="w-[12%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
+                <th className="w-[8%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Day
                 </th>
-                <th className="w-[22%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
+                <th className="w-[16%] px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                   Due date
                 </th>
+                <BlankFillHeader label="KM reading" />
                 <DealerStampHeader />
+                <BlankFillHeader label="Customer signature" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50 print:h-full print:divide-black">
@@ -191,7 +211,9 @@ export function ServiceDueCalculator({
                   <td className="px-3 py-2 print:border print:border-black print:px-2 print:py-2 print:text-sm">
                     {formatScheduleDate(m.dueDate)}
                   </td>
+                  <BlankFillCell label={`KM reading for ${m.shortLabel}`} />
                   <DealerStampCell />
+                  <BlankFillCell label={`Customer signature for ${m.shortLabel}`} />
                 </tr>
               ))}
             </tbody>
@@ -210,7 +232,9 @@ export function ServiceDueCalculator({
                 <tr>
                   <th className="px-3 py-2 print:border print:border-black">Service</th>
                   <th className="px-3 py-2 print:border print:border-black">Due date</th>
+                  <BlankFillHeader label="KM reading" />
                   <DealerStampHeader />
+                  <BlankFillHeader label="Customer signature" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50 print:divide-black">
@@ -223,7 +247,9 @@ export function ServiceDueCalculator({
                     <td className="px-3 py-2 print:border print:border-black">
                       {formatScheduleDate(a.dueDate)}
                     </td>
+                    <BlankFillCell label={`KM reading for ${a.shortLabel}`} />
                     <DealerStampCell />
+                    <BlankFillCell label={`Customer signature for ${a.shortLabel}`} />
                   </tr>
                 ))}
               </tbody>

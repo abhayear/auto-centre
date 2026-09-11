@@ -13,6 +13,7 @@ import {
   type ReplacementClaimView,
 } from "@/components/forms/ReplacementClaimForm";
 import { EditablePieceCount } from "@/components/replacement-parts/PieceCountInput";
+import { ReplacementPeriodBar } from "@/components/replacement-parts/ReplacementPeriodBar";
 import { WarrantyDashboard } from "@/components/replacement-parts/WarrantyDashboard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +33,7 @@ import {
   pendingFromCompanySummary,
   replacementStatusVariant,
   type SerializedReplacementStockItem,
+  type TrackDateField,
 } from "@/lib/replacement-parts";
 import {
   buildWarrantyDashboard,
@@ -43,10 +45,12 @@ function buildListParams(
   toDate: string,
   statusFilter: string,
   itemTypeFilter: string,
+  dateField: TrackDateField = "any",
 ) {
   const params = new URLSearchParams();
   if (fromDate) params.set("from", fromDate);
   if (toDate) params.set("to", toDate);
+  if (dateField) params.set("dateField", dateField);
   if (statusFilter) params.set("status", statusFilter);
   if (itemTypeFilter) params.set("itemType", itemTypeFilter);
   return params;
@@ -99,6 +103,7 @@ export default function AdminReplacementPartsPage() {
   const [returnClaims, setReturnClaims] = useState<ReplacementClaimView[] | undefined>();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [dateField, setDateField] = useState<TrackDateField>("any");
   const [statusFilter, setStatusFilter] = useState("");
   const [itemTypeFilter, setItemTypeFilter] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -113,7 +118,7 @@ export default function AdminReplacementPartsPage() {
 
     async function load() {
       setLoading(true);
-      const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
+      const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter, dateField);
       const [listRes, pendingRes, showroomRes, readyRes, stockRes] = await Promise.all([
         fetch(`/api/replacement-parts?${params}`),
         fetch("/api/replacement-parts?pendingFromCompany=1"),
@@ -141,10 +146,10 @@ export default function AdminReplacementPartsPage() {
     return () => {
       active = false;
     };
-  }, [fromDate, toDate, statusFilter, itemTypeFilter]);
+  }, [fromDate, toDate, dateField, statusFilter, itemTypeFilter]);
 
   async function refreshClaims() {
-    const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter);
+    const params = buildListParams(fromDate, toDate, statusFilter, itemTypeFilter, dateField);
     const [listRes, pendingRes, showroomRes, readyRes, stockRes] = await Promise.all([
       fetch(`/api/replacement-parts?${params}`),
       fetch("/api/replacement-parts?pendingFromCompany=1"),
@@ -300,7 +305,7 @@ export default function AdminReplacementPartsPage() {
   }
 
   function openLetterPrint(ids?: string[]) {
-    const params = buildListParams(fromDate, toDate, "", itemTypeFilter);
+    const params = buildListParams(fromDate, toDate, "", itemTypeFilter, dateField);
     if (ids && ids.length > 0) {
       params.set("ids", ids.join(","));
     } else {
@@ -310,9 +315,12 @@ export default function AdminReplacementPartsPage() {
     window.open(`/admin/replacement-parts/print?${params}`, "_blank");
   }
 
-  function openMovementReport(kind: "movement" | "sent" | "received" | "returned" | "summary" = "movement") {
-    const params = buildListParams(fromDate, toDate, "", itemTypeFilter);
-    if (selectedIds.length > 0) {
+  function openMovementReport(
+    kind: "movement" | "sent" | "received" | "returned" | "summary" | "period" = "movement",
+    field: TrackDateField = dateField,
+  ) {
+    const params = buildListParams(fromDate, toDate, "", itemTypeFilter, field);
+    if (selectedIds.length > 0 && kind !== "period") {
       params.set("ids", selectedIds.join(","));
     }
     params.set("report", kind);
@@ -357,15 +365,15 @@ export default function AdminReplacementPartsPage() {
             <ClipboardList className="h-4 w-4" />
             Movement report
           </Button>
-          <Button variant="outline" onClick={() => openMovementReport("sent")}>
+          <Button variant="outline" onClick={() => openMovementReport("sent", "sent")}>
             <Truck className="h-4 w-4" />
             Sent to company
           </Button>
-          <Button variant="outline" onClick={() => openMovementReport("received")}>
+          <Button variant="outline" onClick={() => openMovementReport("received", "company")}>
             <PackageCheck className="h-4 w-4" />
             Received from company
           </Button>
-          <Button variant="outline" onClick={() => openMovementReport("returned")}>
+          <Button variant="outline" onClick={() => openMovementReport("returned", "returned")}>
             <Undo2 className="h-4 w-4" />
             Returned to customer
           </Button>
@@ -384,6 +392,20 @@ export default function AdminReplacementPartsPage() {
           </Button>
         </div>
       </div>
+
+      <ReplacementPeriodBar
+        fromDate={fromDate}
+        toDate={toDate}
+        dateField={dateField}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        onDateFieldChange={setDateField}
+        onClearDates={() => {
+          setFromDate("");
+          setToDate("");
+        }}
+        onPrintPdf={() => openMovementReport("period", dateField)}
+      />
 
       <WarrantyDashboard
         dashboard={dashboard}
@@ -408,6 +430,7 @@ export default function AdminReplacementPartsPage() {
         onClearSelection={() => setSelectedIds([])}
         onBulkDelete={() => void handleBulkDelete()}
         bulkDeleting={bulkDeleting}
+        hideDates
       />
 
       {showroomClaims.length > 0 && (
@@ -554,7 +577,7 @@ export default function AdminReplacementPartsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => openMovementReport("returned")}>
+              <Button variant="outline" onClick={() => openMovementReport("returned", "returned")}>
                 <Undo2 className="h-4 w-4" />
                 Returned report
               </Button>
@@ -609,7 +632,7 @@ export default function AdminReplacementPartsPage() {
                 Customers who have already collected their replacement.
               </p>
             </div>
-            <Button variant="outline" onClick={() => openMovementReport("returned")}>
+            <Button variant="outline" onClick={() => openMovementReport("returned", "returned")}>
               <Undo2 className="h-4 w-4" />
               Returned to customer report
             </Button>

@@ -2,47 +2,28 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOpsPortal, requireAdminRole } from "@/lib/auth";
-import { computeCashBoxTotals, parseRecordDateInput } from "@/lib/cash-box";
+import {
+  parseRecordDateInput,
+  serializeCashBoxRecord,
+  snapshotCashBoxRecord,
+  summarizeCashBoxChange,
+} from "@/lib/cash-box";
 import { prisma } from "@/lib/prisma";
 import { cashBoxRecordSchema, formatZodErrors } from "@/lib/validators";
+import { Prisma } from "@prisma/client";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-function serializeRecord(
-  record: {
-    id: string;
-    recordDate: Date;
-    sessionNumber: number;
-    openingBalance: number;
-    takenHome: number;
-    notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    entries: {
-      id: string;
-      type: string;
-      category: string;
-      business: string | null;
-      paymentMethod: string | null;
-      description: string;
-      amount: number;
-      sortOrder: number;
-    }[];
-  },
-) {
-  const totals = computeCashBoxTotals(record.openingBalance, record.takenHome, record.entries.map((entry) => ({
-    type: entry.type as "receipt" | "payment",
-    amount: entry.amount,
-    paymentMethod: entry.paymentMethod as "cash" | "phonepay" | "other" | null | undefined,
-  })));
-  return {
-    ...record,
-    recordDate: record.recordDate.toISOString().slice(0, 10),
-    ...totals,
-  };
-}
+const recordInclude = {
+  entries: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
+};
 
- async function getHandler(_request: NextRequest, { params }: RouteParams) {
+const recordWithHistoryInclude = {
+  ...recordInclude,
+  auditLogs: { orderBy: { createdAt: "desc" as const } },
+};
+
+async function getHandler(_request: NextRequest, { params }: RouteParams) {
   const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,29 +32,34 @@ function serializeRecord(
   const { id } = await params;
   const record = await prisma.cashBoxRecord.findUnique({
     where: { id },
-    include: { entries: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+    include: recordWithHistoryInclude,
   });
 
   if (!record) {
     return NextResponse.json({ error: "Record not found" }, { status: 404 });
   }
 
-  return NextResponse.json(serializeRecord(record));
+  return NextResponse.json(serializeCashBoxRecord(record));
 }
 
- async function patchHandler(request: NextRequest, { params }: RouteParams) {
+async function patchHandler(request: NextRequest, { params }: RouteParams) {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Only admins can edit cash box records" }, { status: 403 });
   }
 
   const { id } = await params;
+  const actorEmail = session.user.email ?? "unknown";
+  const actorRole = session.user.role ?? null;
 
   try {
     const body = await request.json();
     const data = cashBoxRecordSchema.partial().parse(body);
 
-    const existing = await prisma.cashBoxRecord.findUnique({ where: { id } });
+    const existing = await prisma.cashBoxRecord.findUnique({
+      where: { id },
+      include: recordInclude,
+    });
     if (!existing) {
       return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
@@ -83,7 +69,7 @@ function serializeRecord(
         await tx.cashBoxEntry.deleteMany({ where: { recordId: id } });
       }
 
-      return tx.cashBoxRecord.update({
+      const updated = await tx.cashBoxRecord.update({
         where: { id },
         data: {
           ...(data.recordDate ? { recordDate: parseRecordDateInput(data.recordDate) } : {}),
@@ -107,11 +93,27 @@ function serializeRecord(
               }
             : {}),
         },
-        include: { entries: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+        include: recordInclude,
       });
+
+      const before = snapshotCashBoxRecord(existing);
+      const after = snapshotCashBoxRecord(updated);
+      await tx.cashBoxAuditLog.create({
+        data: {
+          recordId: id,
+          action: "updated",
+          actorEmail,
+          actorRole,
+          summary: summarizeCashBoxChange("updated", before, after),
+          beforeJson: before as Prisma.InputJsonValue,
+          afterJson: after as Prisma.InputJsonValue,
+        },
+      });
+
+      return updated;
     });
 
-    return NextResponse.json(serializeRecord(record));
+    return NextResponse.json(serializeCashBoxRecord(record));
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -129,16 +131,39 @@ function serializeRecord(
   }
 }
 
- async function deleteHandler(_request: NextRequest, { params }: RouteParams) {
+async function deleteHandler(_request: NextRequest, { params }: RouteParams) {
   const session = await requireAdminRole();
   if (!session) {
     return NextResponse.json({ error: "Only admins can delete cash box records" }, { status: 403 });
   }
 
   const { id } = await params;
+  const actorEmail = session.user.email ?? "unknown";
+  const actorRole = session.user.role ?? null;
 
   try {
-    await prisma.cashBoxRecord.delete({ where: { id } });
+    const existing = await prisma.cashBoxRecord.findUnique({
+      where: { id },
+      include: recordInclude,
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Record not found" }, { status: 404 });
+    }
+
+    const before = snapshotCashBoxRecord(existing);
+    await prisma.$transaction(async (tx) => {
+      await tx.cashBoxAuditLog.create({
+        data: {
+          recordId: id,
+          action: "deleted",
+          actorEmail,
+          actorRole,
+          summary: summarizeCashBoxChange("deleted", before, null),
+          beforeJson: before as Prisma.InputJsonValue,
+        },
+      });
+      await tx.cashBoxRecord.delete({ where: { id } });
+    });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });

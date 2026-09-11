@@ -362,6 +362,7 @@ model CashBoxRecord {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   entries        CashBoxEntry[]
+  auditLogs      CashBoxAuditLog[]
 
   @@unique([recordDate, sessionNumber])
   @@index([recordDate])
@@ -379,6 +380,22 @@ model CashBoxEntry {
   amount        Float
   sortOrder     Int           @default(0)
   createdAt     DateTime      @default(now())
+}
+
+model CashBoxAuditLog {
+  id         String         @id @default(cuid())
+  recordId   String?
+  record     CashBoxRecord? @relation(fields: [recordId], references: [id], onDelete: SetNull)
+  action     String
+  actorEmail String
+  actorRole  String?
+  summary    String
+  beforeJson Json?
+  afterJson  Json?
+  createdAt  DateTime       @default(now())
+
+  @@index([recordId])
+  @@index([createdAt])
 }
 
 model ReplacementClaim {

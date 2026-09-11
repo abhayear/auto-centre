@@ -40,6 +40,7 @@ export function ServiceSchedulePageClient({
 }: ServiceSchedulePageClientProps) {
   const [customerName, setCustomerName] = useState("");
   const [billNo, setBillNo] = useState("");
+  const [kmReading, setKmReading] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [lastCompleted, setLastCompleted] = useState("");
   const [paperSize, setPaperSize] = useState<ServiceSchedulePaperSize>("A4");
@@ -94,9 +95,9 @@ export function ServiceSchedulePageClient({
           Save customer schedule as PDF
         </h2>
         <p className="mt-1 text-sm text-slate-400">
-          Fill customer details and delivery date, pick a paper size, then save as PDF. In the
-          dialog, choose &quot;Save as PDF&quot; as the destination and turn off headers and
-          footers.
+          Fill customer details, current KM, and delivery date, pick a paper size, then save as PDF.
+          In the dialog, choose &quot;Save as PDF&quot; as the destination and turn off headers and
+          footers. Each service row has space for KM reading and the customer signature.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Input
@@ -112,6 +113,14 @@ export function ServiceSchedulePageClient({
             value={billNo}
             onChange={(e) => setBillNo(e.target.value)}
             placeholder="e.g. AG-2026-0142"
+          />
+          <Input
+            id="kmReading"
+            label="KM reading"
+            inputMode="numeric"
+            value={kmReading}
+            onChange={(e) => setKmReading(e.target.value.replace(/[^\d]/g, ""))}
+            placeholder="e.g. 1840"
           />
         </div>
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -151,6 +160,10 @@ export function ServiceSchedulePageClient({
               <dd>{billNo.trim() || "—"}</dd>
             </div>
             <div>
+              <dt className="font-semibold">KM reading</dt>
+              <dd>{kmReading.trim() ? `${kmReading.trim()} km` : "—"}</dd>
+            </div>
+            <div>
               <dt className="font-semibold">Delivery / purchase date</dt>
               <dd>{formatDeliveryDateInput(deliveryDate)}</dd>
             </div>
@@ -161,6 +174,10 @@ export function ServiceSchedulePageClient({
             <div>
               <dt className="font-semibold">Printed on</dt>
               <dd>{printedOn}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold">Customer signature</dt>
+              <dd className="mt-5 min-h-6 border-b border-black" aria-label="Customer signature" />
             </div>
           </dl>
         </div>

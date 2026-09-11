@@ -2,45 +2,21 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOpsPortal } from "@/lib/auth";
-import { computeCashBoxTotals, parseRecordDateInput } from "@/lib/cash-box";
+import {
+  parseRecordDateInput,
+  serializeCashBoxRecord,
+  snapshotCashBoxRecord,
+  summarizeCashBoxChange,
+} from "@/lib/cash-box";
 import { prisma } from "@/lib/prisma";
 import { cashBoxRecordSchema, formatZodErrors } from "@/lib/validators";
+import { Prisma } from "@prisma/client";
 
-function serializeRecord(
-  record: {
-    id: string;
-    recordDate: Date;
-    sessionNumber: number;
-    openingBalance: number;
-    takenHome: number;
-    notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    entries: {
-      id: string;
-      type: string;
-      category: string;
-      business: string | null;
-      paymentMethod: string | null;
-      description: string;
-      amount: number;
-      sortOrder: number;
-    }[];
-  },
-) {
-  const totals = computeCashBoxTotals(record.openingBalance, record.takenHome, record.entries.map((entry) => ({
-    type: entry.type as "receipt" | "payment",
-    amount: entry.amount,
-    paymentMethod: entry.paymentMethod as "cash" | "phonepay" | "other" | null | undefined,
-  })));
-  return {
-    ...record,
-    recordDate: record.recordDate.toISOString().slice(0, 10),
-    ...totals,
-  };
-}
+const recordInclude = {
+  entries: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
+};
 
- async function getHandler(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,15 +24,15 @@ function serializeRecord(
 
   const limit = Number(request.nextUrl.searchParams.get("limit") ?? "60");
   const records = await prisma.cashBoxRecord.findMany({
-    include: { entries: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+    include: recordInclude,
     orderBy: [{ recordDate: "desc" }, { sessionNumber: "desc" }],
     take: Math.min(Math.max(limit, 1), 365),
   });
 
-  return NextResponse.json(records.map(serializeRecord));
+  return NextResponse.json(records.map(serializeCashBoxRecord));
 }
 
- async function postHandler(request: NextRequest) {
+async function postHandler(request: NextRequest) {
   const session = await requireOpsPortal();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,30 +41,48 @@ function serializeRecord(
   try {
     const body = await request.json();
     const data = cashBoxRecordSchema.parse(body);
+    const actorEmail = session.user.email ?? "unknown";
+    const actorRole = session.user.role ?? null;
 
-    const record = await prisma.cashBoxRecord.create({
-      data: {
-        recordDate: parseRecordDateInput(data.recordDate),
-        sessionNumber: data.sessionNumber,
-        openingBalance: data.openingBalance,
-        takenHome: data.takenHome,
-        notes: data.notes?.trim() || null,
-        entries: {
-          create: data.entries.map((entry, index) => ({
-            type: entry.type,
-            category: entry.category,
-            business: entry.business ?? null,
-            paymentMethod: entry.paymentMethod ?? null,
-            description: entry.description.trim(),
-            amount: entry.amount,
-            sortOrder: entry.sortOrder ?? index,
-          })),
+    const record = await prisma.$transaction(async (tx) => {
+      const created = await tx.cashBoxRecord.create({
+        data: {
+          recordDate: parseRecordDateInput(data.recordDate),
+          sessionNumber: data.sessionNumber,
+          openingBalance: data.openingBalance,
+          takenHome: data.takenHome,
+          notes: data.notes?.trim() || null,
+          entries: {
+            create: data.entries.map((entry, index) => ({
+              type: entry.type,
+              category: entry.category,
+              business: entry.business ?? null,
+              paymentMethod: entry.paymentMethod ?? null,
+              description: entry.description.trim(),
+              amount: entry.amount,
+              sortOrder: entry.sortOrder ?? index,
+            })),
+          },
         },
-      },
-      include: { entries: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+        include: recordInclude,
+      });
+
+      const after = snapshotCashBoxRecord(created);
+      await tx.cashBoxAuditLog.create({
+        data: {
+          recordId: created.id,
+          action: "created",
+          actorEmail,
+          actorRole,
+          summary: summarizeCashBoxChange("created", null, after),
+          afterJson: after as Prisma.InputJsonValue,
+        },
+      });
+
+      return created;
     });
 
-    return NextResponse.json(serializeRecord(record), { status: 201 });
+    return NextResponse.json(serializeCashBoxRecord(record), { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -3,17 +3,24 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import { IndianRupee, Pencil, Plus, Trash2 } from "lucide-react";
+import { History, IndianRupee, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CashBoxHistoryModal } from "@/components/cash-box/CashBoxHistoryModal";
 import { CashBoxForm, type CashBoxRecordView } from "@/components/forms/CashBoxForm";
 import { canEditCashBox } from "@/lib/admin-roles";
-import { formatRecordDate } from "@/lib/cash-box";
+import {
+  formatCashBoxTimestamp,
+  formatRecordDate,
+  type SerializedCashBoxAuditLog,
+} from "@/lib/cash-box";
 import { formatPrice } from "@/lib/utils";
 
 type CashBoxListItem = CashBoxRecordView & {
   receipts: number;
   payments: number;
   closingBalance: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export default function AdminCashBoxPage() {
@@ -23,6 +30,9 @@ export default function AdminCashBoxPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<CashBoxListItem | undefined>();
+  const [historyRecord, setHistoryRecord] = useState<CashBoxListItem | undefined>();
+  const [history, setHistory] = useState<SerializedCashBoxAuditLog[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +66,26 @@ export default function AdminCashBoxPage() {
       refreshRecords();
     } else {
       toast.error("Failed to delete record");
+    }
+  }
+
+  async function handleViewHistory(record: CashBoxListItem) {
+    setHistoryRecord(record);
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/cash-box/${record.id}`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to load history");
+        setHistoryRecord(undefined);
+        return;
+      }
+      setHistory(Array.isArray(data.history) ? data.history : []);
+    } catch {
+      toast.error("Failed to load history");
+      setHistoryRecord(undefined);
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -118,9 +148,8 @@ export default function AdminCashBoxPage() {
               <th className="px-4 py-3 font-medium text-slate-300">Payments</th>
               <th className="px-4 py-3 font-medium text-slate-300">Taken home</th>
               <th className="px-4 py-3 font-medium text-slate-300">Closing balance</th>
-              {canEdit ? (
-                <th className="px-4 py-3 font-medium text-slate-300">Actions</th>
-              ) : null}
+              <th className="px-4 py-3 font-medium text-slate-300">Last saved</th>
+              <th className="px-4 py-3 font-medium text-slate-300">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -135,31 +164,52 @@ export default function AdminCashBoxPage() {
                 <td className="px-4 py-3 font-semibold text-red-400">
                   {formatPrice(record.closingBalance)}
                 </td>
-                {canEdit ? (
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Edit"
-                        onClick={() => {
-                          setEditingRecord(record);
-                          setShowForm(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Delete"
-                        onClick={() => handleDelete(record.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </Button>
-                    </div>
-                  </td>
-                ) : null}
+                <td className="px-4 py-3 text-slate-300">
+                  <p>{formatCashBoxTimestamp(record.updatedAt)}</p>
+                  {record.createdAt !== record.updatedAt ? (
+                    <p className="text-xs text-slate-500">
+                      Created {formatCashBoxTimestamp(record.createdAt)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500">Created</p>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit history"
+                      aria-label="Edit history"
+                      onClick={() => void handleViewHistory(record)}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    {canEdit ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Edit"
+                          onClick={() => {
+                            setEditingRecord(record);
+                            setShowForm(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Delete"
+                          onClick={() => handleDelete(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-400" />
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -192,6 +242,22 @@ export default function AdminCashBoxPage() {
           onCancel={() => {
             setShowForm(false);
             setEditingRecord(undefined);
+          }}
+        />
+      ) : null}
+
+      {historyRecord ? (
+        <CashBoxHistoryModal
+          title={`History · ${formatRecordDate(historyRecord.recordDate)}${
+            historyRecord.sessionNumber > 1 ? ` · session ${historyRecord.sessionNumber}` : ""
+          }`}
+          createdAt={historyRecord.createdAt}
+          updatedAt={historyRecord.updatedAt}
+          history={history}
+          loading={historyLoading}
+          onClose={() => {
+            setHistoryRecord(undefined);
+            setHistory([]);
           }}
         />
       ) : null}

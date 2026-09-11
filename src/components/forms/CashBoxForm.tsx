@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import {
   computeCashBoxTotals,
+  formatCashBoxTimestamp,
   type CashBoxEntryInput,
 } from "@/lib/cash-box";
 import { formatPrice } from "@/lib/utils";
@@ -20,6 +21,8 @@ export type CashBoxRecordView = {
   openingBalance: number;
   takenHome: number;
   notes: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   entries: CashBoxEntryInput[];
 };
 
@@ -128,6 +131,12 @@ export function CashBoxForm({ record, onSuccess, onCancel }: CashBoxFormProps) {
           Enter daily cash balance in box — receipts (प्राप्ति), payments (भुगतान), and cash taken
           home.
         </p>
+        {isEdit && record.updatedAt ? (
+          <p className="text-xs text-slate-500">
+            Last saved {formatCashBoxTimestamp(record.updatedAt)}
+            {record.createdAt ? ` · created ${formatCashBoxTimestamp(record.createdAt)}` : ""}
+          </p>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Input

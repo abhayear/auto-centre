@@ -553,6 +553,55 @@ export const MOVEMENT_STAGE_LABELS: Record<MovementStage, string> = {
   pendingWithUs: "Pending with us",
 };
 
+export const TRACK_DATE_FIELDS = ["any", "received", "sent", "company", "returned"] as const;
+export type TrackDateField = (typeof TRACK_DATE_FIELDS)[number];
+
+export const TRACK_DATE_FIELD_LABELS: Record<TrackDateField, string> = {
+  any: "All movements",
+  received: "Received from customer",
+  sent: "Sent to plant / company",
+  company: "Received at company",
+  returned: "Returned to customer",
+};
+
+export const TRACK_DATE_FIELD_OPTIONS = TRACK_DATE_FIELDS.map((value) => ({
+  value,
+  label: TRACK_DATE_FIELD_LABELS[value],
+}));
+
+export function isTrackDateField(value: string | null | undefined): value is TrackDateField {
+  return TRACK_DATE_FIELDS.includes(value as TrackDateField);
+}
+
+export function replacementDateRange(from?: string | null, to?: string | null) {
+  if (!from && !to) return undefined;
+  const range: { gte?: Date; lte?: Date } = {};
+  if (from) range.gte = parseReplacementDateInput(from);
+  if (to) range.lte = parseReplacementDateInput(to);
+  return range;
+}
+
+export function replacementDateWhere(
+  from?: string | null,
+  to?: string | null,
+  dateField: TrackDateField = "any",
+) {
+  const range = replacementDateRange(from, to);
+  if (!range) return undefined;
+  if (dateField === "sent") return { sentToCompanyDate: range };
+  if (dateField === "company") return { companyReceivedDate: range };
+  if (dateField === "returned") return { returnedToCustomerDate: range };
+  if (dateField === "received") return { receivedDate: range };
+  return {
+    OR: [
+      { receivedDate: range },
+      { sentToCompanyDate: range },
+      { companyReceivedDate: range },
+      { returnedToCustomerDate: range },
+    ],
+  };
+}
+
 export const MOVEMENT_REPORT_KINDS = ["movement", "sent", "received", "returned"] as const;
 export type MovementReportKind = (typeof MOVEMENT_REPORT_KINDS)[number];
 
@@ -572,6 +621,13 @@ export const MOVEMENT_REPORT_STAGES: Record<MovementReportKind, MovementStage[]>
 
 export function isMovementReportKind(value: string | null | undefined): value is MovementReportKind {
   return MOVEMENT_REPORT_KINDS.includes(value as MovementReportKind);
+}
+
+export function movementReportKindForDateField(dateField: TrackDateField): MovementReportKind {
+  if (dateField === "sent") return "sent";
+  if (dateField === "company") return "received";
+  if (dateField === "returned") return "returned";
+  return "movement";
 }
 
 export type TypeQuantityTotals = Record<ReplacementItemType, number> & { total: number };

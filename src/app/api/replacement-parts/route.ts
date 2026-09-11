@@ -8,6 +8,8 @@ import {
   filterPendingFromCompanyClaims,
   filterReadyForCustomerClaims,
   isReadyForCustomer,
+  isTrackDateField,
+  replacementDateWhere,
   oldItemQuantityUpdates,
   parseReplacementDateInput,
   serializeReplacementClaim,
@@ -69,6 +71,7 @@ async function backfillCaseNumbers() {
 function buildListFilter(params: {
   from?: string | null;
   to?: string | null;
+  dateField?: string | null;
   status?: string | null;
   itemType?: string | null;
   pendingFromCompany?: string | null;
@@ -77,15 +80,22 @@ function buildListFilter(params: {
 }) {
   const where: {
     receivedDate?: { gte?: Date; lte?: Date };
+    sentToCompanyDate?: { gte?: Date; lte?: Date };
+    companyReceivedDate?: { gte?: Date; lte?: Date };
+    returnedToCustomerDate?: { gte?: Date; lte?: Date };
+    OR?: {
+      receivedDate?: { gte?: Date; lte?: Date };
+      sentToCompanyDate?: { gte?: Date; lte?: Date };
+      companyReceivedDate?: { gte?: Date; lte?: Date };
+      returnedToCustomerDate?: { gte?: Date; lte?: Date };
+    }[];
     status?: string | { in: string[] };
     items?: { some: { itemType: string; side: string } };
   } = {};
 
-  if (params.from || params.to) {
-    where.receivedDate = {};
-    if (params.from) where.receivedDate.gte = parseReplacementDateInput(params.from);
-    if (params.to) where.receivedDate.lte = parseReplacementDateInput(params.to);
-  }
+  const dateField = isTrackDateField(params.dateField) ? params.dateField : "any";
+  const dateWhere = replacementDateWhere(params.from, params.to, dateField);
+  if (dateWhere) Object.assign(where, dateWhere);
 
   if (params.pendingAtShowroom === "1") {
     where.status = "received_from_customer";
@@ -204,6 +214,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
   const { searchParams } = request.nextUrl;
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const dateField = searchParams.get("dateField");
   const status = searchParams.get("status");
   const itemType = searchParams.get("itemType");
   const pendingFromCompany = searchParams.get("pendingFromCompany");
@@ -226,6 +237,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
   const listWhere = buildListFilter({
     from,
     to,
+    dateField,
     status,
     itemType,
     pendingFromCompany,

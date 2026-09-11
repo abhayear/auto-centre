@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 import { MovementReportPrintClient } from "@/components/replacement-parts/MovementReportPrintClient";
 import { ReplacementPartsPrintClient } from "@/components/replacement-parts/ReplacementPartsPrintClient";
+import { TrackingPeriodPrintClient } from "@/components/replacement-parts/TrackingPeriodPrintClient";
 import { WarrantySummaryPrintClient } from "@/components/replacement-parts/WarrantySummaryPrintClient";
 import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   LETTER_ELIGIBLE_STATUSES,
   isMovementReportKind,
-  parseReplacementDateInput,
+  isTrackDateField,
+  replacementDateWhere,
   serializeReplacementClaim,
   serializeReplacementStockItem,
   type SerializedReplacementStockItem,
@@ -22,6 +24,7 @@ type PageProps = {
     letter?: string;
     report?: string;
     itemType?: string;
+    dateField?: string;
   }>;
 };
 
@@ -31,14 +34,12 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
     redirect("/admin/login");
   }
 
-  const { from, to, auto, ids, letter, report, itemType } = await searchParams;
+  const { from, to, auto, ids, letter, report, itemType, dateField: dateFieldParam } = await searchParams;
   const isSummaryReport = report === "summary";
+  const isPeriodReport = report === "period";
   const reportKind = isMovementReportKind(report) ? report : null;
-  const isStageReport = reportKind != null || isSummaryReport;
-
-  const receivedDate: { gte?: Date; lte?: Date } = {};
-  if (from) receivedDate.gte = parseReplacementDateInput(from);
-  if (to) receivedDate.lte = parseReplacementDateInput(to);
+  const isStageReport = reportKind != null || isSummaryReport || isPeriodReport;
+  const dateField = isTrackDateField(dateFieldParam) ? dateFieldParam : "any";
 
   const idList = ids
     ? ids
@@ -50,6 +51,15 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
   const where: {
     id?: { in: string[] };
     receivedDate?: { gte?: Date; lte?: Date };
+    sentToCompanyDate?: { gte?: Date; lte?: Date };
+    companyReceivedDate?: { gte?: Date; lte?: Date };
+    returnedToCustomerDate?: { gte?: Date; lte?: Date };
+    OR?: {
+      receivedDate?: { gte?: Date; lte?: Date };
+      sentToCompanyDate?: { gte?: Date; lte?: Date };
+      companyReceivedDate?: { gte?: Date; lte?: Date };
+      returnedToCustomerDate?: { gte?: Date; lte?: Date };
+    }[];
     status?: { in: string[] };
     items?: { some: { itemType: string; side: string } };
   } = {};
@@ -57,9 +67,8 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
   if (idList.length > 0) {
     where.id = { in: idList };
   } else {
-    if (Object.keys(receivedDate).length > 0) {
-      where.receivedDate = receivedDate;
-    }
+    const dateWhere = replacementDateWhere(from, to, dateField);
+    if (dateWhere) Object.assign(where, dateWhere);
     if (letter === "1" && !isStageReport) {
       where.status = { in: [...LETTER_ELIGIBLE_STATUSES] };
     }
@@ -91,18 +100,32 @@ export default async function ReplacementPartsPrintPage({ searchParams }: PagePr
 
   const claims = records.map(serializeReplacementClaim);
 
-  if (isSummaryReport) {
-    let stock: SerializedReplacementStockItem[] = [];
+  async function loadStock() {
     try {
-      stock = (await prisma.replacementStockItem.findMany()).map(serializeReplacementStockItem);
+      return (await prisma.replacementStockItem.findMany()).map(serializeReplacementStockItem);
     } catch {
-      stock = [];
+      return [] as SerializedReplacementStockItem[];
     }
+  }
 
+  if (isPeriodReport) {
+    return (
+      <TrackingPeriodPrintClient
+        claims={claims}
+        stock={await loadStock()}
+        from={from}
+        to={to}
+        dateField={dateField}
+        autoPrint={auto === "1"}
+      />
+    );
+  }
+
+  if (isSummaryReport) {
     return (
       <WarrantySummaryPrintClient
         claims={claims}
-        stock={stock}
+        stock={await loadStock()}
         from={from}
         to={to}
       />

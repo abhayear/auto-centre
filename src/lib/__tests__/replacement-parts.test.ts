@@ -22,8 +22,10 @@ import {
   formatReplacementDate,
   formatReplacementItemType,
   formatReplacementStatus,
+  movementReportKindForDateField,
   parseReplacementDateInput,
   pendingFromCompanySummary,
+  replacementDateWhere,
   replacementStatusVariant,
   serializeReplacementClaim,
 } from "@/lib/replacement-parts";
@@ -749,6 +751,69 @@ describe("replacement-parts helpers", () => {
     const report = buildMovementReport([vakil]);
     expect(report.stages.returnedToCustomer.total).toBe(2);
     expect(report.stages.pendingAtCompany.total).toBe(4);
+  });
+});
+
+describe("replacement date tracking filters", () => {
+  it("builds a sent-date range so period reports catch items sent that week", () => {
+    expect(replacementDateWhere("2026-09-01", "2026-09-11", "sent")).toEqual({
+      sentToCompanyDate: {
+        gte: parseReplacementDateInput("2026-09-01"),
+        lte: parseReplacementDateInput("2026-09-11"),
+      },
+    });
+  });
+
+  it("builds a company-received date range", () => {
+    expect(replacementDateWhere("2026-09-01", "2026-09-11", "company")).toEqual({
+      companyReceivedDate: {
+        gte: parseReplacementDateInput("2026-09-01"),
+        lte: parseReplacementDateInput("2026-09-11"),
+      },
+    });
+  });
+
+  it("matches any movement date in the period", () => {
+    const where = replacementDateWhere("2026-09-01", "2026-09-11", "any");
+    expect(where).toEqual({
+      OR: [
+        {
+          receivedDate: {
+            gte: parseReplacementDateInput("2026-09-01"),
+            lte: parseReplacementDateInput("2026-09-11"),
+          },
+        },
+        {
+          sentToCompanyDate: {
+            gte: parseReplacementDateInput("2026-09-01"),
+            lte: parseReplacementDateInput("2026-09-11"),
+          },
+        },
+        {
+          companyReceivedDate: {
+            gte: parseReplacementDateInput("2026-09-01"),
+            lte: parseReplacementDateInput("2026-09-11"),
+          },
+        },
+        {
+          returnedToCustomerDate: {
+            gte: parseReplacementDateInput("2026-09-01"),
+            lte: parseReplacementDateInput("2026-09-11"),
+          },
+        },
+      ],
+    });
+  });
+
+  it("returns undefined when no dates are set", () => {
+    expect(replacementDateWhere("", "", "any")).toBeUndefined();
+  });
+
+  it("maps track-by to the matching print report", () => {
+    expect(movementReportKindForDateField("sent")).toBe("sent");
+    expect(movementReportKindForDateField("company")).toBe("received");
+    expect(movementReportKindForDateField("returned")).toBe("returned");
+    expect(movementReportKindForDateField("any")).toBe("movement");
   });
 });
 
