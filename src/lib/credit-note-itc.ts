@@ -148,21 +148,29 @@ export function buildCreditNoteItcDeclaration(
     "the GSTR-3B of the period in which this credit note appears in GSTR-2B";
 
   let statement: string;
-  switch (decision.declarationKind) {
-    case "reversal":
-      statement = `We confirm that the Input Tax Credit attributable to the credit note(s) below has been reversed under Section 15(3)(b)(ii) / Section 34 of the CGST Act, as applicable, in GSTR-3B Table 4(B)(2) for ${period}.`;
-      break;
-    case "not_availed":
-      statement =
-        "We confirm that Input Tax Credit on the original invoice was not availed. Nothing remains to reverse in respect of the credit note(s) below.";
-      break;
-    case "rejected":
-      statement =
-        "We confirm that the credit note was / will be rejected on the Invoice Management System. Input Tax Credit is not being reversed.";
-      break;
-    default:
-      statement =
-        "This is a financial (non-GST) credit note. No GST Input Tax Credit reversal applies.";
+  if (decision.reasonCode === "financial") {
+    statement =
+      "This is a financial (non-GST) credit note. No GST Input Tax Credit reversal applies.";
+  } else if (decision.reasonCode === "not_on_ims" || decision.action === "wait") {
+    statement =
+      "We confirm that the credit note is not on the Invoice Management System yet. Accept or reject on IMS before determining Input Tax Credit reversal.";
+  } else {
+    switch (decision.declarationKind) {
+      case "reversal":
+        statement = `We confirm that the Input Tax Credit attributable to the credit note(s) below has been reversed under Section 15(3)(b)(ii) / Section 34 of the CGST Act, as applicable, in GSTR-3B Table 4(B)(2) for ${period}.`;
+        break;
+      case "not_availed":
+        statement =
+          "We confirm that Input Tax Credit on the original invoice was not availed. Nothing remains to reverse in respect of the credit note(s) below.";
+        break;
+      case "rejected":
+        statement =
+          "We confirm that the credit note was / will be rejected on the Invoice Management System. Input Tax Credit is not being reversed.";
+        break;
+      default:
+        statement =
+          "This is a financial (non-GST) credit note. No GST Input Tax Credit reversal applies.";
+    }
   }
 
   return {

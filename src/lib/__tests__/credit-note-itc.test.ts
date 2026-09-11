@@ -82,4 +82,14 @@ describe("buildCreditNoteItcDeclaration", () => {
     expect(letter.statement).toContain("4(B)(2)");
     expect(letter.statement).toContain("2026-09");
   });
+
+  it("uses wait-specific wording for a GST credit note not on IMS", () => {
+    const waitInput = { ...input, imsStatus: "not_on_ims" as const };
+    const decision = decideCreditNoteItc(waitInput);
+    const letter = buildCreditNoteItcDeclaration(waitInput, decision);
+    expect(decision.action).toBe("wait");
+    expect(decision.declarationKind).toBe("not_applicable");
+    expect(letter.statement).not.toContain("financial");
+    expect(letter.statement).toContain("Invoice Management System");
+  });
 });
