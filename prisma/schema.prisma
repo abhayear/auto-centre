@@ -398,6 +398,39 @@ model CashBoxAuditLog {
   @@index([createdAt])
 }
 
+model CreditNoteItcCase {
+  id                     String   @id @default(cuid())
+  purchaserName          String
+  purchaserGstin         String
+  purchaserAddress       String
+  supplierName           String
+  supplierGstin          String
+  originalInvoiceNumber  String
+  originalInvoiceDate    DateTime @db.Date
+  creditNoteNumber       String
+  creditNoteDate         DateTime @db.Date
+  itcAlreadyClaimed      Boolean
+  creditNoteKind         String
+  reason                 String
+  imsStatus              String
+  taxableValue           Float
+  cgst                   Float    @default(0)
+  sgst                   Float    @default(0)
+  igst                   Float    @default(0)
+  cess                   Float    @default(0)
+  reversalPeriod         String?
+  action                 String
+  summary                String
+  declarationKind        String
+  status                 String   @default("draft")
+  createdByEmail         String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([creditNoteDate])
+  @@index([supplierGstin])
+}
+
 model ReplacementClaim {
   id                     String                 @id @default(cuid())
   caseNumber             String?                @unique
