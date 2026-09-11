@@ -12,6 +12,12 @@ import {
   REPLACEMENT_STOCK_RESULTS,
 } from "@/lib/warranty-allocation";
 import { SHOWROOM_PAYMENT_MODES } from "@/lib/showroom-walk-ins";
+import {
+  CREDIT_NOTE_ITC_STATUSES,
+  CREDIT_NOTE_KINDS,
+  CREDIT_NOTE_REASONS,
+  IMS_STATUSES,
+} from "@/lib/credit-note-itc";
 
 export function formatZodErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
@@ -366,6 +372,33 @@ export const cashBoxRecordSchema = z.object({
 export const cashBoxRecordUpdateSchema = cashBoxRecordSchema.partial().extend({
   id: z.string().min(1),
 });
+
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date");
+
+export const creditNoteItcCaseSchema = z.object({
+  purchaserName: z.string().trim().min(2),
+  purchaserGstin: z.string().trim().min(1),
+  purchaserAddress: z.string().trim().min(2),
+  supplierName: z.string().trim().min(2),
+  supplierGstin: z.string().trim().min(1),
+  originalInvoiceNumber: z.string().trim().min(1),
+  originalInvoiceDate: isoDateSchema,
+  creditNoteNumber: z.string().trim().min(1),
+  creditNoteDate: isoDateSchema,
+  itcAlreadyClaimed: z.boolean(),
+  creditNoteKind: z.enum(CREDIT_NOTE_KINDS),
+  reason: z.enum(CREDIT_NOTE_REASONS),
+  imsStatus: z.enum(IMS_STATUSES),
+  taxableValue: z.coerce.number().min(0),
+  cgst: z.coerce.number().min(0).default(0),
+  sgst: z.coerce.number().min(0).default(0),
+  igst: z.coerce.number().min(0).default(0),
+  cess: z.coerce.number().min(0).default(0),
+  reversalPeriod: z.string().trim().max(20).optional().nullable(),
+  status: z.enum(CREDIT_NOTE_ITC_STATUSES).optional(),
+});
+
+export const creditNoteItcCaseUpdateSchema = creditNoteItcCaseSchema.partial();
 
 const showroomDateSchema = z
   .string()
