@@ -43,6 +43,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/credit-note-itc" className="hover:text-red-400">
+                  Credit note ITC
+                </Link>
+              </li>
+              <li>
                 <Link href="/book-service" className="hover:text-red-400">
                   Book Service
                 </Link>
