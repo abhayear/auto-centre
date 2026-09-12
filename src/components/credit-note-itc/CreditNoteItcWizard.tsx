@@ -11,36 +11,45 @@ import {
   buildCreditNoteItcDeclaration,
   decideCreditNoteItc,
   isValidGstin,
+  normalizeItcAvailment,
   type CreditNoteItcInput,
   type CreditNoteKind,
   type CreditNoteReason,
   type ImsStatus,
+  type ItcAvailedExtent,
 } from "@/lib/credit-note-itc";
 
 export type CreditNoteItcFormValue = CreditNoteItcInput;
 
-const empty = (overrides?: Partial<CreditNoteItcFormValue>): CreditNoteItcFormValue => ({
-  itcAlreadyClaimed: true,
-  creditNoteKind: "gst",
-  reason: "post_sale_discount",
-  imsStatus: "accept",
-  taxableValue: 0,
-  cgst: 0,
-  sgst: 0,
-  igst: 0,
-  cess: 0,
-  reversalPeriod: "",
-  originalInvoiceNumber: "",
-  originalInvoiceDate: "",
-  creditNoteNumber: "",
-  creditNoteDate: "",
-  purchaserName: "",
-  purchaserGstin: "",
-  purchaserAddress: "",
-  supplierName: "",
-  supplierGstin: "",
-  ...overrides,
-});
+const empty = (overrides?: Partial<CreditNoteItcFormValue>): CreditNoteItcFormValue => {
+  const availment = normalizeItcAvailment({
+    itcAlreadyClaimed: overrides?.itcAlreadyClaimed ?? true,
+    itcAvailedExtent: overrides?.itcAvailedExtent,
+    itcAvailedAmount: overrides?.itcAvailedAmount,
+  });
+  return {
+    creditNoteKind: "gst",
+    reason: "post_sale_discount",
+    imsStatus: "accept",
+    taxableValue: 0,
+    cgst: 0,
+    sgst: 0,
+    igst: 0,
+    cess: 0,
+    reversalPeriod: "",
+    originalInvoiceNumber: "",
+    originalInvoiceDate: "",
+    creditNoteNumber: "",
+    creditNoteDate: "",
+    purchaserName: "",
+    purchaserGstin: "",
+    purchaserAddress: "",
+    supplierName: "",
+    supplierGstin: "",
+    ...overrides,
+    ...availment,
+  };
+};
 
 function hasPrintFields(v: CreditNoteItcFormValue): boolean {
   return Boolean(
@@ -74,7 +83,10 @@ export function CreditNoteItcWizard({
 }) {
   const [value, setValue] = useState(() => empty(initial));
   const taxSum = value.cgst + value.sgst + value.igst + value.cess;
-  const ready = value.creditNoteKind === "financial" || taxSum > 0;
+  const extent = value.itcAvailedExtent ?? (value.itcAlreadyClaimed ? "full" : "none");
+  const ready =
+    (value.creditNoteKind === "financial" || taxSum > 0) &&
+    (extent !== "part" || (value.itcAvailedAmount ?? 0) > 0);
   const decision = useMemo(
     () => (ready ? decideCreditNoteItc(value) : null),
     [ready, value],
@@ -102,13 +114,21 @@ export function CreditNoteItcWizard({
 
       <div className="print:hidden grid gap-4 sm:grid-cols-2">
         <Select
-          id="itcAlreadyClaimed"
-          label="Already claimed ITC on the original invoice in a filed GSTR-3B?"
-          value={value.itcAlreadyClaimed ? "yes" : "no"}
-          onChange={(e) => patch({ itcAlreadyClaimed: e.target.value === "yes" })}
+          id="itcAvailedExtent"
+          label="How much ITC did you actually claim on the original invoice?"
+          value={extent}
+          onChange={(e) => {
+            const itcAvailedExtent = e.target.value as ItcAvailedExtent;
+            patch({
+              itcAvailedExtent,
+              itcAlreadyClaimed: itcAvailedExtent !== "none",
+              itcAvailedAmount: itcAvailedExtent === "part" ? value.itcAvailedAmount : 0,
+            });
+          }}
           options={[
-            { value: "yes", label: "Yes" },
-            { value: "no", label: "No" },
+            { value: "full", label: "Full ITC on that invoice" },
+            { value: "part", label: "Only part of the ITC" },
+            { value: "none", label: "None — ITC was not availed" },
           ]}
         />
         <Select
@@ -134,15 +154,28 @@ export function CreditNoteItcWizard({
         />
         <Select
           id="imsStatus"
-          label="IMS"
+          label="IMS action on this credit note"
           value={value.imsStatus}
           onChange={(e) => patch({ imsStatus: e.target.value as ImsStatus })}
           options={[
             { value: "accept", label: "Accept" },
             { value: "reject", label: "Reject" },
+            { value: "pending", label: "Pending (one tax period)" },
+            { value: "no_action", label: "No action (deemed accept)" },
             { value: "not_on_ims", label: "Not on IMS yet" },
           ]}
         />
+        {extent === "part" ? (
+          <Input
+            id="itcAvailedAmount"
+            type="number"
+            min={0}
+            step="0.01"
+            label="ITC actually availed / to reverse (₹ tax)"
+            value={value.itcAvailedAmount || ""}
+            onChange={(e) => patch({ itcAvailedAmount: Number(e.target.value) || 0 })}
+          />
+        ) : null}
       </div>
 
       <div className="print:hidden grid gap-4 sm:grid-cols-3">
@@ -176,7 +209,12 @@ export function CreditNoteItcWizard({
         <div className="print:hidden rounded-xl border border-red-600/30 bg-red-600/10 p-4">
           <p className="font-semibold text-white">{decision.summary}</p>
           {decision.gstr3bTable ? (
-            <p className="mt-1 text-sm text-slate-300">GSTR-3B {decision.gstr3bTable}</p>
+            <p className="mt-1 text-sm text-slate-300">
+              GSTR-3B {decision.gstr3bTable}
+              {decision.reverseTaxTotal != null && decision.action === "reverse_itc"
+                ? ` · reverse ₹${decision.reverseTaxTotal}`
+                : ""}
+            </p>
           ) : null}
         </div>
       ) : (

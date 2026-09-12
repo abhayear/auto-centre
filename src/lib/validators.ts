@@ -17,6 +17,7 @@ import {
   CREDIT_NOTE_KINDS,
   CREDIT_NOTE_REASONS,
   IMS_STATUSES,
+  ITC_AVAILED_EXTENTS,
 } from "@/lib/credit-note-itc";
 
 export function formatZodErrors(error: z.ZodError) {
@@ -388,6 +389,8 @@ const creditNoteItcCaseShape = {
   creditNoteNumber: z.string().trim().min(1),
   creditNoteDate: isoDateSchema,
   itcAlreadyClaimed: z.boolean(),
+  itcAvailedExtent: z.enum(ITC_AVAILED_EXTENTS).optional(),
+  itcAvailedAmount: creditNoteItcAmountSchema.optional(),
   creditNoteKind: z.enum(CREDIT_NOTE_KINDS),
   reason: z.enum(CREDIT_NOTE_REASONS),
   imsStatus: z.enum(IMS_STATUSES),
@@ -409,16 +412,34 @@ export const creditNoteItcCaseSchema = z
     cess: creditNoteItcAmountSchema.default(0),
   })
   .superRefine((data, ctx) => {
-    if (data.creditNoteKind !== "gst") return;
-    if (data.cgst + data.sgst + data.igst + data.cess > 0) return;
-    ctx.addIssue({
-      code: "custom",
-      path: ["cgst"],
-      message: "GST credit notes need a tax amount (CGST, SGST, IGST, or cess)",
-    });
+    if (data.creditNoteKind === "gst" && data.cgst + data.sgst + data.igst + data.cess <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["cgst"],
+        message: "GST credit notes need a tax amount (CGST, SGST, IGST, or cess)",
+      });
+    }
+    if (data.itcAvailedExtent === "part" && !(data.itcAvailedAmount && data.itcAvailedAmount > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["itcAvailedAmount"],
+        message: "Enter the ITC you actually availed",
+      });
+    }
   });
 
-export const creditNoteItcCaseUpdateSchema = z.object(creditNoteItcCaseShape).partial();
+export const creditNoteItcCaseUpdateSchema = z
+  .object(creditNoteItcCaseShape)
+  .partial()
+  .superRefine((data, ctx) => {
+    if (data.itcAvailedExtent === "part" && !(data.itcAvailedAmount && data.itcAvailedAmount > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["itcAvailedAmount"],
+        message: "Enter the ITC you actually availed",
+      });
+    }
+  });
 
 const showroomDateSchema = z
   .string()

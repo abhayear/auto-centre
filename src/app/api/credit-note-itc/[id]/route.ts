@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAdminRole, requireOpsPortal } from "@/lib/auth";
 import {
   decideCreditNoteItc,
+  normalizeItcAvailment,
   parseIsoDate,
   serializeCreditNoteItcCase,
   type CreditNoteKind,
@@ -41,10 +42,19 @@ async function patchHandler(request: NextRequest, { params }: RouteParams) {
     }
 
     const data = creditNoteItcCaseUpdateSchema.parse(await request.json());
-    const merged = {
+    const availment = normalizeItcAvailment({
       itcAlreadyClaimed: data.itcAlreadyClaimed ?? existing.itcAlreadyClaimed,
+      itcAvailedExtent: data.itcAvailedExtent ?? existing.itcAvailedExtent,
+      itcAvailedAmount: data.itcAvailedAmount ?? existing.itcAvailedAmount,
+    });
+    const merged = {
+      ...availment,
       creditNoteKind: (data.creditNoteKind ?? existing.creditNoteKind) as CreditNoteKind,
       imsStatus: (data.imsStatus ?? existing.imsStatus) as ImsStatus,
+      cgst: data.cgst ?? existing.cgst,
+      sgst: data.sgst ?? existing.sgst,
+      igst: data.igst ?? existing.igst,
+      cess: data.cess ?? existing.cess,
     };
     const decision = decideCreditNoteItc(merged);
 
@@ -64,7 +74,9 @@ async function patchHandler(request: NextRequest, { params }: RouteParams) {
           : {}),
         ...(data.creditNoteNumber !== undefined ? { creditNoteNumber: data.creditNoteNumber } : {}),
         ...(data.creditNoteDate ? { creditNoteDate: parseIsoDate(data.creditNoteDate) } : {}),
-        ...(data.itcAlreadyClaimed !== undefined ? { itcAlreadyClaimed: data.itcAlreadyClaimed } : {}),
+        itcAlreadyClaimed: availment.itcAlreadyClaimed,
+        itcAvailedExtent: availment.itcAvailedExtent,
+        itcAvailedAmount: availment.itcAvailedAmount,
         ...(data.creditNoteKind !== undefined ? { creditNoteKind: data.creditNoteKind } : {}),
         ...(data.reason !== undefined ? { reason: data.reason } : {}),
         ...(data.imsStatus !== undefined ? { imsStatus: data.imsStatus } : {}),

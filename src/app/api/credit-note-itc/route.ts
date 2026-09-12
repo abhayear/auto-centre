@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireOpsPortal } from "@/lib/auth";
 import {
   decideCreditNoteItc,
+  normalizeItcAvailment,
   parseIsoDate,
   serializeCreditNoteItcCase,
 } from "@/lib/credit-note-itc";
@@ -31,7 +32,8 @@ async function postHandler(request: NextRequest) {
 
   try {
     const data = creditNoteItcCaseSchema.parse(await request.json());
-    const decision = decideCreditNoteItc(data);
+    const availment = normalizeItcAvailment(data);
+    const decision = decideCreditNoteItc({ ...data, ...availment });
     const record = await prisma.creditNoteItcCase.create({
       data: {
         purchaserName: data.purchaserName,
@@ -43,7 +45,9 @@ async function postHandler(request: NextRequest) {
         originalInvoiceDate: parseIsoDate(data.originalInvoiceDate),
         creditNoteNumber: data.creditNoteNumber,
         creditNoteDate: parseIsoDate(data.creditNoteDate),
-        itcAlreadyClaimed: data.itcAlreadyClaimed,
+        itcAlreadyClaimed: availment.itcAlreadyClaimed,
+        itcAvailedExtent: availment.itcAvailedExtent,
+        itcAvailedAmount: availment.itcAvailedAmount,
         creditNoteKind: data.creditNoteKind,
         reason: data.reason,
         imsStatus: data.imsStatus,

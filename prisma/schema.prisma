@@ -410,6 +410,8 @@ model CreditNoteItcCase {
   creditNoteNumber       String
   creditNoteDate         DateTime @db.Date
   itcAlreadyClaimed      Boolean
+  itcAvailedExtent       String   @default("full")
+  itcAvailedAmount       Float    @default(0)
   creditNoteKind         String
   reason                 String
   imsStatus              String

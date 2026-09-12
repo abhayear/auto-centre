@@ -43,6 +43,57 @@ describe("decideCreditNoteItc", () => {
     expect(d.gstr3bTable).toBe("4(B)(2)");
     expect(d.declarationKind).toBe("reversal");
   });
+
+  it("treats IMS no action as deemed accept and reverses claimed ITC", () => {
+    const d = decideCreditNoteItc({ ...base, imsStatus: "no_action" });
+    expect(d.action).toBe("reverse_itc");
+    expect(d.gstr3bTable).toBe("4(B)(2)");
+    expect(d.summary.toLowerCase()).toMatch(/deemed accept|no action/);
+  });
+
+  it("waits while the credit note is pending on IMS", () => {
+    const d = decideCreditNoteItc({ ...base, imsStatus: "pending" });
+    expect(d.action).toBe("wait");
+    expect(d.reasonCode).toBe("ims_pending");
+    expect(d.summary.toLowerCase()).toMatch(/one tax period|pending/);
+  });
+
+  it("reverses only the ITC actually availed when the purchaser claimed part", () => {
+    const d = decideCreditNoteItc({
+      ...base,
+      itcAvailedExtent: "part",
+      itcAvailedAmount: 500,
+      cgst: 900,
+      sgst: 900,
+      igst: 0,
+      cess: 0,
+    });
+    expect(d.action).toBe("reverse_itc");
+    expect(d.reverseTaxTotal).toBe(500);
+    expect(d.summary).toContain("500");
+  });
+
+  it("does not reverse when the purchaser says none of the ITC was availed", () => {
+    const d = decideCreditNoteItc({
+      ...base,
+      itcAlreadyClaimed: true,
+      itcAvailedExtent: "none",
+    });
+    expect(d.action).toBe("no_reversal");
+    expect(d.declarationKind).toBe("not_availed");
+  });
+
+  it("tells a wrongly rejected purchaser to ask the supplier to re-upload the same CN", () => {
+    const d = decideCreditNoteItc({ ...base, imsStatus: "reject" });
+    expect(d.summary).toMatch(/GSTR-1A|amendment/i);
+    expect(d.summary.toLowerCase()).toMatch(/recompute/);
+  });
+
+  it("says Table 4(B)(2) is temporary and can be reclaimed", () => {
+    const d = decideCreditNoteItc(base);
+    expect(d.summary).toMatch(/reclaim|temporary/i);
+    expect(d.summary).toMatch(/4\(B\)\(1\)/);
+  });
 });
 
 describe("isValidGstin", () => {
@@ -93,6 +144,15 @@ describe("buildCreditNoteItcDeclaration", () => {
     expect(letter.statement).not.toContain("financial");
     expect(letter.statement).toContain("Invoice Management System");
   });
+
+  it("uses pending wording for a GST credit note kept pending on IMS", () => {
+    const pendingInput = { ...input, imsStatus: "pending" as const };
+    const decision = decideCreditNoteItc(pendingInput);
+    const letter = buildCreditNoteItcDeclaration(pendingInput, decision);
+    expect(decision.action).toBe("wait");
+    expect(letter.statement.toLowerCase()).toMatch(/pending/);
+    expect(letter.statement).not.toContain("financial");
+  });
 });
 
 describe("creditNoteItcCaseUpdateSchema", () => {
@@ -135,5 +195,32 @@ describe("creditNoteItcCaseSchema", () => {
     expect(parsed.sgst).toBe(0);
     expect(parsed.igst).toBe(0);
     expect(parsed.cess).toBe(0);
+  });
+
+  it("accepts IMS pending and no-action statuses", () => {
+    expect(
+      creditNoteItcCaseSchema.safeParse({ ...createBase, cgst: 900, imsStatus: "pending" }).success,
+    ).toBe(true);
+    expect(
+      creditNoteItcCaseSchema.safeParse({ ...createBase, cgst: 900, imsStatus: "no_action" }).success,
+    ).toBe(true);
+  });
+
+  it("requires a claimed ITC amount when availment is only part", () => {
+    expect(
+      creditNoteItcCaseSchema.safeParse({
+        ...createBase,
+        cgst: 900,
+        itcAvailedExtent: "part",
+      }).success,
+    ).toBe(false);
+    expect(
+      creditNoteItcCaseSchema.safeParse({
+        ...createBase,
+        cgst: 900,
+        itcAvailedExtent: "part",
+        itcAvailedAmount: 400,
+      }).success,
+    ).toBe(true);
   });
 });
