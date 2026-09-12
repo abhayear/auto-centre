@@ -230,7 +230,6 @@ export default function AdminCreditNoteItcPage() {
                     creditNoteKind: editing.creditNoteKind as CreditNoteItcFormValue["creditNoteKind"],
                     imsStatus: editing.imsStatus as CreditNoteItcFormValue["imsStatus"],
                     itcAvailedExtent: editing.itcAvailedExtent as CreditNoteItcFormValue["itcAvailedExtent"],
-                    itcAvailedExtent: editing.itcAvailedExtent as CreditNoteItcFormValue["itcAvailedExtent"],
                     itcAvailedAmount: editing.itcAvailedAmount,
                   }
                 : { purchaserName: SITE_NAME, purchaserAddress: SITE_ADDRESS }
