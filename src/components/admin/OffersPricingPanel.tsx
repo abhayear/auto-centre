@@ -4,6 +4,7 @@ import { SiteCampaign } from "@prisma/client";
 import { Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { OfferYearCalendar } from "@/components/admin/OfferYearCalendar";
 import { CampaignForm } from "@/components/forms/CampaignForm";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -118,8 +119,8 @@ export function OffersPricingPanel() {
         <h1 className="text-2xl font-bold text-white">Offers and pricing</h1>
         <p className="mt-1 text-sm text-slate-400">
           Publish festival or monsoon offers on the home page, then apply suggested model prices.
-          Suggestions use sold listing prices for the same make and model, adjusted for the current
-          Indian calendar window.
+          The year calendar shows every offer window at a glance. Suggestions use sold listing prices
+          for the same make and model, adjusted for the current Indian calendar window.
         </p>
       </div>
 
@@ -129,6 +130,17 @@ export function OffersPricingPanel() {
           <p className="mt-1 text-sm text-slate-300">{season.reason}</p>
         </div>
       ) : null}
+
+      <OfferYearCalendar
+        offers={campaigns}
+        onSelectOffer={(id) => {
+          const campaign = campaigns.find((item) => item.id === id);
+          if (!campaign) return;
+          setEditing(campaign);
+          setSeasonDraft(null);
+          setShowForm(true);
+        }}
+      />
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
