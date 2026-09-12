@@ -107,7 +107,31 @@ export default function AdminCreditNoteItcPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <style>{`
+        @media print {
+          .fixed.inset-0.z-50 {
+            position: static !important;
+            display: block !important;
+            padding: 0 !important;
+          }
+          .fixed.inset-0.z-50 > .absolute {
+            display: none !important;
+          }
+          .fixed.inset-0.z-50 .mb-4.flex.items-center {
+            display: none !important;
+          }
+          .fixed.inset-0.z-50 > .relative {
+            max-height: none !important;
+            max-width: none !important;
+            overflow: visible !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
+      <div className="mb-6 flex items-end justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-white">Credit note ITC (purchaser)</h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -125,7 +149,7 @@ export default function AdminCreditNoteItcPage() {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700/50">
+      <div className="overflow-x-auto rounded-xl border border-slate-700/50 print:hidden">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-700 bg-slate-800/50">
             <tr>

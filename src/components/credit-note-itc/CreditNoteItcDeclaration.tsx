@@ -1,7 +1,13 @@
 "use client";
 
-import { formatPrice } from "@/lib/utils";
 import type { CreditNoteItcDeclaration as Letter } from "@/lib/credit-note-itc";
+
+const formatInr = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 export function CreditNoteItcDeclaration({ letter }: { letter: Letter }) {
   return (
@@ -39,11 +45,11 @@ export function CreditNoteItcDeclaration({ letter }: { letter: Letter }) {
               <td className="border border-black px-2 py-1">{row.creditNoteDate}</td>
               <td className="border border-black px-2 py-1">{row.originalInvoiceNumber}</td>
               <td className="border border-black px-2 py-1">{row.originalInvoiceDate}</td>
-              <td className="border border-black px-2 py-1">{formatPrice(row.taxableValue)}</td>
-              <td className="border border-black px-2 py-1">{formatPrice(row.cgst)}</td>
-              <td className="border border-black px-2 py-1">{formatPrice(row.sgst)}</td>
-              <td className="border border-black px-2 py-1">{formatPrice(row.igst)}</td>
-              <td className="border border-black px-2 py-1">{formatPrice(row.cess)}</td>
+              <td className="border border-black px-2 py-1">{formatInr.format(row.taxableValue)}</td>
+              <td className="border border-black px-2 py-1">{formatInr.format(row.cgst)}</td>
+              <td className="border border-black px-2 py-1">{formatInr.format(row.sgst)}</td>
+              <td className="border border-black px-2 py-1">{formatInr.format(row.igst)}</td>
+              <td className="border border-black px-2 py-1">{formatInr.format(row.cess)}</td>
             </tr>
           ))}
         </tbody>

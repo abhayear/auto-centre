@@ -4,6 +4,7 @@ import {
   decideCreditNoteItc,
   isValidGstin,
 } from "@/lib/credit-note-itc";
+import { creditNoteItcCaseSchema, creditNoteItcCaseUpdateSchema } from "@/lib/validators";
 
 const base = {
   itcAlreadyClaimed: true,
@@ -91,5 +92,48 @@ describe("buildCreditNoteItcDeclaration", () => {
     expect(decision.declarationKind).toBe("not_applicable");
     expect(letter.statement).not.toContain("financial");
     expect(letter.statement).toContain("Invoice Management System");
+  });
+});
+
+describe("creditNoteItcCaseUpdateSchema", () => {
+  it("does not default tax amounts on a status-only PATCH", () => {
+    const parsed = creditNoteItcCaseUpdateSchema.parse({ status: "itc_reversed" });
+    expect(parsed).not.toHaveProperty("cgst");
+    expect(parsed).not.toHaveProperty("sgst");
+    expect(parsed).not.toHaveProperty("igst");
+    expect(parsed).not.toHaveProperty("cess");
+    expect(parsed).not.toHaveProperty("taxableValue");
+  });
+});
+
+describe("creditNoteItcCaseSchema", () => {
+  const createBase = {
+    purchaserName: "Auto Galaxy",
+    purchaserGstin: "09ABCDE1234F1Z5",
+    purchaserAddress: "Lalitpur",
+    supplierName: "OEM",
+    supplierGstin: "27ABCDE1234F1Z5",
+    originalInvoiceNumber: "INV-1",
+    originalInvoiceDate: "2026-08-01",
+    creditNoteNumber: "CN-9",
+    creditNoteDate: "2026-09-10",
+    itcAlreadyClaimed: true,
+    creditNoteKind: "gst" as const,
+    reason: "post_sale_discount" as const,
+    imsStatus: "accept" as const,
+    taxableValue: 10000,
+  };
+
+  it("requires a tax sum on GST credit notes", () => {
+    expect(creditNoteItcCaseSchema.safeParse(createBase).success).toBe(false);
+    expect(creditNoteItcCaseSchema.safeParse({ ...createBase, cgst: 900 }).success).toBe(true);
+  });
+
+  it("allows a financial credit note with zero tax", () => {
+    const parsed = creditNoteItcCaseSchema.parse({ ...createBase, creditNoteKind: "financial" });
+    expect(parsed.cgst).toBe(0);
+    expect(parsed.sgst).toBe(0);
+    expect(parsed.igst).toBe(0);
+    expect(parsed.cess).toBe(0);
   });
 });

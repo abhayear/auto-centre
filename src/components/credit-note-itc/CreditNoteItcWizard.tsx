@@ -190,7 +190,7 @@ export function CreditNoteItcWizard({
           Print / Save as PDF
         </Button>
         {mode === "staff" && onSave ? (
-          <Button type="button" loading={saving} onClick={() => onSave(value)}>
+          <Button type="button" loading={saving} disabled={!ready} onClick={() => onSave(value)}>
             Save
           </Button>
         ) : null}

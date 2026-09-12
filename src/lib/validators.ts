@@ -375,7 +375,9 @@ export const cashBoxRecordUpdateSchema = cashBoxRecordSchema.partial().extend({
 
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date");
 
-export const creditNoteItcCaseSchema = z.object({
+const creditNoteItcAmountSchema = z.coerce.number().min(0);
+
+const creditNoteItcCaseShape = {
   purchaserName: z.string().trim().min(2),
   purchaserGstin: z.string().trim().min(1),
   purchaserAddress: z.string().trim().min(2),
@@ -389,16 +391,34 @@ export const creditNoteItcCaseSchema = z.object({
   creditNoteKind: z.enum(CREDIT_NOTE_KINDS),
   reason: z.enum(CREDIT_NOTE_REASONS),
   imsStatus: z.enum(IMS_STATUSES),
-  taxableValue: z.coerce.number().min(0),
-  cgst: z.coerce.number().min(0).default(0),
-  sgst: z.coerce.number().min(0).default(0),
-  igst: z.coerce.number().min(0).default(0),
-  cess: z.coerce.number().min(0).default(0),
+  taxableValue: creditNoteItcAmountSchema,
+  cgst: creditNoteItcAmountSchema,
+  sgst: creditNoteItcAmountSchema,
+  igst: creditNoteItcAmountSchema,
+  cess: creditNoteItcAmountSchema,
   reversalPeriod: z.string().trim().max(20).optional().nullable(),
   status: z.enum(CREDIT_NOTE_ITC_STATUSES).optional(),
-});
+};
 
-export const creditNoteItcCaseUpdateSchema = creditNoteItcCaseSchema.partial();
+export const creditNoteItcCaseSchema = z
+  .object({
+    ...creditNoteItcCaseShape,
+    cgst: creditNoteItcAmountSchema.default(0),
+    sgst: creditNoteItcAmountSchema.default(0),
+    igst: creditNoteItcAmountSchema.default(0),
+    cess: creditNoteItcAmountSchema.default(0),
+  })
+  .superRefine((data, ctx) => {
+    if (data.creditNoteKind !== "gst") return;
+    if (data.cgst + data.sgst + data.igst + data.cess > 0) return;
+    ctx.addIssue({
+      code: "custom",
+      path: ["cgst"],
+      message: "GST credit notes need a tax amount (CGST, SGST, IGST, or cess)",
+    });
+  });
+
+export const creditNoteItcCaseUpdateSchema = z.object(creditNoteItcCaseShape).partial();
 
 const showroomDateSchema = z
   .string()
