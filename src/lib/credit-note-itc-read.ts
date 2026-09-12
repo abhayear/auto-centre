@@ -43,7 +43,8 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(bytes);
   const result = await extractText(pdf, { mergePages: true });
-  return typeof result.text === "string" ? result.text : result.text.join("\n");
+  const text = result.text as string | string[];
+  return Array.isArray(text) ? text.join("\n") : text;
 }
 
 function parseVisionJson(raw: string): Partial<GstDocumentExtract> {
