@@ -1,4 +1,10 @@
-import { GSTIN_PATTERN, type CreditNoteKind } from "@/lib/credit-note-itc";
+import {
+  GSTIN_PATTERN,
+  type CreditNoteKind,
+  type CreditNoteReason,
+  type ImsStatus,
+  type ItcAvailedExtent,
+} from "@/lib/credit-note-itc";
 
 export type GstDocumentKind = "invoice" | "credit_note" | "unknown";
 
@@ -38,6 +44,10 @@ export type CreditNoteItcAutofill = {
   igst: number;
   cess: number;
   creditNoteKind: CreditNoteKind;
+  itcAvailedExtent?: ItcAvailedExtent;
+  imsStatus?: ImsStatus;
+  reason?: CreditNoteReason;
+  reversalPeriod?: string;
   filled: string[];
   warnings: string[];
 };
@@ -372,4 +382,130 @@ export function mergeGstDocumentExtracts(
   }
 
   return { ...fields, filled, warnings };
+}
+
+export function parseCreditNoteReasonFromText(text: string): CreditNoteReason | null {
+  const normalized = normalizeExtractedText(text);
+  if (/\b(sales\s*return|goods?\s*return|return of goods|cancelled the job|cancellation)\b/i.test(normalized)) {
+    return "return";
+  }
+  if (/\b(rate\s*diff|price\s*(?:reduction|reduced)|value\s+(?:or\s+tax\s+)?reduc|tax\s+reduc|quantity\s*diff)/i.test(normalized)) {
+    return "value_or_tax_reduced";
+  }
+  if (/\b(discount|scheme|rebate|trade\s*discount|post[-\s]?sale)\b/i.test(normalized)) {
+    return "post_sale_discount";
+  }
+  return null;
+}
+
+export function parseImsStatusFromText(text: string): ImsStatus | null {
+  const normalized = normalizeExtractedText(text);
+  if (/\b(not\s+on\s+ims|not\s+available\s+on\s+ims|not\s+yet\s+on\s+ims|not\s+reflected)\b/i.test(normalized)) {
+    return "not_on_ims";
+  }
+  if (/\b(deemed\s+accept|no\s+action)\b/i.test(normalized)) {
+    return "no_action";
+  }
+  if (/\bpending\b/i.test(normalized)) return "pending";
+  if (/\breject(?:ed|ion)?\b/i.test(normalized)) return "reject";
+  if (/\baccept(?:ed)?\b/i.test(normalized)) return "accept";
+  return null;
+}
+
+const MONTH_INDEX: Record<string, string> = {
+  january: "01",
+  february: "02",
+  march: "03",
+  april: "04",
+  may: "05",
+  june: "06",
+  july: "07",
+  august: "08",
+  september: "09",
+  october: "10",
+  november: "11",
+  december: "12",
+  jan: "01",
+  feb: "02",
+  mar: "03",
+  apr: "04",
+  jun: "06",
+  jul: "07",
+  aug: "08",
+  sep: "09",
+  oct: "10",
+  nov: "11",
+  dec: "12",
+};
+
+export function parseGstr3bPeriod(text: string): string {
+  const named = text.match(
+    /(?:tax\s*period|return\s*period|period)\s*[:\-]?\s*(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*[-/ ]\s*(\d{2,4})/i,
+  );
+  if (named) {
+    const month = MONTH_INDEX[named[1].toLowerCase()];
+    const year = named[2].length === 2 ? `20${named[2]}` : named[2];
+    return month ? `${year}-${month}` : "";
+  }
+  const numeric = text.match(
+    /(?:tax\s*period|return\s*period|period)\s*[:\-]?\s*(\d{1,2})[\/\-](\d{4})/i,
+  );
+  if (numeric) {
+    return `${numeric[2]}-${numeric[1].padStart(2, "0")}`;
+  }
+  return "";
+}
+
+export function parseItcExtentFromGstr3b(text: string): {
+  extent: ItcAvailedExtent | null;
+  reversalPeriod: string;
+} {
+  const normalized = normalizeExtractedText(text);
+  const reversalPeriod = parseGstr3bPeriod(normalized);
+  if (/\b(itc\s+not\s+availed|not\s+availed|nil\s+itc|no\s+itc\s+claimed)\b/i.test(normalized)) {
+    return { extent: "none", reversalPeriod };
+  }
+  if (/\b(part(?:ial|ly)?\s+itc|itc\s+partly|part\s+of\s+the\s+itc)\b/i.test(normalized)) {
+    return { extent: "part", reversalPeriod };
+  }
+  if (/\b(eligible\s+itc|itc\s+available|itc\s+availed|4\s*\(a\)|all other itc)\b/i.test(normalized)) {
+    return { extent: "full", reversalPeriod };
+  }
+  return { extent: null, reversalPeriod };
+}
+
+export function applyEvidenceAnswers(
+  fields: CreditNoteItcAutofill,
+  answers: {
+    itcAvailedExtent?: ItcAvailedExtent | null;
+    imsStatus?: ImsStatus | null;
+    reason?: CreditNoteReason | null;
+    creditNoteKind?: CreditNoteKind | null;
+    reversalPeriod?: string | null;
+    warnings?: string[];
+  },
+): CreditNoteItcAutofill {
+  const next = { ...fields };
+  if (answers.itcAvailedExtent) {
+    next.itcAvailedExtent = answers.itcAvailedExtent;
+    if (!next.filled.includes("itcAvailedExtent")) next.filled.push("itcAvailedExtent");
+  }
+  if (answers.imsStatus) {
+    next.imsStatus = answers.imsStatus;
+    if (!next.filled.includes("imsStatus")) next.filled.push("imsStatus");
+  }
+  if (answers.reason) {
+    next.reason = answers.reason;
+    if (!next.filled.includes("reason")) next.filled.push("reason");
+  }
+  if (answers.creditNoteKind) {
+    next.creditNoteKind = answers.creditNoteKind;
+    if (!next.filled.includes("creditNoteKind")) next.filled.push("creditNoteKind");
+  }
+  if (answers.reversalPeriod) {
+    next.reversalPeriod = answers.reversalPeriod;
+    if (!next.filled.includes("reversalPeriod")) next.filled.push("reversalPeriod");
+  }
+  if (answers.warnings?.length) next.warnings = [...next.warnings, ...answers.warnings];
+  return next;
 }

@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyEvidenceAnswers,
   detectGstDocumentKind,
   mergeGstDocumentExtracts,
   normalizeExtractedText,
+  parseCreditNoteReasonFromText,
+  parseGstr3bPeriod,
   parseGstDocumentText,
+  parseImsStatusFromText,
+  parseItcExtentFromGstr3b,
   toIsoDate,
 } from "../credit-note-itc-extract";
 import { validateGstDocumentFile } from "../credit-note-itc-read";
@@ -162,5 +167,57 @@ describe("mergeGstDocumentExtracts", () => {
       taxableValue: 500,
     });
     expect(merged.creditNoteKind).toBe("financial");
+  });
+});
+
+describe("parseImsStatusFromText", () => {
+  it("reads Accept / Reject / Pending / deemed accept from an IMS screenshot dump", () => {
+    expect(parseImsStatusFromText("IMS Credit Notes Status: Accepted")).toBe("accept");
+    expect(parseImsStatusFromText("Action: Rejected by recipient")).toBe("reject");
+    expect(parseImsStatusFromText("Credit note CN/1 is Pending")).toBe("pending");
+    expect(parseImsStatusFromText("No action — Deemed accept")).toBe("no_action");
+    expect(parseImsStatusFromText("This document is not on IMS yet")).toBe("not_on_ims");
+  });
+});
+
+describe("parseItcExtentFromGstr3b", () => {
+  it("reads full ITC and the GSTR-3B month", () => {
+    const parsed = parseItcExtentFromGstr3b(
+      "FORM GSTR-3B Tax period: July 2026\n4(A) Eligible ITC\nAll other ITC 18000\nITC availed on invoice AG/INV/2026/0142",
+    );
+    expect(parsed.extent).toBe("full");
+    expect(parsed.reversalPeriod).toBe("2026-07");
+  });
+
+  it("reads none when ITC was not availed", () => {
+    expect(parseItcExtentFromGstr3b("GSTR-3B Period 08/2026 ITC not availed").extent).toBe("none");
+  });
+});
+
+describe("parseCreditNoteReasonFromText", () => {
+  it("maps seller remarks to the reason dropdown", () => {
+    expect(parseCreditNoteReasonFromText("Credit note for sales return of battery")).toBe("return");
+    expect(parseCreditNoteReasonFromText("Post-sale discount / scheme")).toBe("post_sale_discount");
+    expect(parseCreditNoteReasonFromText("Rate difference and tax reduced")).toBe("value_or_tax_reduced");
+  });
+});
+
+describe("applyEvidenceAnswers", () => {
+  it("adds IMS and GSTR-3B answers onto an autofill", () => {
+    const base = mergeGstDocumentExtracts(
+      parseGstDocumentText(INVOICE_TEXT, "invoice"),
+      parseGstDocumentText(CREDIT_NOTE_TEXT, "credit_note"),
+    );
+    const next = applyEvidenceAnswers(base, {
+      imsStatus: "pending",
+      itcAvailedExtent: "full",
+      reason: "return",
+      reversalPeriod: parseGstr3bPeriod("Tax period: July 2026"),
+    });
+    expect(next.imsStatus).toBe("pending");
+    expect(next.itcAvailedExtent).toBe("full");
+    expect(next.reason).toBe("return");
+    expect(next.reversalPeriod).toBe("2026-07");
+    expect(next.filled).toEqual(expect.arrayContaining(["imsStatus", "itcAvailedExtent", "reason"]));
   });
 });

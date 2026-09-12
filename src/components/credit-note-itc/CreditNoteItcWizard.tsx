@@ -98,7 +98,55 @@ function applyAutofill(
     if (fields[key] > 0) next[key] = fields[key];
   }
   if (fields.creditNoteKind) next.creditNoteKind = fields.creditNoteKind;
+  if (fields.itcAvailedExtent) {
+    next.itcAvailedExtent = fields.itcAvailedExtent;
+    next.itcAlreadyClaimed = fields.itcAvailedExtent !== "none";
+    if (fields.itcAvailedExtent !== "part") next.itcAvailedAmount = 0;
+  }
+  if (fields.imsStatus) next.imsStatus = fields.imsStatus;
+  if (fields.reason) next.reason = fields.reason;
+  if (fields.reversalPeriod) next.reversalPeriod = fields.reversalPeriod;
   return next;
+}
+
+function QuestionUpload({
+  id,
+  check,
+  uploadLabel,
+  fileName,
+  reading,
+  onUpload,
+}: {
+  id: string;
+  check: string;
+  uploadLabel: string;
+  fileName?: string;
+  reading?: boolean;
+  onUpload: (file: File) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">or upload</p>
+      <p className="text-xs text-slate-500">Check: {check}</p>
+      <label
+        htmlFor={id}
+        className="inline-flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-600 bg-slate-900/70 px-3 py-2 text-xs text-slate-200 hover:border-red-500/70"
+      >
+        {reading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-red-400" /> : <FileUp className="h-3.5 w-3.5 text-red-400" />}
+        <span className="truncate">{reading ? "Reading…" : fileName || uploadLabel}</span>
+        <input
+          id={id}
+          type="file"
+          accept=".pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) onUpload(file);
+          }}
+        />
+      </label>
+    </div>
+  );
 }
 
 function FileCard({
@@ -153,6 +201,11 @@ export function CreditNoteItcWizard({
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [creditNoteFile, setCreditNoteFile] = useState<File | null>(null);
   const [reading, setReading] = useState(false);
+  const [readingQuestion, setReadingQuestion] = useState<string | null>(null);
+  const [gstr3bName, setGstr3bName] = useState("");
+  const [imsName, setImsName] = useState("");
+  const [reasonFileName, setReasonFileName] = useState("");
+  const [gstFileName, setGstFileName] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
   const taxSum = value.cgst + value.sgst + value.igst + value.cess;
@@ -171,6 +224,22 @@ export function CreditNoteItcWizard({
     setValue((cur) => ({ ...cur, ...p }));
   }
 
+  async function postExtract(body: FormData) {
+    const res = await fetch("/api/credit-note-itc/extract", { method: "POST", body });
+    const result = (await res.json()) as {
+      error?: string;
+      fields?: CreditNoteItcAutofill;
+      warnings?: string[];
+    };
+    if (!res.ok || !result.fields) {
+      throw new Error(result.error ?? "Could not read those files");
+    }
+    setValue((cur) => applyAutofill(cur, result.fields!));
+    setPicked((cur) => [...new Set([...cur, ...result.fields!.filled])]);
+    setNotes(result.warnings ?? result.fields.warnings ?? []);
+    return result.fields;
+  }
+
   async function handleReadDocuments() {
     if (!invoiceFile && !creditNoteFile) {
       toast.error("Choose the invoice and the credit note first");
@@ -181,28 +250,50 @@ export function CreditNoteItcWizard({
       const body = new FormData();
       if (invoiceFile) body.set("invoice", invoiceFile);
       if (creditNoteFile) body.set("creditNote", creditNoteFile);
-      const res = await fetch("/api/credit-note-itc/extract", { method: "POST", body });
-      const result = (await res.json()) as {
-        error?: string;
-        fields?: CreditNoteItcAutofill;
-        warnings?: string[];
-      };
-      if (!res.ok || !result.fields) {
-        toast.error(result.error ?? "Could not read those files");
-        return;
+      const fields = await postExtract(body);
+      if (creditNoteFile) {
+        setReasonFileName(creditNoteFile.name);
+        setGstFileName(creditNoteFile.name);
       }
-      setValue((cur) => applyAutofill(cur, result.fields!));
-      setPicked(result.fields.filled);
-      setNotes(result.warnings ?? result.fields.warnings ?? []);
       toast.success(
-        result.fields.filled.length > 0
-          ? `Filled ${result.fields.filled.length} boxes — check them once`
+        fields.filled.length > 0
+          ? `Filled ${fields.filled.length} boxes — check them once`
           : "Nothing clear was found. Type the boxes below.",
       );
-    } catch {
-      toast.error("Could not read those files");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read those files");
     } finally {
       setReading(false);
+    }
+  }
+
+  async function handleQuestionUpload(
+    key: "gstr3b" | "ims" | "creditNote",
+    file: File,
+    label: string,
+  ) {
+    setReadingQuestion(key);
+    try {
+      const body = new FormData();
+      body.set(key, file);
+      if (key === "creditNote" && invoiceFile) body.set("invoice", invoiceFile);
+      const fields = await postExtract(body);
+      if (key === "gstr3b") setGstr3bName(file.name);
+      if (key === "ims") setImsName(file.name);
+      if (key === "creditNote") {
+        setReasonFileName(file.name);
+        setGstFileName(file.name);
+        setCreditNoteFile(file);
+      }
+      toast.success(
+        fields.filled.length > 0
+          ? `Read ${label} — dropdown updated. Check it.`
+          : `Read ${label}, but pick the dropdown yourself.`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read that file");
+    } finally {
+      setReadingQuestion(null);
     }
   }
 
@@ -269,64 +360,105 @@ export function CreditNoteItcWizard({
       <section className="print:hidden space-y-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-red-300">Step 2</p>
-          <h2 className="text-lg font-semibold text-white">Three easy questions</h2>
+          <h2 className="text-lg font-semibold text-white">Answer from your GST papers</h2>
           <p className="mt-1 text-sm text-slate-400">
-            These do not appear on the invoice. Answer from how you used the bill on GST.
+            Both options work: pick from the dropdown, or upload the paper. Upload fills the
+            dropdown; you can still change it by hand.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            id="itcAvailedExtent"
-            label="Did you already take GST credit (ITC) on that purchase bill in a filed GSTR-3B?"
-            value={extent}
-            onChange={(e) => {
-              const itcAvailedExtent = e.target.value as ItcAvailedExtent;
-              patch({
-                itcAvailedExtent,
-                itcAlreadyClaimed: itcAvailedExtent !== "none",
-                itcAvailedAmount: itcAvailedExtent === "part" ? value.itcAvailedAmount : 0,
-              });
-            }}
-            options={[
-              { value: "full", label: "Yes — full ITC on that invoice" },
-              { value: "part", label: "Yes — but only part of the ITC" },
-              { value: "none", label: "No — I never took ITC on it" },
-            ]}
-          />
-          <Select
-            id="imsStatus"
-            label="On the GST portal (IMS), what did you do with this credit note?"
-            value={value.imsStatus}
-            onChange={(e) => patch({ imsStatus: e.target.value as ImsStatus })}
-            options={[
-              { value: "accept", label: "Accept — the credit note is correct" },
-              { value: "reject", label: "Reject — it is wrong / not ours" },
-              { value: "pending", label: "Pending — parked for this tax period" },
-              { value: "no_action", label: "Left it — deemed accept after due date" },
-              { value: "not_on_ims", label: "I have not seen it on IMS yet" },
-            ]}
-          />
-          <Select
-            id="reason"
-            label="Why did the seller issue this credit note?"
-            value={value.reason}
-            onChange={(e) => patch({ reason: e.target.value as CreditNoteReason })}
-            options={[
-              { value: "return", label: "We returned goods / cancelled the job" },
-              { value: "post_sale_discount", label: "Discount / scheme after the sale" },
-              { value: "value_or_tax_reduced", label: "Price or tax was reduced" },
-            ]}
-          />
-          <Select
-            id="creditNoteKind"
-            label="Does this credit note have GST on it?"
-            value={value.creditNoteKind}
-            onChange={(e) => patch({ creditNoteKind: e.target.value as CreditNoteKind })}
-            options={[
-              { value: "gst", label: "Yes — GST credit note (CGST/SGST or IGST)" },
-              { value: "financial", label: "No — only a commercial / financial CN" },
-            ]}
-          />
+          <div className="space-y-2">
+            <Select
+              id="itcAvailedExtent"
+              label="Did you already take GST credit (ITC) on that purchase bill in a filed GSTR-3B?"
+              value={extent}
+              onChange={(e) => {
+                const itcAvailedExtent = e.target.value as ItcAvailedExtent;
+                patch({
+                  itcAvailedExtent,
+                  itcAlreadyClaimed: itcAvailedExtent !== "none",
+                  itcAvailedAmount: itcAvailedExtent === "part" ? value.itcAvailedAmount : 0,
+                });
+              }}
+              options={[
+                { value: "full", label: "Yes — full ITC on that invoice" },
+                { value: "part", label: "Yes — but only part of the ITC" },
+                { value: "none", label: "No — I never took ITC on it" },
+              ]}
+            />
+            <QuestionUpload
+              id="gstr3b-upload"
+              check="Your GSTR-3B for the period when you claimed the original invoice"
+              uploadLabel="Upload GSTR-3B PDF or photo"
+              fileName={gstr3bName}
+              reading={readingQuestion === "gstr3b"}
+              onUpload={(file) => void handleQuestionUpload("gstr3b", file, "GSTR-3B")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Select
+              id="imsStatus"
+              label="On the GST portal (IMS), what did you do with this credit note?"
+              value={value.imsStatus}
+              onChange={(e) => patch({ imsStatus: e.target.value as ImsStatus })}
+              options={[
+                { value: "accept", label: "Accept — the credit note is correct" },
+                { value: "reject", label: "Reject — it is wrong / not ours" },
+                { value: "pending", label: "Pending — parked for this tax period" },
+                { value: "no_action", label: "Left it — deemed accept after due date" },
+                { value: "not_on_ims", label: "I have not seen it on IMS yet" },
+              ]}
+            />
+            <QuestionUpload
+              id="ims-upload"
+              check="IMS → Credit Notes → Status / action"
+              uploadLabel="Upload IMS screenshot or PDF"
+              fileName={imsName}
+              reading={readingQuestion === "ims"}
+              onUpload={(file) => void handleQuestionUpload("ims", file, "IMS")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Select
+              id="reason"
+              label="Why did the seller issue this credit note?"
+              value={value.reason}
+              onChange={(e) => patch({ reason: e.target.value as CreditNoteReason })}
+              options={[
+                { value: "return", label: "We returned goods / cancelled the job" },
+                { value: "post_sale_discount", label: "Discount / scheme after the sale" },
+                { value: "value_or_tax_reduced", label: "Price or tax was reduced" },
+              ]}
+            />
+            <QuestionUpload
+              id="reason-upload"
+              check="Actual credit note PDF/details from seller — discount, return, rate difference"
+              uploadLabel="Upload credit note again if needed"
+              fileName={reasonFileName}
+              reading={readingQuestion === "creditNote"}
+              onUpload={(file) => void handleQuestionUpload("creditNote", file, "credit note")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Select
+              id="creditNoteKind"
+              label="Does this credit note have GST on it?"
+              value={value.creditNoteKind}
+              onChange={(e) => patch({ creditNoteKind: e.target.value as CreditNoteKind })}
+              options={[
+                { value: "gst", label: "Yes — GST credit note (CGST/SGST or IGST)" },
+                { value: "financial", label: "No — only a commercial / financial CN" },
+              ]}
+            />
+            <QuestionUpload
+              id="cn-gst-upload"
+              check="Credit note itself — check CGST / SGST / IGST amounts"
+              uploadLabel="Upload credit note to read GST"
+              fileName={gstFileName}
+              reading={readingQuestion === "creditNote"}
+              onUpload={(file) => void handleQuestionUpload("creditNote", file, "credit note")}
+            />
+          </div>
           {extent === "part" ? (
             <Input
               id="itcAvailedAmount"
