@@ -90,11 +90,7 @@ export function MechanicBonusForm() {
         toast.error(result.error ?? "Could not save rating");
         return;
       }
-      toast.success(
-        result.sentToGoogle
-          ? "Thank you. Rating saved to Google Form."
-          : "Thank you. Rating saved for bonus.",
-      );
+      toast.success("Thank you. Rating saved for bonus.");
       setBillNo("");
       setScores([0, 0, 0]);
     } catch {

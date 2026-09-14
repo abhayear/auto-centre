@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { rosterIsReady, submitMechanicBonusToGoogleForm } from "@/lib/mechanic-bonus";
+import { rosterIsReady } from "@/lib/mechanic-bonus";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, mechanicBonusRatingSchema } from "@/lib/validators";
 
@@ -16,13 +16,6 @@ async function postHandler(request: NextRequest) {
       );
     }
 
-    const google = await submitMechanicBonusToGoogleForm(roster, {
-      ...data,
-      mechanic1Name: roster.mechanic1Name,
-      mechanic2Name: roster.mechanic2Name,
-      mechanic3Name: roster.mechanic3Name,
-    });
-
     const record = await prisma.mechanicBonusRating.create({
       data: {
         billNo: data.billNo,
@@ -32,19 +25,10 @@ async function postHandler(request: NextRequest) {
         mechanic2Rating: data.mechanic2Rating,
         mechanic3Name: roster.mechanic3Name,
         mechanic3Rating: data.mechanic3Rating,
-        sentToGoogle: google.sent,
-        googleError: google.sent ? null : google.error ?? null,
       },
     });
 
-    return NextResponse.json(
-      {
-        id: record.id,
-        sentToGoogle: record.sentToGoogle,
-        googleError: record.googleError,
-      },
-      { status: 201 },
-    );
+    return NextResponse.json({ id: record.id }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

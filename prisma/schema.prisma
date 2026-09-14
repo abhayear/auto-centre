@@ -506,20 +506,12 @@ model ReplacementStockItem {
 }
 
 model MechanicBonusRoster {
-  id                   String   @id @default("default")
-  mechanic1Name        String   @default("")
-  mechanic2Name        String   @default("")
-  mechanic3Name        String   @default("")
-  googleFormUrl        String?
-  entryBillNo          String?
-  entryMechanic1Name   String?
-  entryMechanic1Rating String?
-  entryMechanic2Name   String?
-  entryMechanic2Rating String?
-  entryMechanic3Name   String?
-  entryMechanic3Rating String?
-  updatedByEmail       String?
-  updatedAt            DateTime @updatedAt
+  id             String   @id @default("default")
+  mechanic1Name  String   @default("")
+  mechanic2Name  String   @default("")
+  mechanic3Name  String   @default("")
+  updatedByEmail String?
+  updatedAt      DateTime @updatedAt
 }
 
 model MechanicBonusRating {
@@ -531,8 +523,6 @@ model MechanicBonusRating {
   mechanic2Rating Int
   mechanic3Name   String
   mechanic3Rating Int
-  sentToGoogle    Boolean  @default(false)
-  googleError     String?
   createdAt       DateTime @default(now())
 
   @@index([createdAt])
