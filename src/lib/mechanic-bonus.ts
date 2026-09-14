@@ -23,7 +23,7 @@ export function mechanicNames(roster: MechanicBonusRosterInput): [string, string
 }
 
 export function rosterIsReady(roster: MechanicBonusRosterInput): boolean {
-  return mechanicNames(roster).every((name) => name.length >= 2);
+  return mechanicNames(roster).every((name) => name.length >= 1);
 }
 
 export function bonusAverage(ratings: [number, number, number]): number {

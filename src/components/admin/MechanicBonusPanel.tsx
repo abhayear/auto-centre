@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { bonusAverage } from "@/lib/mechanic-bonus";
+import { bonusAverage, rosterIsReady } from "@/lib/mechanic-bonus";
 
 type Roster = {
   mechanic1Name: string;
@@ -34,6 +34,7 @@ const emptyRoster: Roster = {
 export function MechanicBonusPanel() {
   const [roster, setRoster] = useState<Roster>(emptyRoster);
   const [ratings, setRatings] = useState<RatingRow[]>([]);
+  const [errors, setErrors] = useState<Partial<Roster>>({});
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -59,10 +60,27 @@ export function MechanicBonusPanel() {
 
   function patch(partial: Partial<Roster>) {
     setRoster((current) => ({ ...current, ...partial }));
+    setErrors((current) => {
+      const next = { ...current };
+      for (const key of Object.keys(partial) as (keyof Roster)[]) {
+        delete next[key];
+      }
+      return next;
+    });
   }
 
   async function handleSave() {
+    if (!rosterIsReady(roster)) {
+      const fieldErrors: Partial<Roster> = {};
+      if (!roster.mechanic1Name.trim()) fieldErrors.mechanic1Name = "Enter this mechanic's name";
+      if (!roster.mechanic2Name.trim()) fieldErrors.mechanic2Name = "Enter this mechanic's name";
+      if (!roster.mechanic3Name.trim()) fieldErrors.mechanic3Name = "Enter this mechanic's name";
+      setErrors(fieldErrors);
+      toast.error("Enter all three mechanic names");
+      return;
+    }
     setSaving(true);
+    setErrors({});
     try {
       const res = await fetch("/api/mechanic-bonus", {
         method: "PUT",
@@ -71,7 +89,18 @@ export function MechanicBonusPanel() {
       });
       const result = await res.json();
       if (!res.ok) {
-        toast.error(result.error ?? "Failed to save");
+        const fieldErrors: Partial<Roster> = {};
+        if (Array.isArray(result.details)) {
+          for (const item of result.details) {
+            if (item.field === "mechanic1Name" || item.field === "mechanic2Name" || item.field === "mechanic3Name") {
+              fieldErrors[item.field] = item.message;
+            }
+          }
+        }
+        setErrors(fieldErrors);
+        toast.error(
+          Object.values(fieldErrors)[0] ?? result.error ?? "Could not save mechanic names",
+        );
         return;
       }
       toast.success("Mechanic names saved");
@@ -97,9 +126,9 @@ export function MechanicBonusPanel() {
       <section className="space-y-4 rounded-xl border border-slate-700/50 p-5">
         <h2 className="text-lg font-semibold text-white">Three mechanic names</h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Input id="mechanic1Name" label="Mechanic 1" value={roster.mechanic1Name} onChange={(e) => patch({ mechanic1Name: e.target.value })} />
-          <Input id="mechanic2Name" label="Mechanic 2" value={roster.mechanic2Name} onChange={(e) => patch({ mechanic2Name: e.target.value })} />
-          <Input id="mechanic3Name" label="Mechanic 3" value={roster.mechanic3Name} onChange={(e) => patch({ mechanic3Name: e.target.value })} />
+          <Input id="mechanic1Name" label="Mechanic 1" value={roster.mechanic1Name} error={errors.mechanic1Name} onChange={(e) => patch({ mechanic1Name: e.target.value })} placeholder="e.g. Ravi" />
+          <Input id="mechanic2Name" label="Mechanic 2" value={roster.mechanic2Name} error={errors.mechanic2Name} onChange={(e) => patch({ mechanic2Name: e.target.value })} placeholder="e.g. Imran" />
+          <Input id="mechanic3Name" label="Mechanic 3" value={roster.mechanic3Name} error={errors.mechanic3Name} onChange={(e) => patch({ mechanic3Name: e.target.value })} placeholder="e.g. Suresh" />
         </div>
         <div className="flex justify-end">
           <Button type="button" loading={saving} onClick={() => void handleSave()}>

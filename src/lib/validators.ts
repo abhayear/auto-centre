@@ -636,7 +636,7 @@ export const patchWorkItemSchema = z
     "At least one work item field is required",
   );
 
-const mechanicNameSchema = z.string().trim().min(2).max(80);
+const mechanicNameSchema = z.string().trim().min(1, "Enter this mechanic's name").max(80);
 const mechanicRatingSchema = z.coerce.number().int().min(1).max(5);
 
 export const mechanicBonusRosterSchema = z.object({

@@ -13,6 +13,10 @@ describe("rosterIsReady", () => {
     expect(rosterIsReady(roster)).toBe(true);
     expect(rosterIsReady({ ...roster, mechanic3Name: "" })).toBe(false);
   });
+
+  it("accepts one-letter names", () => {
+    expect(rosterIsReady({ mechanic1Name: "P", mechanic2Name: "K", mechanic3Name: "S" })).toBe(true);
+  });
 });
 
 describe("mechanicBonusRosterSchema", () => {
@@ -25,6 +29,32 @@ describe("mechanicBonusRosterSchema", () => {
     expect(parsed).toEqual(roster);
     expect(parsed).not.toHaveProperty("googleFormUrl");
     expect(parsed).not.toHaveProperty("entryBillNo");
+  });
+
+  it("saves one-letter mechanic names", () => {
+    expect(
+      mechanicBonusRosterSchema.parse({
+        mechanic1Name: "P",
+        mechanic2Name: "K",
+        mechanic3Name: "S",
+      }),
+    ).toEqual({
+      mechanic1Name: "P",
+      mechanic2Name: "K",
+      mechanic3Name: "S",
+    });
+  });
+
+  it("tells the manager to enter a name when a field is blank", () => {
+    const result = mechanicBonusRosterSchema.safeParse({
+      mechanic1Name: "Ravi",
+      mechanic2Name: "Imran",
+      mechanic3Name: "  ",
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.path).toEqual(["mechanic3Name"]);
+    expect(result.error.issues[0]?.message).toBe("Enter this mechanic's name");
   });
 });
 
