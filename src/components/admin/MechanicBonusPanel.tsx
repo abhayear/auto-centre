@@ -92,9 +92,9 @@ export function MechanicBonusPanel() {
         const fieldErrors: Partial<Roster> = {};
         if (Array.isArray(result.details)) {
           for (const item of result.details) {
-            if (item.field === "mechanic1Name" || item.field === "mechanic2Name" || item.field === "mechanic3Name") {
-              fieldErrors[item.field] = item.message;
-            }
+            if (item.field === "mechanic1Name") fieldErrors.mechanic1Name = item.message;
+            if (item.field === "mechanic2Name") fieldErrors.mechanic2Name = item.message;
+            if (item.field === "mechanic3Name") fieldErrors.mechanic3Name = item.message;
           }
         }
         setErrors(fieldErrors);
