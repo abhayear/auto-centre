@@ -659,6 +659,13 @@ export const mechanicReferralSchema = z.object({
   address: z.string().trim().min(5, "Enter the address").max(300),
   yearsOfExpertise: z.coerce.number().int().min(0, "Enter years of expertise").max(60),
   expertise: z.array(z.enum(MECHANIC_EXPERTISE)).min(1, "Select at least one expertise"),
+  referrerName: z.string().trim().min(1, "Enter your name").max(80),
+  referrerContact: z.string().trim().min(10, "Enter your mobile number").max(20),
+});
+
+export const mechanicReferralActionSchema = z.object({
+  id: z.string().min(1),
+  action: z.enum(["hire", "reward"]),
 });
 
 export type VehicleInput = z.infer<typeof vehicleSchema>;

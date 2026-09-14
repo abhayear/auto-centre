@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatMechanicExpertise } from "@/lib/mechanic-referral";
+import toast from "react-hot-toast";
+import { Button } from "@/components/ui/Button";
+import { formatMechanicExpertise, type ReferralRewardState } from "@/lib/mechanic-referral";
 
 type ReferralRow = {
   id: string;
@@ -11,19 +13,51 @@ type ReferralRow = {
   yearsOfExpertise: number;
   expertise: string[];
   expertiseLabel?: string;
+  referrerName: string;
+  referrerContact: string;
+  hiredAt: string | null;
+  rewardedAt: string | null;
+  rewardState: ReferralRewardState;
+  rewardLabel: string;
   createdAt: string;
 };
 
 export function MechanicReferralPanel() {
   const [rows, setRows] = useState<ReferralRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function load() {
+    const res = await fetch("/api/mechanic-referrals");
+    const data = await res.json();
+    setRows(Array.isArray(data) ? data : []);
+  }
 
   useEffect(() => {
-    fetch("/api/mechanic-referrals")
-      .then((res) => res.json())
-      .then((data) => setRows(Array.isArray(data) ? data : []))
-      .finally(() => setLoading(false));
+    load().finally(() => setLoading(false));
   }, []);
+
+  async function update(id: string, action: "hire" | "reward") {
+    setBusyId(id);
+    try {
+      const res = await fetch("/api/mechanic-referrals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error ?? "Could not update referral");
+        return;
+      }
+      toast.success(action === "hire" ? "Marked as hired. 15-day stay started." : "₹500 labour off marked as given.");
+      await load();
+    } catch {
+      toast.error("Could not update referral");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -38,6 +72,7 @@ export function MechanicReferralPanel() {
       <div>
         <h1 className="text-2xl font-bold text-white">Mechanic referrals</h1>
         <p className="mt-1 text-sm text-slate-400">
+          Customer gets ₹500 off the next labour bill after the mechanic is hired and stays 15 days.
           Public form: <span className="font-mono text-white">/refer-mechanic</span>
         </p>
       </div>
@@ -48,22 +83,51 @@ export function MechanicReferralPanel() {
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-800/80 text-slate-300">
               <tr>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
-                <th className="px-4 py-3 font-medium">Address</th>
-                <th className="px-4 py-3 font-medium">Years</th>
+                <th className="px-4 py-3 font-medium">Mechanic</th>
+                <th className="px-4 py-3 font-medium">Customer</th>
                 <th className="px-4 py-3 font-medium">Expertise</th>
+                <th className="px-4 py-3 font-medium">Reward</th>
+                <th className="px-4 py-3 font-medium">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {rows.map((row) => (
                 <tr key={row.id} className="text-slate-300">
-                  <td className="px-4 py-3 font-medium text-white">{row.name}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{row.contactNo}</td>
-                  <td className="px-4 py-3 max-w-xs">{row.address}</td>
-                  <td className="px-4 py-3">{row.yearsOfExpertise}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-white">{row.name}</p>
+                    <p className="text-xs text-slate-400">{row.contactNo}</p>
+                    <p className="text-xs text-slate-500">{row.address}</p>
+                    <p className="text-xs text-slate-500">{row.yearsOfExpertise} years</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-white">{row.referrerName || "—"}</p>
+                    <p className="text-xs text-slate-400">{row.referrerContact || "—"}</p>
+                  </td>
                   <td className="px-4 py-3">
                     {row.expertiseLabel ?? formatMechanicExpertise(row.expertise)}
+                  </td>
+                  <td className="px-4 py-3 text-white">{row.rewardLabel}</td>
+                  <td className="px-4 py-3">
+                    {row.rewardState === "pending_hire" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        loading={busyId === row.id}
+                        onClick={() => void update(row.id, "hire")}
+                      >
+                        Mark hired
+                      </Button>
+                    ) : null}
+                    {row.rewardState === "due" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        loading={busyId === row.id}
+                        onClick={() => void update(row.id, "reward")}
+                      >
+                        Give ₹500 off
+                      </Button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

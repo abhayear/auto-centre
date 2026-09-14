@@ -530,13 +530,17 @@ model MechanicBonusRating {
 }
 
 model MechanicReferral {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   name             String
   contactNo        String
   address          String
   yearsOfExpertise Int
   expertise        String[]
-  createdAt        DateTime @default(now())
+  referrerName     String    @default("")
+  referrerContact  String    @default("")
+  hiredAt          DateTime?
+  rewardedAt       DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([createdAt])
 }

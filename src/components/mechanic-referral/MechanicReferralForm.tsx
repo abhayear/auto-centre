@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/Input";
 import {
   MECHANIC_EXPERTISE,
   MECHANIC_EXPERTISE_LABELS,
+  MECHANIC_REFERRAL_LABOUR_OFF_RUPEES,
+  MECHANIC_REFERRAL_STAY_DAYS,
   referralFromFormData,
 } from "@/lib/mechanic-referral";
 
@@ -34,7 +36,9 @@ export function MechanicReferralForm() {
         toast.error(first ?? result.error ?? "Could not save referral");
         return;
       }
-      toast.success("Mechanic referral saved");
+      toast.success(
+        `Thank you. If this mechanic joins and stays ${MECHANIC_REFERRAL_STAY_DAYS} days, you get ₹${MECHANIC_REFERRAL_LABOUR_OFF_RUPEES} off your next labour bill.`,
+      );
       setFormKey((current) => current + 1);
     } catch {
       toast.error("Could not save referral. Try again.");
@@ -45,19 +49,30 @@ export function MechanicReferralForm() {
 
   return (
     <form key={formKey} onSubmit={handleSubmit} className="space-y-5">
-      <Input id="name" name="name" label="Mechanic name" required autoComplete="name" placeholder="Full name" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input id="referrerName" name="referrerName" label="Your name" required autoComplete="name" placeholder="Customer name" />
+        <Input
+          id="referrerContact"
+          name="referrerContact"
+          label="Your mobile number"
+          required
+          autoComplete="tel"
+          inputMode="tel"
+          placeholder="10-digit mobile number"
+        />
+      </div>
+      <Input id="name" name="name" label="Mechanic name" required placeholder="Full name" />
       <Input
         id="contactNo"
         name="contactNo"
-        label="Contact number"
+        label="Mechanic contact number"
         required
-        autoComplete="tel"
         inputMode="tel"
         placeholder="10-digit mobile number"
       />
       <div className="space-y-1">
         <label htmlFor="address" className="block text-sm font-medium text-slate-300">
-          Address
+          Mechanic address
         </label>
         <textarea
           id="address"

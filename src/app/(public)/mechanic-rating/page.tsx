@@ -21,8 +21,8 @@ export default function MechanicRatingPage() {
       <div className="mt-12 border-t border-slate-800 pt-8">
         <h2 className="text-xl font-semibold text-white">Refer a mechanic</h2>
         <p className="mt-2 text-sm text-slate-400">
-          Know a mechanic for electrical, petrol, battery, motor, controller, or charger repair?
-          Send their name, contact number, address, and years of expertise.
+          Refer a mechanic who joins our workshop. After they work 15 days, you get ₹500 off your
+          next labour bill.
         </p>
         <Link
           href="/refer-mechanic"
