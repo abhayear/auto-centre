@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildOfferYearCalendar,
   clipOfferToMonth,
+  listUpcomingOffers,
   offerOverlapsYear,
   offerWindowStatus,
 } from "../offer-calendar";
@@ -104,6 +105,30 @@ describe("offerWindowStatus", () => {
 
   it("is ended after the end", () => {
     expect(offerWindowStatus(window, new Date(2026, 11, 1))).toBe("ended");
+  });
+});
+
+describe("listUpcomingOffers", () => {
+  it("lists published offers that have not started yet", () => {
+    const upcoming = listUpcomingOffers(
+      [
+        offer({ id: "past", startsAt: new Date(2026, 0, 1), endsAt: new Date(2026, 0, 10) }),
+        offer({ id: "live", startsAt: new Date(2026, 8, 1), endsAt: new Date(2026, 9, 1) }),
+        offer({
+          id: "draft",
+          published: false,
+          startsAt: new Date(2026, 10, 1),
+          endsAt: new Date(2026, 10, 10),
+        }),
+        offer({
+          id: "diwali-advance",
+          startsAt: new Date(2026, 9, 20),
+          endsAt: new Date(2026, 10, 15),
+        }),
+      ],
+      new Date(2026, 8, 12),
+    );
+    expect(upcoming.map((item) => item.id)).toEqual(["diwali-advance"]);
   });
 });
 

@@ -14,3 +14,10 @@ export async function findLiveCampaigns(now: Date = new Date()) {
     orderBy: [{ sortOrder: "asc" }, { startsAt: "desc" }],
   });
 }
+
+export async function findPublishedCampaigns() {
+  return prisma.siteCampaign.findMany({
+    where: { published: true },
+    orderBy: [{ startsAt: "asc" }, { sortOrder: "asc" }],
+  });
+}

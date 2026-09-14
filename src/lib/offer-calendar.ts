@@ -89,6 +89,17 @@ export function offerOverlapsYear(offer: OfferCalendarInput, year: number): bool
   return start <= endOfYear(year) && end >= startOfYear(year);
 }
 
+export function listUpcomingOffers(
+  offers: OfferCalendarInput[],
+  now: Date = new Date(),
+): OfferCalendarInput[] {
+  return sortOffers(
+    offers.filter(
+      (offer) => offer.published && hasValidRange(offer) && toOfferDate(offer.startsAt) > now,
+    ),
+  );
+}
+
 export function offerWindowStatus(
   offer: OfferCalendarInput,
   now: Date = new Date(),

@@ -2,7 +2,7 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOpsPortal } from "@/lib/auth";
-import { findLiveCampaigns } from "@/lib/campaigns";
+import { findLiveCampaigns, findPublishedCampaigns } from "@/lib/campaigns";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicSitePages } from "@/lib/revalidate";
 import { campaignPatchSchema, campaignSchema, formatZodErrors } from "@/lib/validators";
@@ -16,6 +16,10 @@ async function getHandler(request: NextRequest) {
       orderBy: [{ published: "desc" }, { sortOrder: "asc" }, { startsAt: "desc" }],
     });
     return NextResponse.json(campaigns);
+  }
+
+  if (request.nextUrl.searchParams.get("calendar") === "true") {
+    return NextResponse.json(await findPublishedCampaigns());
   }
 
   const campaigns = await findLiveCampaigns();

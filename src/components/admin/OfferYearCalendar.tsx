@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   buildOfferYearCalendar,
+  listUpcomingOffers,
   type OfferCalendarBar,
   type OfferCalendarInput,
 } from "@/lib/offer-calendar";
@@ -142,16 +143,21 @@ function OfferMonthCard({
 export function OfferYearCalendar({
   offers,
   onSelectOffer,
+  mode = "staff",
 }: {
   offers: OfferCalendarInput[];
   onSelectOffer?: (id: string) => void;
+  mode?: "staff" | "public";
 }) {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const now = useMemo(() => new Date(), []);
+  const visibleOffers = mode === "public" ? offers.filter((offer) => offer.published) : offers;
   const calendar = useMemo(
-    () => buildOfferYearCalendar(year, offers, new Date()),
-    [offers, year],
+    () => buildOfferYearCalendar(year, visibleOffers, now),
+    [visibleOffers, year, now],
   );
+  const upcoming = useMemo(() => listUpcomingOffers(visibleOffers, now), [visibleOffers, now]);
 
   return (
     <section aria-labelledby="offer-year-calendar-heading">
@@ -161,7 +167,9 @@ export function OfferYearCalendar({
             Offer calendar
           </h2>
           <p className="mt-1 text-sm text-slate-400">
-            Whole-year view of homepage offer windows. Click a bar to edit that offer.
+            {mode === "public"
+              ? "Whole-year view of live and upcoming (advance) offers. Sky-blue bars have not started yet."
+              : "Whole-year view of homepage offer windows. Click a bar to edit that offer."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -180,6 +188,24 @@ export function OfferYearCalendar({
         </div>
       </div>
 
+      {upcoming.length > 0 ? (
+        <div className="mb-6 rounded-xl border border-sky-700/40 bg-sky-950/20 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">
+            Advance / upcoming offers
+          </p>
+          <ul className="mt-3 space-y-2">
+            {upcoming.map((offer) => (
+              <li key={offer.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span className="font-medium text-white">{offer.title}</span>
+                <span className="text-slate-400">
+                  {formatDate(offer.startsAt)} – {formatDate(offer.endsAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-5 rounded-sm bg-red-600/85" /> Live
@@ -190,9 +216,11 @@ export function OfferYearCalendar({
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-5 rounded-sm bg-slate-600/80" /> Ended
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-5 rounded-sm border border-dashed border-amber-500/70 bg-amber-950/70" /> Draft
-        </span>
+        {mode === "staff" ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-5 rounded-sm border border-dashed border-amber-500/70 bg-amber-950/70" /> Draft
+          </span>
+        ) : null}
         <Badge variant="default">{calendar.offerCount} in {calendar.year}</Badge>
       </div>
 

@@ -14,10 +14,12 @@ export const dynamic = "force-dynamic";
 const mainPages = [
   { href: "/", label: "Home" },
   { href: "/vehicles", label: "E-Scooters" },
+  { href: "/offers", label: "Offer calendar" },
   { href: "/services", label: "Services" },
   { href: "/book-service", label: "Book Service" },
   { href: "/test-drive", label: "Test Ride" },
   { href: "/service-schedule", label: "Service Schedule" },
+  { href: "/mechanic-rating", label: "Rate your mechanic" },
   { href: "/about", label: "About" },
   { href: "/policies", label: "Policies" },
   { href: "/contact", label: "Contact Us" },

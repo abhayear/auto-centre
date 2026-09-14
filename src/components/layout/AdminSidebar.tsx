@@ -81,6 +81,7 @@ const navItems: NavItem[] = [
   { href: "/admin/cloud-vitals", label: "Cloud Vitals", icon: Activity, show: canUseOpsPortal },
   { href: "/admin/training", label: "Training", icon: GraduationCap, show: canAccessTraining },
   { href: "/admin/work", label: "Work", icon: ListChecks, show: (role) => canAssignWork(role) || role === "junior_developer" },
+  { href: "/admin/mechanic-bonus", label: "Mechanic bonus", icon: Star, show: canUseOpsPortal },
   { href: "/admin/releases", label: "Releases", icon: GitBranch, show: canViewReleases },
   { href: "/admin/vehicles", label: "Vehicles", icon: Car, show: canUseOpsPortal },
   { href: "/admin/offers", label: "Offers & pricing", icon: Megaphone, show: canUseOpsPortal },

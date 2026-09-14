@@ -504,3 +504,37 @@ model ReplacementStockItem {
   @@index([sourceClaimId])
   @@index([allocatedClaimId])
 }
+
+model MechanicBonusRoster {
+  id                   String   @id @default("default")
+  mechanic1Name        String   @default("")
+  mechanic2Name        String   @default("")
+  mechanic3Name        String   @default("")
+  googleFormUrl        String?
+  entryBillNo          String?
+  entryMechanic1Name   String?
+  entryMechanic1Rating String?
+  entryMechanic2Name   String?
+  entryMechanic2Rating String?
+  entryMechanic3Name   String?
+  entryMechanic3Rating String?
+  updatedByEmail       String?
+  updatedAt            DateTime @updatedAt
+}
+
+model MechanicBonusRating {
+  id              String   @id @default(cuid())
+  billNo          String
+  mechanic1Name   String
+  mechanic1Rating Int
+  mechanic2Name   String
+  mechanic2Rating Int
+  mechanic3Name   String
+  mechanic3Rating Int
+  sentToGoogle    Boolean  @default(false)
+  googleError     String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([billNo])
+}

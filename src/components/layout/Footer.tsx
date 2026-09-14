@@ -33,6 +33,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/offers" className="hover:text-red-400">
+                  Offer calendar
+                </Link>
+              </li>
+              <li>
                 <Link href="/services" className="hover:text-red-400">
                   Our Services
                 </Link>
@@ -45,6 +50,11 @@ export function Footer() {
               <li>
                 <Link href="/credit-note-itc" className="hover:text-red-400">
                   Credit note ITC
+                </Link>
+              </li>
+              <li>
+                <Link href="/mechanic-rating" className="hover:text-red-400">
+                  Rate your mechanic
                 </Link>
               </li>
               <li>

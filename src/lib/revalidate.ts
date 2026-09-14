@@ -20,6 +20,8 @@ export function revalidatePublicSitePages() {
   revalidatePath("/contact");
   revalidatePath("/about");
   revalidatePath("/service-schedule");
+  revalidatePath("/offers");
+  revalidatePath("/mechanic-rating");
   revalidatePath("/vehicles");
   revalidatePath("/services");
   revalidatePath("/book-service");

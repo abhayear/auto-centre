@@ -636,6 +636,30 @@ export const patchWorkItemSchema = z
     "At least one work item field is required",
   );
 
+const mechanicNameSchema = z.string().trim().min(2).max(80);
+const mechanicRatingSchema = z.coerce.number().int().min(1).max(5);
+
+export const mechanicBonusRosterSchema = z.object({
+  mechanic1Name: mechanicNameSchema,
+  mechanic2Name: mechanicNameSchema,
+  mechanic3Name: mechanicNameSchema,
+  googleFormUrl: z.string().trim().max(500).optional().nullable(),
+  entryBillNo: z.string().trim().max(40).optional().nullable(),
+  entryMechanic1Name: z.string().trim().max(40).optional().nullable(),
+  entryMechanic1Rating: z.string().trim().max(40).optional().nullable(),
+  entryMechanic2Name: z.string().trim().max(40).optional().nullable(),
+  entryMechanic2Rating: z.string().trim().max(40).optional().nullable(),
+  entryMechanic3Name: z.string().trim().max(40).optional().nullable(),
+  entryMechanic3Rating: z.string().trim().max(40).optional().nullable(),
+});
+
+export const mechanicBonusRatingSchema = z.object({
+  billNo: z.string().trim().min(2).max(40),
+  mechanic1Rating: mechanicRatingSchema,
+  mechanic2Rating: mechanicRatingSchema,
+  mechanic3Rating: mechanicRatingSchema,
+});
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
