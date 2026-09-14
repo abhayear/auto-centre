@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mechanicBonusRosterSchema } from "../validators";
-import { bonusAverage, rosterIsReady } from "../mechanic-bonus";
+import { bonusAverage, rosterFromFormData, rosterIsReady } from "../mechanic-bonus";
 
 const roster = {
   mechanic1Name: "Ravi",
@@ -62,5 +62,19 @@ describe("bonusAverage", () => {
   it("averages the three scores for bonus", () => {
     expect(bonusAverage([5, 4, 3])).toBe(4);
     expect(bonusAverage([5, 5, 4])).toBe(4.7);
+  });
+});
+
+describe("rosterFromFormData", () => {
+  it("reads the three mechanic names from the save form", () => {
+    const form = new FormData();
+    form.set("mechanic1Name", " Ravi ");
+    form.set("mechanic2Name", "Imran");
+    form.set("mechanic3Name", "Suresh");
+    expect(rosterFromFormData(form)).toEqual({
+      mechanic1Name: "Ravi",
+      mechanic2Name: "Imran",
+      mechanic3Name: "Suresh",
+    });
   });
 });

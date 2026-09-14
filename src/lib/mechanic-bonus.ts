@@ -26,6 +26,14 @@ export function rosterIsReady(roster: MechanicBonusRosterInput): boolean {
   return mechanicNames(roster).every((name) => name.length >= 1);
 }
 
+export function rosterFromFormData(form: FormData): MechanicBonusRosterInput {
+  return {
+    mechanic1Name: String(form.get("mechanic1Name") ?? "").trim(),
+    mechanic2Name: String(form.get("mechanic2Name") ?? "").trim(),
+    mechanic3Name: String(form.get("mechanic3Name") ?? "").trim(),
+  };
+}
+
 export function bonusAverage(ratings: [number, number, number]): number {
   return Math.round(((ratings[0] + ratings[1] + ratings[2]) / 3) * 10) / 10;
 }
