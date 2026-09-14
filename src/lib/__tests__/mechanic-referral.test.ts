@@ -5,6 +5,7 @@ import {
   MECHANIC_REFERRAL_LABOUR_OFF_RUPEES,
   MECHANIC_REFERRAL_STAY_DAYS,
   formatMechanicExpertise,
+  groupReferralsByMechanic,
   referralFromFormData,
   referralRewardState,
 } from "../mechanic-referral";
@@ -102,5 +103,46 @@ describe("referralRewardState", () => {
         now,
       ),
     ).toBe("given");
+  });
+});
+
+describe("groupReferralsByMechanic", () => {
+  it("lists every customer who referred the same mechanic", () => {
+    const groups = groupReferralsByMechanic([
+      {
+        id: "1",
+        name: "Ravi Kumar",
+        contactNo: "9876543210",
+        address: "Pune",
+        yearsOfExpertise: 8,
+        expertise: ["motor"],
+        referrerName: "Anita",
+        referrerContact: "9123456780",
+      },
+      {
+        id: "2",
+        name: " ravi  kumar ",
+        contactNo: "+91 98765 43210",
+        address: "Pune",
+        yearsOfExpertise: 8,
+        expertise: ["motor"],
+        referrerName: "Suresh",
+        referrerContact: "9000000000",
+      },
+      {
+        id: "3",
+        name: "Imran",
+        contactNo: "9111111111",
+        address: "Nashik",
+        yearsOfExpertise: 4,
+        expertise: ["petrol"],
+        referrerName: "Meena",
+        referrerContact: "9222222222",
+      },
+    ]);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.name).toBe("Ravi Kumar");
+    expect(groups[0]?.referrers.map((person) => person.referrerName)).toEqual(["Anita", "Suresh"]);
+    expect(groups[1]?.referrers.map((person) => person.referrerName)).toEqual(["Meena"]);
   });
 });

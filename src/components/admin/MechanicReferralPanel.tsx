@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
-import { formatMechanicExpertise, type ReferralRewardState } from "@/lib/mechanic-referral";
+import {
+  formatMechanicExpertise,
+  groupReferralsByMechanic,
+  type ReferralRewardState,
+} from "@/lib/mechanic-referral";
 
 type ReferralRow = {
   id: string;
@@ -26,6 +30,7 @@ export function MechanicReferralPanel() {
   const [rows, setRows] = useState<ReferralRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const groups = useMemo(() => groupReferralsByMechanic(rows), [rows]);
 
   async function load() {
     const res = await fetch("/api/mechanic-referrals");
@@ -72,67 +77,71 @@ export function MechanicReferralPanel() {
       <div>
         <h1 className="text-2xl font-bold text-white">Mechanic referrals</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Customer gets ₹500 off the next labour bill after the mechanic is hired and stays 15 days.
-          Public form: <span className="font-mono text-white">/refer-mechanic</span>
+          Customers who referred the same mechanic are listed together. ₹500 labour off is per
+          customer after hire + 15 days.
         </p>
       </div>
-      {rows.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="text-sm text-slate-400">No mechanic referrals yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-700/50">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-800/80 text-slate-300">
-              <tr>
-                <th className="px-4 py-3 font-medium">Mechanic</th>
-                <th className="px-4 py-3 font-medium">Customer</th>
-                <th className="px-4 py-3 font-medium">Expertise</th>
-                <th className="px-4 py-3 font-medium">Reward</th>
-                <th className="px-4 py-3 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50">
-              {rows.map((row) => (
-                <tr key={row.id} className="text-slate-300">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-white">{row.name}</p>
-                    <p className="text-xs text-slate-400">{row.contactNo}</p>
-                    <p className="text-xs text-slate-500">{row.address}</p>
-                    <p className="text-xs text-slate-500">{row.yearsOfExpertise} years</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-white">{row.referrerName || "—"}</p>
-                    <p className="text-xs text-slate-400">{row.referrerContact || "—"}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    {row.expertiseLabel ?? formatMechanicExpertise(row.expertise)}
-                  </td>
-                  <td className="px-4 py-3 text-white">{row.rewardLabel}</td>
-                  <td className="px-4 py-3">
-                    {row.rewardState === "pending_hire" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        loading={busyId === row.id}
-                        onClick={() => void update(row.id, "hire")}
-                      >
-                        Mark hired
-                      </Button>
-                    ) : null}
-                    {row.rewardState === "due" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        loading={busyId === row.id}
-                        onClick={() => void update(row.id, "reward")}
-                      >
-                        Give ₹500 off
-                      </Button>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-5">
+          {groups.map((group) => (
+            <section key={group.key} className="overflow-hidden rounded-xl border border-slate-700/50">
+              <div className="border-b border-slate-700/50 bg-slate-800/80 px-4 py-3">
+                <p className="font-semibold text-white">{group.name}</p>
+                <p className="text-xs text-slate-400">
+                  {group.contactNo} · {group.address} · {group.yearsOfExpertise} years ·{" "}
+                  {formatMechanicExpertise(group.expertise)}
+                </p>
+                <p className="mt-1 text-sm text-red-300">
+                  {group.referrers.length} {group.referrers.length === 1 ? "person referred" : "persons referred"} this mechanic
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Person who referred</th>
+                      <th className="px-4 py-2 font-medium">Mobile</th>
+                      <th className="px-4 py-2 font-medium">Reward</th>
+                      <th className="px-4 py-2 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {group.referrers.map((row) => (
+                      <tr key={row.id} className="text-slate-300">
+                        <td className="px-4 py-3 text-white">{row.referrerName || "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{row.referrerContact || "—"}</td>
+                        <td className="px-4 py-3">{row.rewardLabel}</td>
+                        <td className="px-4 py-3">
+                          {row.rewardState === "pending_hire" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={busyId === row.id}
+                              onClick={() => void update(row.id, "hire")}
+                            >
+                              Mark hired
+                            </Button>
+                          ) : null}
+                          {row.rewardState === "due" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={busyId === row.id}
+                              onClick={() => void update(row.id, "reward")}
+                            >
+                              Give ₹500 off
+                            </Button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>

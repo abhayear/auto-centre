@@ -76,3 +76,67 @@ export function referralRewardLabel(state: ReferralRewardState): string {
   if (state === "due") return `Give ₹${MECHANIC_REFERRAL_LABOUR_OFF_RUPEES} labour off`;
   return "₹500 labour off given";
 }
+
+export type MechanicReferralPerson = {
+  id: string;
+  name: string;
+  contactNo: string;
+  address: string;
+  yearsOfExpertise: number;
+  expertise: string[];
+  referrerName: string;
+  referrerContact: string;
+};
+
+export function sameMechanicKey(referral: { name: string; contactNo: string }): string {
+  const name = referral.name.trim().toLowerCase().replace(/\s+/g, " ");
+  const digits = referral.contactNo.replace(/\D/g, "");
+  const mobile = digits.length > 10 ? digits.slice(-10) : digits;
+  return `${name}|${mobile}`;
+}
+
+export function groupReferralsByMechanic<T extends MechanicReferralPerson>(referrals: T[]): Array<{
+  key: string;
+  name: string;
+  contactNo: string;
+  address: string;
+  yearsOfExpertise: number;
+  expertise: string[];
+  referrers: T[];
+}> {
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      name: string;
+      contactNo: string;
+      address: string;
+      yearsOfExpertise: number;
+      expertise: string[];
+      referrers: T[];
+    }
+  >();
+
+  for (const row of referrals) {
+    const key = sameMechanicKey(row);
+    const existing = groups.get(key);
+    if (existing) {
+      existing.referrers.push(row);
+      continue;
+    }
+    groups.set(key, {
+      key,
+      name: row.name.trim(),
+      contactNo: row.contactNo.trim(),
+      address: row.address.trim(),
+      yearsOfExpertise: row.yearsOfExpertise,
+      expertise: row.expertise,
+      referrers: [row],
+    });
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    if (b.referrers.length !== a.referrers.length) return b.referrers.length - a.referrers.length;
+    return a.name.localeCompare(b.name);
+  });
+}
