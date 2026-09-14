@@ -22,6 +22,7 @@ export function revalidatePublicSitePages() {
   revalidatePath("/service-schedule");
   revalidatePath("/offers");
   revalidatePath("/mechanic-rating");
+  revalidatePath("/refer-mechanic");
   revalidatePath("/vehicles");
   revalidatePath("/services");
   revalidatePath("/book-service");

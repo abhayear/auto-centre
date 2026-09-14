@@ -528,3 +528,15 @@ model MechanicBonusRating {
   @@index([createdAt])
   @@index([billNo])
 }
+
+model MechanicReferral {
+  id               String   @id @default(cuid())
+  name             String
+  contactNo        String
+  address          String
+  yearsOfExpertise Int
+  expertise        String[]
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
+}

@@ -20,6 +20,7 @@ const mainPages = [
   { href: "/test-drive", label: "Test Ride" },
   { href: "/service-schedule", label: "Service Schedule" },
   { href: "/mechanic-rating", label: "Rate your mechanic" },
+  { href: "/refer-mechanic", label: "Refer a mechanic" },
   { href: "/about", label: "About" },
   { href: "/policies", label: "Policies" },
   { href: "/contact", label: "Contact Us" },

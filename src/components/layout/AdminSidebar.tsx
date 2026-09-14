@@ -29,6 +29,7 @@ import {
   Star,
   Store,
   UserCog,
+  UserPlus,
   Wrench,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -82,6 +83,7 @@ const navItems: NavItem[] = [
   { href: "/admin/training", label: "Training", icon: GraduationCap, show: canAccessTraining },
   { href: "/admin/work", label: "Work", icon: ListChecks, show: (role) => canAssignWork(role) || role === "junior_developer" },
   { href: "/admin/mechanic-bonus", label: "Mechanic bonus", icon: Star, show: canUseOpsPortal },
+  { href: "/admin/mechanic-referrals", label: "Mechanic referrals", icon: UserPlus, show: canUseOpsPortal },
   { href: "/admin/releases", label: "Releases", icon: GitBranch, show: canViewReleases },
   { href: "/admin/vehicles", label: "Vehicles", icon: Car, show: canUseOpsPortal },
   { href: "/admin/offers", label: "Offers & pricing", icon: Megaphone, show: canUseOpsPortal },

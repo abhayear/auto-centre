@@ -19,6 +19,7 @@ import {
   IMS_STATUSES,
   ITC_AVAILED_EXTENTS,
 } from "@/lib/credit-note-itc";
+import { MECHANIC_EXPERTISE } from "@/lib/mechanic-referral";
 
 export function formatZodErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
@@ -650,6 +651,14 @@ export const mechanicBonusRatingSchema = z.object({
   mechanic1Rating: mechanicRatingSchema,
   mechanic2Rating: mechanicRatingSchema,
   mechanic3Rating: mechanicRatingSchema,
+});
+
+export const mechanicReferralSchema = z.object({
+  name: z.string().trim().min(1, "Enter the mechanic's name").max(80),
+  contactNo: z.string().trim().min(10, "Enter a valid contact number").max(20),
+  address: z.string().trim().min(5, "Enter the address").max(300),
+  yearsOfExpertise: z.coerce.number().int().min(0, "Enter years of expertise").max(60),
+  expertise: z.array(z.enum(MECHANIC_EXPERTISE)).min(1, "Select at least one expertise"),
 });
 
 export type VehicleInput = z.infer<typeof vehicleSchema>;
