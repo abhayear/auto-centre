@@ -4,7 +4,13 @@ import { FormEvent, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { rosterFromFormData, rosterIsReady } from "@/lib/mechanic-bonus";
+import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
+import { mechanicMembers, rosterFromFormData, rosterIsReady } from "@/lib/mechanic-bonus";
+
+type MechanicRow = {
+  name: string;
+  photoUrl: string;
+};
 
 type RatingRow = {
   id: string;
@@ -20,8 +26,12 @@ type AverageRow = {
   average: number;
 };
 
+function emptyRow(): MechanicRow {
+  return { name: "", photoUrl: "" };
+}
+
 export function MechanicBonusPanel() {
-  const [names, setNames] = useState<string[]>([""]);
+  const [mechanics, setMechanics] = useState<MechanicRow[]>([emptyRow()]);
   const [ratings, setRatings] = useState<RatingRow[]>([]);
   const [averages, setAverages] = useState<AverageRow[]>([]);
   const [saving, setSaving] = useState(false);
@@ -33,8 +43,15 @@ export function MechanicBonusPanel() {
     ]);
     const rosterData = await rosterRes.json();
     const ratingsData = await ratingsRes.json();
-    const loadedNames = Array.isArray(rosterData.roster?.names) ? rosterData.roster.names : [];
-    setNames(loadedNames.length > 0 ? loadedNames : [""]);
+    const loaded = mechanicMembers({
+      names: Array.isArray(rosterData.roster?.names) ? rosterData.roster.names : [],
+      photoUrls: Array.isArray(rosterData.roster?.photoUrls)
+        ? rosterData.roster.photoUrls
+        : Array.isArray(rosterData.roster?.mechanics)
+          ? rosterData.roster.mechanics.map((member: { photoUrl?: string | null }) => member.photoUrl ?? "")
+          : [],
+    }).map((member) => ({ name: member.name, photoUrl: member.photoUrl ?? "" }));
+    setMechanics(loaded.length > 0 ? loaded : [emptyRow()]);
     setRatings(Array.isArray(ratingsData.ratings) ? ratingsData.ratings : []);
     setAverages(Array.isArray(ratingsData.averages) ? ratingsData.averages : []);
   }
@@ -46,7 +63,11 @@ export function MechanicBonusPanel() {
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = rosterFromFormData(new FormData(event.currentTarget));
-    setNames(next.names.length > 0 ? next.names : [""]);
+    setMechanics(
+      next.names.length > 0
+        ? next.names.map((name, index) => ({ name, photoUrl: next.photoUrls?.[index] ?? "" }))
+        : [emptyRow()],
+    );
     if (!rosterIsReady(next)) {
       toast.error("Add at least one mechanic name");
       return;
@@ -63,7 +84,7 @@ export function MechanicBonusPanel() {
         toast.error(result.error ?? "Could not save mechanic names");
         return;
       }
-      toast.success("Mechanic names saved");
+      toast.success("Mechanic names and photos saved");
       await load();
     } catch {
       toast.error("Could not save mechanic names. Try again.");
@@ -77,8 +98,8 @@ export function MechanicBonusPanel() {
       <div>
         <h1 className="text-2xl font-bold text-white">Mechanic bonus ratings</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Add as many working mechanics as you need. The customer picks only one mechanic and gives
-          a 1–5 score for bonus.
+          Add as many working mechanics as you need. Upload a passport-size photo so customers can
+          recognise the person they choose.
         </p>
         <p className="mt-2 text-sm text-red-300">
           Customer form: <span className="font-mono text-white">/mechanic-rating</span>
@@ -86,35 +107,55 @@ export function MechanicBonusPanel() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-slate-700/50 p-5">
-        <h2 className="text-lg font-semibold text-white">Mechanic names</h2>
-        <div className="space-y-3">
-          {names.map((name, index) => (
-            <div key={index} className="flex items-end gap-2">
-              <div className="flex-1">
+        <h2 className="text-lg font-semibold text-white">Mechanic names and photos</h2>
+        <div className="space-y-4">
+          {mechanics.map((mechanic, index) => (
+            <div
+              key={index}
+              className="flex flex-col gap-4 rounded-lg border border-slate-700/60 p-4 sm:flex-row sm:items-start"
+            >
+              <div className="w-full shrink-0 sm:w-28">
+                <SingleImageUploader
+                  value={mechanic.photoUrl || null}
+                  onChange={(url) =>
+                    setMechanics((current) =>
+                      current.map((item, i) => (i === index ? { ...item, photoUrl: url ?? "" } : item)),
+                    )
+                  }
+                  category="mechanics"
+                  label="Passport photo"
+                  emptyHint="Face photo"
+                  previewAspect="aspect-[3/4]"
+                />
+                <input type="hidden" name="mechanicPhoto" value={mechanic.photoUrl} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-3">
                 <Input
                   id={`mechanicName-${index}`}
                   name="mechanicName"
                   label={`Mechanic ${index + 1}`}
-                  value={name}
+                  value={mechanic.name}
                   onChange={(event) =>
-                    setNames((current) =>
-                      current.map((item, i) => (i === index ? event.target.value : item)),
+                    setMechanics((current) =>
+                      current.map((item, i) =>
+                        i === index ? { ...item, name: event.target.value } : item,
+                      ),
                     )
                   }
                   placeholder="e.g. Ravi"
                   autoComplete="off"
                 />
+                {mechanics.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMechanics((current) => current.filter((_, i) => i !== index))}
+                  >
+                    Remove
+                  </Button>
+                ) : null}
               </div>
-              {names.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setNames((current) => current.filter((_, i) => i !== index))}
-                >
-                  Remove
-                </Button>
-              ) : null}
             </div>
           ))}
         </div>
@@ -122,13 +163,13 @@ export function MechanicBonusPanel() {
           <Button
             type="button"
             variant="outline"
-            disabled={names.length >= 30}
-            onClick={() => setNames((current) => [...current, ""])}
+            disabled={mechanics.length >= 30}
+            onClick={() => setMechanics((current) => [...current, emptyRow()])}
           >
             Add mechanic
           </Button>
           <Button type="submit" loading={saving}>
-            Save names
+            Save mechanics
           </Button>
         </div>
       </form>

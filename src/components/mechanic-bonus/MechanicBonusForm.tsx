@@ -1,13 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { MECHANIC_BONUS_SCALE } from "@/lib/mechanic-bonus";
+import { MECHANIC_BONUS_SCALE, type MechanicRosterMember } from "@/lib/mechanic-bonus";
 
 export function MechanicBonusForm() {
-  const [names, setNames] = useState<string[]>([]);
+  const [mechanics, setMechanics] = useState<MechanicRosterMember[]>([]);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [billNo, setBillNo] = useState("");
@@ -19,9 +20,17 @@ export function MechanicBonusForm() {
     fetch("/api/mechanic-bonus")
       .then((res) => res.json())
       .then((data) => {
-        const nextNames = Array.isArray(data.roster?.names) ? data.roster.names : [];
-        setNames(nextNames);
-        setReady(Boolean(data.ready) && nextNames.length > 0);
+        const nextMechanics: MechanicRosterMember[] = Array.isArray(data.roster?.mechanics)
+          ? data.roster.mechanics.map((member: { name?: string; photoUrl?: string | null }) => ({
+              name: String(member.name ?? "").trim(),
+              photoUrl: member.photoUrl?.trim() ? member.photoUrl : null,
+            }))
+          : Array.isArray(data.roster?.names)
+            ? data.roster.names.map((name: string) => ({ name, photoUrl: null }))
+            : [];
+        const named = nextMechanics.filter((member) => member.name.length > 0);
+        setMechanics(named);
+        setReady(Boolean(data.ready) && named.length > 0);
         setLoaded(true);
       })
       .catch(() => {
@@ -96,20 +105,45 @@ export function MechanicBonusForm() {
       <p className="-mt-3 text-xs text-slate-500">Each bill number can be rated only once.</p>
       <fieldset className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">
         <legend className="px-1 text-sm font-medium text-white">Choose one mechanic</legend>
-        <div className="mt-2 space-y-2">
-          {names.map((name) => (
-            <label key={name} className="flex items-center gap-2 text-sm text-slate-300">
-              <input
-                type="radio"
-                name="mechanicName"
-                value={name}
-                checked={mechanicName === name}
-                onChange={() => setMechanicName(name)}
-                className="border-slate-600 bg-slate-800 text-red-600 focus:ring-red-500"
-              />
-              {name}
-            </label>
-          ))}
+        <div className="mt-3 space-y-3">
+          {mechanics.map((member) => {
+            const photo = member.photoUrl;
+            const localPhoto = photo?.startsWith("/uploads/") ?? false;
+            return (
+              <label
+                key={member.name}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-2 text-sm ${
+                  mechanicName === member.name
+                    ? "border-red-500 bg-red-500/10 text-white"
+                    : "border-slate-700 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="mechanicName"
+                  value={member.name}
+                  checked={mechanicName === member.name}
+                  onChange={() => setMechanicName(member.name)}
+                  className="border-slate-600 bg-slate-800 text-red-600 focus:ring-red-500"
+                />
+                {photo ? (
+                  <Image
+                    src={photo}
+                    alt={member.name}
+                    width={72}
+                    height={96}
+                    className="h-24 w-[72px] rounded-md object-cover"
+                    unoptimized={localPhoto}
+                  />
+                ) : (
+                  <span className="flex h-24 w-[72px] items-center justify-center rounded-md border border-dashed border-slate-600 bg-slate-800 text-center text-[10px] text-slate-500">
+                    No photo
+                  </span>
+                )}
+                <span className="font-medium">{member.name}</span>
+              </label>
+            );
+          })}
         </div>
       </fieldset>
       <fieldset className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">

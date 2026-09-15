@@ -1,0 +1,1 @@
+ALTER TABLE "MechanicBonusRoster" ADD COLUMN "photoUrls" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

@@ -508,6 +508,7 @@ model ReplacementStockItem {
 model MechanicBonusRoster {
   id             String   @id @default("default")
   names          String[] @default([])
+  photoUrls      String[] @default([])
   updatedByEmail String?
   updatedAt      DateTime @updatedAt
 }

@@ -9,6 +9,7 @@ export const UPLOAD_CATEGORIES = [
   "services",
   "customers",
   "training",
+  "mechanics",
 ] as const;
 export type UploadCategory = (typeof UPLOAD_CATEGORIES)[number];
 

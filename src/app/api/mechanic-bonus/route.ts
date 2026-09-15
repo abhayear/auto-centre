@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { canUseOpsPortal, isStaffRole } from "@/lib/admin-roles";
 import { requireOpsPortal, requireStaffSession } from "@/lib/auth";
-import { bonusAverage, mechanicNames, rosterIsReady } from "@/lib/mechanic-bonus";
+import { bonusAverage, mechanicMembers, rosterIsReady } from "@/lib/mechanic-bonus";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, mechanicBonusRosterSchema } from "@/lib/validators";
 
@@ -12,6 +12,7 @@ async function getRoster() {
     (await prisma.mechanicBonusRoster.findUnique({ where: { id: "default" } })) ?? {
       id: "default",
       names: [] as string[],
+      photoUrls: [] as string[],
       updatedByEmail: null,
       updatedAt: null,
     }
@@ -20,12 +21,13 @@ async function getRoster() {
 
 async function getHandler() {
   const roster = await getRoster();
-  const names = mechanicNames(roster);
+  const mechanics = mechanicMembers(roster);
+  const names = mechanics.map((member) => member.name);
   const session = await requireStaffSession();
   const role = session?.user?.role;
-  const publicRoster = { names };
+  const publicRoster = { names, mechanics };
   return NextResponse.json({
-    roster: role && isStaffRole(role) && canUseOpsPortal(role) ? { ...roster, names } : publicRoster,
+    roster: role && isStaffRole(role) && canUseOpsPortal(role) ? { ...roster, names, mechanics } : publicRoster,
     ready: rosterIsReady({ names }),
   });
 }
@@ -38,16 +40,20 @@ async function putHandler(request: NextRequest) {
 
   try {
     const data = mechanicBonusRosterSchema.parse(await request.json());
-    const names = mechanicNames(data);
+    const members = mechanicMembers(data);
+    const names = members.map((member) => member.name);
+    const photoUrls = members.map((member) => member.photoUrl ?? "");
     const roster = await prisma.mechanicBonusRoster.upsert({
       where: { id: "default" },
       create: {
         id: "default",
         names,
+        photoUrls,
         updatedByEmail: session.user.email ?? "unknown",
       },
       update: {
         names,
+        photoUrls,
         updatedByEmail: session.user.email ?? "unknown",
       },
     });

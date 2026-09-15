@@ -641,8 +641,15 @@ export const patchWorkItemSchema = z
 const mechanicNameSchema = z.string().trim().min(1, "Enter this mechanic's name").max(80);
 const mechanicRatingSchema = z.coerce.number().int().min(1).max(5);
 
+const mechanicPhotoUrlSchema = z
+  .string()
+  .trim()
+  .transform((value) => (value === "" ? null : value))
+  .pipe(optionalUploadedImageUrlSchema);
+
 export const mechanicBonusRosterSchema = z.object({
   names: z.array(mechanicNameSchema).min(1, "Add at least one mechanic").max(30),
+  photoUrls: z.array(mechanicPhotoUrlSchema).max(30).default([]),
 });
 
 export const mechanicBonusRatingSchema = z.object({

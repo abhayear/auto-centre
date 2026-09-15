@@ -33,6 +33,10 @@ describe("isUploadCategory", () => {
   it("accepts training uploads", () => {
     expect(isUploadCategory("training")).toBe(true);
   });
+
+  it("accepts mechanic passport photos", () => {
+    expect(isUploadCategory("mechanics")).toBe(true);
+  });
 });
 
 describe("isAllowedVehicleImage", () => {

@@ -4,6 +4,7 @@ import {
   bonusAverage,
   isRosterMechanic,
   isUniqueConstraintError,
+  mechanicMembers,
   normalizeBillNo,
   rosterFromFormData,
   rosterIsReady,
@@ -25,7 +26,19 @@ describe("mechanicBonusRosterSchema", () => {
         names: ["Ravi", "Imran", "Suresh", "P"],
         googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLExample/viewform",
       }),
-    ).toEqual({ names: ["Ravi", "Imran", "Suresh", "P"] });
+    ).toEqual({ names: ["Ravi", "Imran", "Suresh", "P"], photoUrls: [] });
+  });
+
+  it("saves a passport photo next to each mechanic name", () => {
+    expect(
+      mechanicBonusRosterSchema.parse({
+        names: ["Ravi", "Imran"],
+        photoUrls: ["/uploads/mechanics/ravi.jpg", ""],
+      }),
+    ).toEqual({
+      names: ["Ravi", "Imran"],
+      photoUrls: ["/uploads/mechanics/ravi.jpg", null],
+    });
   });
 
   it("rejects an empty roster", () => {
@@ -98,6 +111,33 @@ describe("rosterFromFormData", () => {
     form.append("mechanicName", "Suresh");
     expect(rosterFromFormData(form)).toEqual({
       names: ["Ravi", "Imran", "Suresh"],
+      photoUrls: [null, null, null],
     });
+  });
+
+  it("keeps the passport photo beside the matching mechanic name", () => {
+    const form = new FormData();
+    form.append("mechanicName", "Ravi");
+    form.append("mechanicPhoto", "/uploads/mechanics/ravi.jpg");
+    form.append("mechanicName", "Imran");
+    form.append("mechanicPhoto", "");
+    expect(rosterFromFormData(form)).toEqual({
+      names: ["Ravi", "Imran"],
+      photoUrls: ["/uploads/mechanics/ravi.jpg", null],
+    });
+  });
+});
+
+describe("mechanicMembers", () => {
+  it("pairs each name with its passport photo for the customer form", () => {
+    expect(
+      mechanicMembers({
+        names: ["Ravi", "Imran"],
+        photoUrls: ["/uploads/mechanics/ravi.jpg", null],
+      }),
+    ).toEqual([
+      { name: "Ravi", photoUrl: "/uploads/mechanics/ravi.jpg" },
+      { name: "Imran", photoUrl: null },
+    ]);
   });
 });
