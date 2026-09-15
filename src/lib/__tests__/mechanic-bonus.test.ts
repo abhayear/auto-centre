@@ -1,80 +1,77 @@
 import { describe, expect, it } from "vitest";
-import { mechanicBonusRosterSchema } from "../validators";
-import { bonusAverage, rosterFromFormData, rosterIsReady } from "../mechanic-bonus";
-
-const roster = {
-  mechanic1Name: "Ravi",
-  mechanic2Name: "Imran",
-  mechanic3Name: "Suresh",
-};
+import { mechanicBonusRatingSchema, mechanicBonusRosterSchema } from "../validators";
+import {
+  bonusAverage,
+  isRosterMechanic,
+  rosterFromFormData,
+  rosterIsReady,
+} from "../mechanic-bonus";
 
 describe("rosterIsReady", () => {
-  it("needs three mechanic names from the manager", () => {
-    expect(rosterIsReady(roster)).toBe(true);
-    expect(rosterIsReady({ ...roster, mechanic3Name: "" })).toBe(false);
-  });
-
-  it("accepts one-letter names", () => {
-    expect(rosterIsReady({ mechanic1Name: "P", mechanic2Name: "K", mechanic3Name: "S" })).toBe(true);
+  it("needs at least one mechanic name from the manager", () => {
+    expect(rosterIsReady({ names: ["Ravi", "Imran"] })).toBe(true);
+    expect(rosterIsReady({ names: ["P"] })).toBe(true);
+    expect(rosterIsReady({ names: [] })).toBe(false);
+    expect(rosterIsReady({ names: ["", "  "] })).toBe(false);
   });
 });
 
 describe("mechanicBonusRosterSchema", () => {
-  it("keeps only the three mechanic names for the website roster", () => {
-    const parsed = mechanicBonusRosterSchema.parse({
-      ...roster,
-      googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLExample/viewform",
-      entryBillNo: "entry.123",
-    });
-    expect(parsed).toEqual(roster);
-    expect(parsed).not.toHaveProperty("googleFormUrl");
-    expect(parsed).not.toHaveProperty("entryBillNo");
-  });
-
-  it("saves one-letter mechanic names", () => {
+  it("saves any number of mechanic names", () => {
     expect(
       mechanicBonusRosterSchema.parse({
-        mechanic1Name: "P",
-        mechanic2Name: "K",
-        mechanic3Name: "S",
+        names: ["Ravi", "Imran", "Suresh", "P"],
+        googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLExample/viewform",
       }),
-    ).toEqual({
-      mechanic1Name: "P",
-      mechanic2Name: "K",
-      mechanic3Name: "S",
-    });
+    ).toEqual({ names: ["Ravi", "Imran", "Suresh", "P"] });
   });
 
-  it("tells the manager to enter a name when a field is blank", () => {
-    const result = mechanicBonusRosterSchema.safeParse({
-      mechanic1Name: "Ravi",
-      mechanic2Name: "Imran",
-      mechanic3Name: "  ",
-    });
+  it("rejects an empty roster", () => {
+    const result = mechanicBonusRosterSchema.safeParse({ names: [] });
     expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.error.issues[0]?.path).toEqual(["mechanic3Name"]);
-    expect(result.error.issues[0]?.message).toBe("Enter this mechanic's name");
+  });
+});
+
+describe("mechanicBonusRatingSchema", () => {
+  it("accepts a rating for only one mechanic", () => {
+    expect(
+      mechanicBonusRatingSchema.parse({
+        billNo: "AG-1042",
+        mechanicName: "Imran",
+        rating: "5",
+      }),
+    ).toEqual({
+      billNo: "AG-1042",
+      mechanicName: "Imran",
+      rating: 5,
+    });
+  });
+});
+
+describe("isRosterMechanic", () => {
+  it("only allows rating a mechanic the manager named", () => {
+    expect(isRosterMechanic({ names: ["Ravi", "Imran"] }, "Imran")).toBe(true);
+    expect(isRosterMechanic({ names: ["Ravi", "Imran"] }, "Suresh")).toBe(false);
   });
 });
 
 describe("bonusAverage", () => {
-  it("averages the three scores for bonus", () => {
+  it("averages scores for one mechanic's bonus", () => {
     expect(bonusAverage([5, 4, 3])).toBe(4);
     expect(bonusAverage([5, 5, 4])).toBe(4.7);
+    expect(bonusAverage([])).toBe(0);
   });
 });
 
 describe("rosterFromFormData", () => {
-  it("reads the three mechanic names from the save form", () => {
+  it("reads every mechanic name the manager added", () => {
     const form = new FormData();
-    form.set("mechanic1Name", " Ravi ");
-    form.set("mechanic2Name", "Imran");
-    form.set("mechanic3Name", "Suresh");
+    form.append("mechanicName", " Ravi ");
+    form.append("mechanicName", "Imran");
+    form.append("mechanicName", "");
+    form.append("mechanicName", "Suresh");
     expect(rosterFromFormData(form)).toEqual({
-      mechanic1Name: "Ravi",
-      mechanic2Name: "Imran",
-      mechanic3Name: "Suresh",
+      names: ["Ravi", "Imran", "Suresh"],
     });
   });
 });

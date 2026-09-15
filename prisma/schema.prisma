@@ -507,26 +507,21 @@ model ReplacementStockItem {
 
 model MechanicBonusRoster {
   id             String   @id @default("default")
-  mechanic1Name  String   @default("")
-  mechanic2Name  String   @default("")
-  mechanic3Name  String   @default("")
+  names          String[] @default([])
   updatedByEmail String?
   updatedAt      DateTime @updatedAt
 }
 
 model MechanicBonusRating {
-  id              String   @id @default(cuid())
-  billNo          String
-  mechanic1Name   String
-  mechanic1Rating Int
-  mechanic2Name   String
-  mechanic2Rating Int
-  mechanic3Name   String
-  mechanic3Rating Int
-  createdAt       DateTime @default(now())
+  id           String   @id @default(cuid())
+  billNo       String
+  mechanicName String
+  rating       Int
+  createdAt    DateTime @default(now())
 
   @@index([createdAt])
   @@index([billNo])
+  @@index([mechanicName])
 }
 
 model MechanicReferral {

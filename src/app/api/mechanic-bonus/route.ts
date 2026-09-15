@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { canUseOpsPortal, isStaffRole } from "@/lib/admin-roles";
 import { requireOpsPortal, requireStaffSession } from "@/lib/auth";
-import { bonusAverage } from "@/lib/mechanic-bonus";
+import { bonusAverage, mechanicNames, rosterIsReady } from "@/lib/mechanic-bonus";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, mechanicBonusRosterSchema } from "@/lib/validators";
 
@@ -11,9 +11,7 @@ async function getRoster() {
   return (
     (await prisma.mechanicBonusRoster.findUnique({ where: { id: "default" } })) ?? {
       id: "default",
-      mechanic1Name: "",
-      mechanic2Name: "",
-      mechanic3Name: "",
+      names: [] as string[],
       updatedByEmail: null,
       updatedAt: null,
     }
@@ -22,16 +20,13 @@ async function getRoster() {
 
 async function getHandler() {
   const roster = await getRoster();
+  const names = mechanicNames(roster);
   const session = await requireStaffSession();
   const role = session?.user?.role;
-  const publicRoster = {
-    mechanic1Name: roster.mechanic1Name,
-    mechanic2Name: roster.mechanic2Name,
-    mechanic3Name: roster.mechanic3Name,
-  };
+  const publicRoster = { names };
   return NextResponse.json({
-    roster: role && isStaffRole(role) && canUseOpsPortal(role) ? roster : publicRoster,
-    ready: Boolean(roster.mechanic1Name && roster.mechanic2Name && roster.mechanic3Name),
+    roster: role && isStaffRole(role) && canUseOpsPortal(role) ? { ...roster, names } : publicRoster,
+    ready: rosterIsReady({ names }),
   });
 }
 
@@ -43,19 +38,20 @@ async function putHandler(request: NextRequest) {
 
   try {
     const data = mechanicBonusRosterSchema.parse(await request.json());
+    const names = mechanicNames(data);
     const roster = await prisma.mechanicBonusRoster.upsert({
       where: { id: "default" },
       create: {
         id: "default",
-        ...data,
+        names,
         updatedByEmail: session.user.email ?? "unknown",
       },
       update: {
-        ...data,
+        names,
         updatedByEmail: session.user.email ?? "unknown",
       },
     });
-    return NextResponse.json({ roster, ready: true });
+    return NextResponse.json({ roster, ready: rosterIsReady(roster) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -77,12 +73,20 @@ async function ratingsHandler() {
     orderBy: { createdAt: "desc" },
     take: 200,
   });
-  return NextResponse.json(
-    records.map((row) => ({
-      ...row,
-      bonusAverage: bonusAverage([row.mechanic1Rating, row.mechanic2Rating, row.mechanic3Rating]),
+  const byMechanic = new Map<string, number[]>();
+  for (const row of records) {
+    const scores = byMechanic.get(row.mechanicName) ?? [];
+    scores.push(row.rating);
+    byMechanic.set(row.mechanicName, scores);
+  }
+  return NextResponse.json({
+    ratings: records,
+    averages: [...byMechanic.entries()].map(([mechanicName, scores]) => ({
+      mechanicName,
+      count: scores.length,
+      average: bonusAverage(scores),
     })),
-  );
+  });
 }
 
 export const GET = observeRoute(async (request: NextRequest) => {

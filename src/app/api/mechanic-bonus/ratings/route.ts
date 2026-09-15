@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { rosterIsReady } from "@/lib/mechanic-bonus";
+import { isRosterMechanic, rosterIsReady } from "@/lib/mechanic-bonus";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, mechanicBonusRatingSchema } from "@/lib/validators";
 
@@ -11,20 +11,22 @@ async function postHandler(request: NextRequest) {
     const roster = await prisma.mechanicBonusRoster.findUnique({ where: { id: "default" } });
     if (!roster || !rosterIsReady(roster)) {
       return NextResponse.json(
-        { error: "Manager has not named the three mechanics yet." },
+        { error: "Manager has not named the mechanics yet." },
         { status: 409 },
+      );
+    }
+    if (!isRosterMechanic(roster, data.mechanicName)) {
+      return NextResponse.json(
+        { error: "Choose one mechanic from the list." },
+        { status: 400 },
       );
     }
 
     const record = await prisma.mechanicBonusRating.create({
       data: {
         billNo: data.billNo,
-        mechanic1Name: roster.mechanic1Name,
-        mechanic1Rating: data.mechanic1Rating,
-        mechanic2Name: roster.mechanic2Name,
-        mechanic2Rating: data.mechanic2Rating,
-        mechanic3Name: roster.mechanic3Name,
-        mechanic3Rating: data.mechanic3Rating,
+        mechanicName: data.mechanicName,
+        rating: data.rating,
       },
     });
 

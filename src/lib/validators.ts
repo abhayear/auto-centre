@@ -641,16 +641,13 @@ const mechanicNameSchema = z.string().trim().min(1, "Enter this mechanic's name"
 const mechanicRatingSchema = z.coerce.number().int().min(1).max(5);
 
 export const mechanicBonusRosterSchema = z.object({
-  mechanic1Name: mechanicNameSchema,
-  mechanic2Name: mechanicNameSchema,
-  mechanic3Name: mechanicNameSchema,
+  names: z.array(mechanicNameSchema).min(1, "Add at least one mechanic").max(30),
 });
 
 export const mechanicBonusRatingSchema = z.object({
   billNo: z.string().trim().min(2).max(40),
-  mechanic1Rating: mechanicRatingSchema,
-  mechanic2Rating: mechanicRatingSchema,
-  mechanic3Rating: mechanicRatingSchema,
+  mechanicName: mechanicNameSchema,
+  rating: mechanicRatingSchema,
 });
 
 export const mechanicReferralSchema = z.object({
