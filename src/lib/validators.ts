@@ -645,7 +645,7 @@ const mechanicPhotoUrlSchema = z
   .string()
   .trim()
   .transform((value) => (value === "" ? null : value))
-  .pipe(optionalUploadedImageUrlSchema);
+  .pipe(uploadedImageUrlSchema.nullable());
 
 export const mechanicBonusRosterSchema = z.object({
   names: z.array(mechanicNameSchema).min(1, "Add at least one mechanic").max(30),
