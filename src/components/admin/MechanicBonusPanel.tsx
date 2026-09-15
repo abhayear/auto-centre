@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SingleImageUploader } from "@/components/forms/SingleImageUploader";
-import { mechanicMembers, rosterFromFormData, rosterIsReady } from "@/lib/mechanic-bonus";
+import { mechanicMembers, rosterFromFormData, rosterIsReady, formatRatingSubmittedAt } from "@/lib/mechanic-bonus";
 
 type MechanicRow = {
   name: string;
@@ -215,6 +215,7 @@ export function MechanicBonusPanel() {
                   <th className="px-4 py-3 font-medium">Bill</th>
                   <th className="px-4 py-3 font-medium">Mechanic</th>
                   <th className="px-4 py-3 font-medium">Rating</th>
+                  <th className="px-4 py-3 font-medium">Submitted</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
@@ -223,6 +224,9 @@ export function MechanicBonusPanel() {
                     <td className="px-4 py-3 text-white">{row.billNo}</td>
                     <td className="px-4 py-3">{row.mechanicName}</td>
                     <td className="px-4 py-3 text-white">{row.rating}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {row.createdAt ? formatRatingSubmittedAt(row.createdAt) : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mechanicBonusRatingSchema, mechanicBonusRosterSchema } from "../validators";
 import {
   bonusAverage,
+  formatRatingSubmittedAt,
   isRosterMechanic,
   isUniqueConstraintError,
   mechanicMembers,
@@ -114,6 +115,16 @@ describe("bonusAverage", () => {
     expect(bonusAverage([5, 4, 3])).toBe(4);
     expect(bonusAverage([5, 5, 4])).toBe(4.7);
     expect(bonusAverage([])).toBe(0);
+  });
+});
+
+describe("formatRatingSubmittedAt", () => {
+  it("shows the date and time the customer submitted the review", () => {
+    const formatted = formatRatingSubmittedAt("2026-09-15T05:47:00.000Z");
+    expect(formatted).toMatch(/15/);
+    expect(formatted).toMatch(/Sep/i);
+    expect(formatted).toMatch(/2026/);
+    expect(formatted).toMatch(/11:17/);
   });
 });
 

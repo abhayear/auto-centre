@@ -43,7 +43,10 @@ async function postHandler(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ id: record.id }, { status: 201 });
+    return NextResponse.json(
+      { id: record.id, createdAt: record.createdAt.toISOString() },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

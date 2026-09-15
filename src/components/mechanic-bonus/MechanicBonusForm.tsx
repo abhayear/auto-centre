@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { MECHANIC_BONUS_SCALE, type MechanicRosterMember } from "@/lib/mechanic-bonus";
+import { MECHANIC_BONUS_SCALE, formatRatingSubmittedAt, type MechanicRosterMember } from "@/lib/mechanic-bonus";
 
 export function MechanicBonusForm() {
   const [mechanics, setMechanics] = useState<MechanicRosterMember[]>([]);
@@ -69,7 +69,11 @@ export function MechanicBonusForm() {
         toast.error(result.error ?? "Could not save rating");
         return;
       }
-      toast.success("Thank you. Rating saved for bonus.");
+      toast.success(
+        result.createdAt
+          ? `Thank you. Rating saved on ${formatRatingSubmittedAt(result.createdAt)}.`
+          : "Thank you. Rating saved for bonus.",
+      );
       setBillNo("");
       setMechanicName("");
       setScore(0);

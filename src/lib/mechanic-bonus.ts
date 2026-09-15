@@ -80,3 +80,18 @@ export function bonusAverage(ratings: number[]): number {
   if (ratings.length === 0) return 0;
   return Math.round((ratings.reduce((sum, score) => sum + score, 0) / ratings.length) * 10) / 10;
 }
+
+export function formatRatingSubmittedAt(date: Date | string): string {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }).format(parsed);
+}
