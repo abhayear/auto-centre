@@ -81,7 +81,10 @@ export function MechanicBonusPanel() {
       });
       const result = await res.json();
       if (!res.ok) {
-        toast.error(result.error ?? "Could not save mechanic names");
+        const detailMessage = Array.isArray(result.details)
+          ? result.details.map((detail: { message: string }) => detail.message).join(". ")
+          : null;
+        toast.error(detailMessage || result.error || "Could not save mechanic names");
         return;
       }
       toast.success("Mechanic names and photos saved");

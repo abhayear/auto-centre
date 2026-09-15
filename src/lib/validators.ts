@@ -642,10 +642,8 @@ const mechanicNameSchema = z.string().trim().min(1, "Enter this mechanic's name"
 const mechanicRatingSchema = z.coerce.number().int().min(1).max(5);
 
 const mechanicPhotoUrlSchema = z
-  .string()
-  .trim()
-  .transform((value) => (value === "" ? null : value))
-  .pipe(uploadedImageUrlSchema.nullable());
+  .union([z.null(), z.literal(""), uploadedImageUrlSchema])
+  .transform((value) => (value === "" ? null : value));
 
 export const mechanicBonusRosterSchema = z.object({
   names: z.array(mechanicNameSchema).min(1, "Add at least one mechanic").max(30),

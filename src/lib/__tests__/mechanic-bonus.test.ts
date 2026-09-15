@@ -41,6 +41,21 @@ describe("mechanicBonusRosterSchema", () => {
     });
   });
 
+  it("allows a mechanic without a photo when others have one", () => {
+    expect(
+      mechanicBonusRosterSchema.parse({
+        names: ["Ravi", "Imran"],
+        photoUrls: [
+          "https://store.public.blob.vercel-storage.com/mechanics/ravi.jpg",
+          null,
+        ],
+      }),
+    ).toEqual({
+      names: ["Ravi", "Imran"],
+      photoUrls: ["https://store.public.blob.vercel-storage.com/mechanics/ravi.jpg", null],
+    });
+  });
+
   it("rejects an empty roster", () => {
     const result = mechanicBonusRosterSchema.safeParse({ names: [] });
     expect(result.success).toBe(false);
