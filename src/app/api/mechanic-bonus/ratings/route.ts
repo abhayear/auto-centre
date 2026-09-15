@@ -1,7 +1,12 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { isRosterMechanic, rosterIsReady } from "@/lib/mechanic-bonus";
+import {
+  DUPLICATE_BILL_RATING_ERROR,
+  isRosterMechanic,
+  isUniqueConstraintError,
+  rosterIsReady,
+} from "@/lib/mechanic-bonus";
 import { prisma } from "@/lib/prisma";
 import { formatZodErrors, mechanicBonusRatingSchema } from "@/lib/validators";
 
@@ -22,6 +27,14 @@ async function postHandler(request: NextRequest) {
       );
     }
 
+    const alreadyRated = await prisma.mechanicBonusRating.findUnique({
+      where: { billNo: data.billNo },
+      select: { id: true },
+    });
+    if (alreadyRated) {
+      return NextResponse.json({ error: DUPLICATE_BILL_RATING_ERROR }, { status: 409 });
+    }
+
     const record = await prisma.mechanicBonusRating.create({
       data: {
         billNo: data.billNo,
@@ -37,6 +50,9 @@ async function postHandler(request: NextRequest) {
         { error: "Validation failed", details: formatZodErrors(error) },
         { status: 400 },
       );
+    }
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json({ error: DUPLICATE_BILL_RATING_ERROR }, { status: 409 });
     }
     return NextResponse.json({ error: "Failed to save rating" }, { status: 500 });
   }

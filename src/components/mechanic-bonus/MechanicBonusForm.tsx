@@ -93,6 +93,7 @@ export function MechanicBonusForm() {
         onChange={(event) => setBillNo(event.target.value)}
         placeholder="e.g. AG-1042"
       />
+      <p className="-mt-3 text-xs text-slate-500">Each bill number can be rated only once.</p>
       <fieldset className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">
         <legend className="px-1 text-sm font-medium text-white">Choose one mechanic</legend>
         <div className="mt-2 space-y-2">

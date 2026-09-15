@@ -20,6 +20,7 @@ import {
   ITC_AVAILED_EXTENTS,
 } from "@/lib/credit-note-itc";
 import { MECHANIC_EXPERTISE } from "@/lib/mechanic-referral";
+import { normalizeBillNo } from "@/lib/mechanic-bonus";
 
 export function formatZodErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
@@ -645,7 +646,7 @@ export const mechanicBonusRosterSchema = z.object({
 });
 
 export const mechanicBonusRatingSchema = z.object({
-  billNo: z.string().trim().min(2).max(40),
+  billNo: z.string().transform(normalizeBillNo).pipe(z.string().min(2).max(40)),
   mechanicName: mechanicNameSchema,
   rating: mechanicRatingSchema,
 });

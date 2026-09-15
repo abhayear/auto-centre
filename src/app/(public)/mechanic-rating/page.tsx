@@ -13,7 +13,7 @@ export default function MechanicRatingPage() {
       <h1 className="text-3xl font-bold text-white">Rate your mechanic</h1>
       <p className="mt-2 text-slate-400">
         Enter the job / bill number, choose the one mechanic who did the work, and score them from
-        1 to 5 for bonus.
+        1 to 5 for bonus. Each bill number can be rated only once.
       </p>
       <div className="mt-8">
         <MechanicBonusForm />

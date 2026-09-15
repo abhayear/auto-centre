@@ -514,13 +514,12 @@ model MechanicBonusRoster {
 
 model MechanicBonusRating {
   id           String   @id @default(cuid())
-  billNo       String
+  billNo       String   @unique
   mechanicName String
   rating       Int
   createdAt    DateTime @default(now())
 
   @@index([createdAt])
-  @@index([billNo])
   @@index([mechanicName])
 }
 

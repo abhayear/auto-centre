@@ -11,6 +11,21 @@ export type MechanicBonusRatingInput = {
   rating: number;
 };
 
+export const DUPLICATE_BILL_RATING_ERROR = "This bill number already has a rating.";
+
+export function normalizeBillNo(value: string): string {
+  return value.trim().replace(/\s+/g, "").toUpperCase();
+}
+
+export function isUniqueConstraintError(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: unknown }).code === "P2002",
+  );
+}
+
 export function isMechanicBonusScore(value: number): value is MechanicBonusScore {
   return MECHANIC_BONUS_SCALE.includes(value as MechanicBonusScore);
 }

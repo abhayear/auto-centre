@@ -3,6 +3,8 @@ import { mechanicBonusRatingSchema, mechanicBonusRosterSchema } from "../validat
 import {
   bonusAverage,
   isRosterMechanic,
+  isUniqueConstraintError,
+  normalizeBillNo,
   rosterFromFormData,
   rosterIsReady,
 } from "../mechanic-bonus";
@@ -32,6 +34,13 @@ describe("mechanicBonusRosterSchema", () => {
   });
 });
 
+describe("normalizeBillNo", () => {
+  it("treats the same bill number as one value even with spaces or case changes", () => {
+    expect(normalizeBillNo(" ag-1042 ")).toBe("AG-1042");
+    expect(normalizeBillNo("AG-1042")).toBe(normalizeBillNo("ag-1042"));
+  });
+});
+
 describe("mechanicBonusRatingSchema", () => {
   it("accepts a rating for only one mechanic", () => {
     expect(
@@ -45,6 +54,23 @@ describe("mechanicBonusRatingSchema", () => {
       mechanicName: "Imran",
       rating: 5,
     });
+  });
+
+  it("stores one canonical bill number so a second rating cannot sneak in", () => {
+    expect(
+      mechanicBonusRatingSchema.parse({
+        billNo: " ag-1042 ",
+        mechanicName: "Imran",
+        rating: 4,
+      }).billNo,
+    ).toBe("AG-1042");
+  });
+});
+
+describe("isUniqueConstraintError", () => {
+  it("detects a repeated bill number from the database", () => {
+    expect(isUniqueConstraintError({ code: "P2002" })).toBe(true);
+    expect(isUniqueConstraintError(new Error("Failed to save rating"))).toBe(false);
   });
 });
 
