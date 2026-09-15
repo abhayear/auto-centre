@@ -95,7 +95,12 @@ export function MechanicBonusPanel() {
                   id={`mechanicName-${index}`}
                   name="mechanicName"
                   label={`Mechanic ${index + 1}`}
-                  defaultValue={name}
+                  value={name}
+                  onChange={(event) =>
+                    setNames((current) =>
+                      current.map((item, i) => (i === index ? event.target.value : item)),
+                    )
+                  }
                   placeholder="e.g. Ravi"
                   autoComplete="off"
                 />
@@ -114,7 +119,12 @@ export function MechanicBonusPanel() {
           ))}
         </div>
         <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={() => setNames((current) => [...current, ""])}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={names.length >= 30}
+            onClick={() => setNames((current) => [...current, ""])}
+          >
             Add mechanic
           </Button>
           <Button type="submit" loading={saving}>
