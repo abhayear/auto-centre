@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 
 const MAX_ATTEMPTS = 5;
 const RETRY_DELAY_MS = 20000;
+const FAILED_BONUS_MIGRATION = "20260915090000_mechanic_bonus_any_count_one_rating";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -34,8 +35,24 @@ function isAdvisoryLockError(output) {
   );
 }
 
+function isFailedBonusMigration(output) {
+  return output.includes("P3009") && output.includes(FAILED_BONUS_MIGRATION);
+}
+
+function markBonusMigrationRolledBack() {
+  const output = execSync(
+    `npx prisma migrate resolve --rolled-back "${FAILED_BONUS_MIGRATION}"`,
+    {
+      encoding: "utf8",
+      stdio: ["inherit", "pipe", "pipe"],
+    },
+  );
+  if (output) process.stdout.write(output);
+}
+
 async function migrateDeployWithRetry() {
   let lastOutput = "";
+  let rolledBackFailedBonus = false;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const result = runMigrateDeploy();
@@ -44,6 +61,20 @@ async function migrateDeployWithRetry() {
     }
 
     lastOutput = result.output;
+
+    if (!rolledBackFailedBonus && isFailedBonusMigration(result.output)) {
+      console.warn(
+        `Marking failed ${FAILED_BONUS_MIGRATION} as rolled back, then retrying migrate deploy...`,
+      );
+      try {
+        markBonusMigrationRolledBack();
+        rolledBackFailedBonus = true;
+        continue;
+      } catch (error) {
+        lastOutput = `${result.output}\n${error.stderr?.toString?.() ?? ""}\n${error.message ?? error}`;
+        break;
+      }
+    }
 
     if (!isAdvisoryLockError(result.output) || attempt === MAX_ATTEMPTS) {
       break;
