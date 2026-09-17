@@ -58,6 +58,27 @@ export function canUseOpsPortal(role: StaffRole): boolean {
   return role === ADMIN_ROLE || role === MANAGER_ROLE;
 }
 
+export const MANAGER_APPOINTABLE_ROLES = [
+  PURCHASING_ROLE,
+  STORE_ROLE,
+  SALES_ROLE,
+  MECHANIC_ROLE,
+] as const;
+
+export function canAppointStaff(role: StaffRole): boolean {
+  return role === ADMIN_ROLE || role === MANAGER_ROLE;
+}
+
+export function canAppointRole(actor: StaffRole, targetRole: string): boolean {
+  if (actor === ADMIN_ROLE) {
+    return isStaffRole(targetRole);
+  }
+  if (actor === MANAGER_ROLE) {
+    return (MANAGER_APPOINTABLE_ROLES as readonly string[]).includes(targetRole);
+  }
+  return false;
+}
+
 export function canViewReleases(role: StaffRole): boolean {
   return (
     role === ADMIN_ROLE ||

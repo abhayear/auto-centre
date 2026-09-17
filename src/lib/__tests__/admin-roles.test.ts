@@ -7,6 +7,8 @@ import {
   canReadTraining,
   canUseOpsPortal,
   canViewReleases,
+  canAppointStaff,
+  canAppointRole,
   STAFF_ROLES,
   trainingAudienceForRole,
 } from "@/lib/admin-roles";
@@ -60,5 +62,13 @@ describe("portal permissions", () => {
   it("does not give purchasing or store the ops portal", () => {
     expect(canUseOpsPortal("purchasing")).toBe(false);
     expect(canUseOpsPortal("store")).toBe(false);
+  });
+
+  it("lets manager appoint purchasing and store but not admin", () => {
+    expect(canAppointStaff("manager")).toBe(true);
+    expect(canAppointRole("manager", "purchasing")).toBe(true);
+    expect(canAppointRole("manager", "store")).toBe(true);
+    expect(canAppointRole("manager", "admin")).toBe(false);
+    expect(canAppointRole("admin", "purchasing")).toBe(true);
   });
 });

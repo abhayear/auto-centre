@@ -2,8 +2,8 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { ADMIN_ROLE } from "@/lib/admin-roles";
-import { requireAdminRole } from "@/lib/auth";
+import { ADMIN_ROLE, canAppointRole, canAppointStaff } from "@/lib/admin-roles";
+import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createStaffSchema, formatZodErrors, updateStaffSchema } from "@/lib/validators";
 
@@ -20,8 +20,16 @@ async function countAdmins() {
   return prisma.adminUser.count({ where: { role: ADMIN_ROLE } });
 }
 
+async function requireStaffAppointSession() {
+  const session = await requireStaffSession();
+  if (!session || !canAppointStaff(session.user.role)) {
+    return null;
+  }
+  return session;
+}
+
 async function getHandler() {
-  const session = await requireAdminRole();
+  const session = await requireStaffAppointSession();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -35,7 +43,7 @@ async function getHandler() {
 }
 
 async function postHandler(request: NextRequest) {
-  const session = await requireAdminRole();
+  const session = await requireStaffAppointSession();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -43,6 +51,12 @@ async function postHandler(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createStaffSchema.parse(body);
+    if (!canAppointRole(session.user.role, data.role)) {
+      return NextResponse.json(
+        { error: "Managers can appoint Purchasing, Store, Sales, and Mechanic only" },
+        { status: 403 },
+      );
+    }
 
     const existing = await prisma.adminUser.findUnique({
       where: { email: data.email.toLowerCase().trim() },
@@ -81,7 +95,7 @@ async function postHandler(request: NextRequest) {
 }
 
 async function patchHandler(request: NextRequest) {
-  const session = await requireAdminRole();
+  const session = await requireStaffAppointSession();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -93,6 +107,15 @@ async function patchHandler(request: NextRequest) {
     const user = await prisma.adminUser.findUnique({ where: { id: data.id } });
     if (!user) {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
+    }
+    if (
+      !canAppointRole(session.user.role, user.role) ||
+      (data.role !== undefined && !canAppointRole(session.user.role, data.role))
+    ) {
+      return NextResponse.json(
+        { error: "Managers can only update Purchasing, Store, Sales, and Mechanic" },
+        { status: 403 },
+      );
     }
 
     const removingLastAdmin =
@@ -137,7 +160,7 @@ async function patchHandler(request: NextRequest) {
 }
 
 async function deleteHandler(request: NextRequest) {
-  const session = await requireAdminRole();
+  const session = await requireStaffAppointSession();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -150,6 +173,12 @@ async function deleteHandler(request: NextRequest) {
   const user = await prisma.adminUser.findUnique({ where: { id } });
   if (!user) {
     return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
+  }
+  if (!canAppointRole(session.user.role, user.role)) {
+    return NextResponse.json(
+      { error: "Managers can only remove Purchasing, Store, Sales, and Mechanic" },
+      { status: 403 },
+    );
   }
 
   if (user.role === ADMIN_ROLE && (await countAdmins()) <= 1) {

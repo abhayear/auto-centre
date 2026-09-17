@@ -36,12 +36,12 @@ import {
 import { signOut } from "next-auth/react";
 import { GSTR1_CONSOLIDATOR_URL, GST_ITC_MATCHER_URL, ONLINE_STORE_URL, SITE_NAME } from "@/lib/constants";
 import {
+  canAppointStaff,
   canAssignWork,
   canEditTraining,
   canReadTraining,
   canUseOpsPortal,
   canViewReleases,
-  isAdminRole,
   isStaffRole,
   type StaffRole,
 } from "@/lib/admin-roles";
@@ -117,7 +117,7 @@ const navItems: NavItem[] = [
   { href: "/admin/service-schedule", label: "Service Schedule", icon: CalendarClock, show: canUseOpsPortal },
   { href: "/admin/jobs", label: "Job Postings", icon: Briefcase, show: canUseOpsPortal },
   { href: "/admin/job-applications", label: "Applicant Tracking", icon: ClipboardList, show: canUseOpsPortal },
-  { href: "/admin/staff", label: "Staff", icon: UserCog, show: isAdminRole },
+  { href: "/admin/staff", label: "Staff", icon: UserCog, show: canAppointStaff },
 ];
 
 export function AdminSidebar() {

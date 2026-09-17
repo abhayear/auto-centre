@@ -78,9 +78,12 @@ describe("assertStaffPageAccess", () => {
     },
   );
 
-  it("allows only admins to access staff management", () => {
+  it("allows admin and manager to access staff management", () => {
     expect(assertStaffPageAccess("/admin/staff", "admin")).toBeNull();
-    expect(assertStaffPageAccess("/admin/staff", "manager")).toBe("/admin");
+    expect(assertStaffPageAccess("/admin/staff", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/staff", "purchasing")).toBe(
+      "/admin/inventory/receive",
+    );
   });
 
   it("allows every staff role to change their password", () => {

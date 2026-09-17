@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Shield, Trash2, UserCog } from "lucide-react";
+import { useSession } from "next-auth/react";
 import {
+  MANAGER_APPOINTABLE_ROLES,
   STAFF_ROLES,
+  canAppointRole,
+  isAdminRole,
   type StaffRole,
 } from "@/lib/admin-roles";
 import { Badge } from "@/components/ui/Badge";
@@ -37,13 +41,18 @@ type Props = {
 };
 
 export function StaffPanel({ defaultRoleFilter }: Props) {
+  const { data: session } = useSession();
+  const actorRole = session?.user?.role;
+  const appointableRoles: readonly StaffRole[] = isAdminRole(actorRole ?? "")
+    ? STAFF_ROLES
+    : MANAGER_APPOINTABLE_ROLES;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<StaffRole>("manager");
+  const [role, setRole] = useState<StaffRole>("purchasing");
   const [roleFilter, setRoleFilter] = useState<string>(defaultRoleFilter ?? "all");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -59,7 +68,7 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
       const res = await fetch("/api/admin/staff");
       if (!active) return;
       if (res.status === 403) {
-        toast.error("Only admins can manage staff");
+        toast.error("You cannot manage staff");
         setLoading(false);
         return;
       }
@@ -79,7 +88,7 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
   async function loadStaff() {
     const res = await fetch("/api/admin/staff");
     if (res.status === 403) {
-      toast.error("Only admins can manage staff");
+      toast.error("You cannot manage staff");
       return;
     }
     const data = await res.json();
@@ -161,8 +170,8 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-white">Staff</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
-            Appoint staff for all portal roles — admin, manager, developers, sales, and
-            mechanic. Only admins can access this page.
+            Appoint Purchasing, Store, Sales, and Mechanic. Admin can also appoint managers
+            and developers.
           </p>
         </div>
         <Button onClick={() => setShowForm(true)}>
@@ -195,7 +204,7 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
           className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
         >
           <option value="all">All roles</option>
-          {STAFF_ROLES.map((staffRole) => (
+          {appointableRoles.map((staffRole) => (
             <option key={staffRole} value={staffRole}>
               {roleLabels[staffRole]}
             </option>
@@ -234,6 +243,7 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
                     {new Date(member.createdAt).toLocaleDateString("en-IN")}
                   </td>
                   <td className="px-4 py-3">
+                    {actorRole && canAppointRole(actorRole, member.role) ? (
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => toggleActive(member)}>
                         {member.active ? "Deactivate" : "Activate"}
@@ -242,6 +252,9 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                    ) : (
+                      <span className="text-slate-500">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -283,7 +296,7 @@ export function StaffPanel({ defaultRoleFilter }: Props) {
               onChange={(e) => setRole(e.target.value as StaffRole)}
               className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
             >
-              {STAFF_ROLES.map((staffRole) => (
+              {appointableRoles.map((staffRole) => (
                 <option key={staffRole} value={staffRole}>
                   {roleLabels[staffRole]}
                 </option>

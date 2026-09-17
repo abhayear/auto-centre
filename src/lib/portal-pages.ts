@@ -1,9 +1,9 @@
 import {
+  canAppointStaff,
   canAssignWork,
   canEditTraining,
   canUseOpsPortal,
   canViewReleases,
-  isAdminRole,
   trainingAudienceForRole,
   type StaffRole,
 } from "@/lib/admin-roles";
@@ -77,7 +77,7 @@ export function assertStaffPageAccess(
   }
 
   if (isPage(pathname, "/admin/staff")) {
-    return isAdminRole(role) ? null : fallbackRedirectForRole(role);
+    return canAppointStaff(role) ? null : fallbackRedirectForRole(role);
   }
 
   return canUseOpsPortal(role) ? null : fallbackRedirectForRole(role);
