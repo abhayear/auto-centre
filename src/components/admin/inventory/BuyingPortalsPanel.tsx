@@ -149,7 +149,7 @@ export function BuyingPortalsPanel() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Buying portals</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Sign in as Admin or Manager. Save the supplier website login and WhatsApp number. Purchasing uses Place order on WhatsApp to chat and order.
+          Sign in as Admin or Manager. Name is enough. Buy link, username, and password are optional. Purchasing uses Place order on WhatsApp to chat and order.
         </p>
       </div>
       <form className="space-y-4" onSubmit={(event) => void addPortal(event)}>
@@ -164,23 +164,22 @@ export function BuyingPortalsPanel() {
             required
           />
           <Input
-            label="Website"
+            label="Website (optional)"
             name="portalWebsite"
             autoComplete="off"
             placeholder="supplier-website.com"
             value={websiteUrl}
             onChange={(e) => setWebsiteUrl(e.target.value)}
-            required
           />
           <Input
-            label="Portal username / mobile"
+            label="Portal username / mobile (optional)"
             name="portalUsername"
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <Input
-            label="Portal password"
+            label="Portal password (optional)"
             name="portalPassword"
             type="password"
             autoComplete="new-password"
@@ -274,14 +273,18 @@ function PortalLoginRow({
     <tr className="border-t border-slate-800 text-slate-200">
       <td className="px-3 py-2">{portal.name}</td>
       <td className="px-3 py-2">
-        <a
-          href={portal.websiteUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-red-400 underline hover:text-red-300"
-        >
-          {portal.websiteUrl}
-        </a>
+        {portal.websiteUrl ? (
+          <a
+            href={portal.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red-400 underline hover:text-red-300"
+          >
+            {portal.websiteUrl}
+          </a>
+        ) : (
+          <span className="text-slate-500">—</span>
+        )}
       </td>
       <td className="space-y-2 px-3 py-2">
         <Input

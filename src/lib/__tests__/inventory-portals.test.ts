@@ -5,6 +5,7 @@ describe("normalizeWebsiteUrl", () => {
   it("adds https when the protocol is missing", () => {
     expect(normalizeWebsiteUrl("elyfevspare.com")).toBe("https://elyfevspare.com");
     expect(normalizeWebsiteUrl("https://maple.in")).toBe("https://maple.in");
+    expect(normalizeWebsiteUrl("")).toBe("");
   });
 });
 

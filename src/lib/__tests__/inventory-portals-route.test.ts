@@ -108,6 +108,41 @@ describe("/api/inventory/portals", () => {
     );
   });
 
+  it("lets manager save a supplier with only a name", async () => {
+    requireStaffSession.mockResolvedValue({
+      user: { email: "mgr@example.com", role: "manager" },
+    });
+    buyingPortalUpsert.mockResolvedValue({
+      id: "p2",
+      name: "R K Enterprises",
+      websiteUrl: "",
+      username: "",
+      passwordEncrypted: "",
+      enabled: true,
+      connectorId: null,
+      lastSyncedAt: null,
+      lastError: null,
+    });
+    const response = await POST(
+      new Request("https://example.com/api/inventory/portals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "R K Enterprises" }),
+      }),
+      undefined,
+    );
+    expect(response.status).toBe(201);
+    expect(buyingPortalUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          name: "R K Enterprises",
+          websiteUrl: "",
+          username: "",
+        }),
+      }),
+    );
+  });
+
   it("lets manager list portals", async () => {
     requireStaffSession.mockResolvedValue({
       user: { email: "mgr@example.com", role: "manager" },

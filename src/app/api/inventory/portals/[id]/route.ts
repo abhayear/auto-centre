@@ -47,7 +47,7 @@ async function patchHandler(
   if (parsed.data.whatsappCatalogueNo !== undefined) {
     data.whatsappCatalogueNo = parsed.data.whatsappCatalogueNo;
   }
-  if (parsed.data.password !== undefined) {
+  if (parsed.data.password) {
     data.passwordEncrypted = encryptPortalPassword(parsed.data.password);
   }
   const row = await prisma.buyingPortal.update({ where: { id }, data });

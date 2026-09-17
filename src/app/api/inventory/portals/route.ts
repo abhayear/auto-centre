@@ -33,18 +33,24 @@ async function postHandler(request: Request) {
   }
   const parsed = createBuyingPortalSchema.safeParse(body);
   if (!parsed.success) {
+    const websiteInvalid = parsed.error.issues.some((issue) => issue.path.includes("websiteUrl"));
     return NextResponse.json(
-      { error: "Enter a portal name and a website (for example https://supplier.com)" },
+      {
+        error: websiteInvalid
+          ? "Check the website address and try again"
+          : "Enter a supplier name. Buy link, username, and password are optional.",
+      },
       { status: 400 },
     );
   }
   const username = parsed.data.username ?? "";
   const passwordEncrypted = encryptPortalPassword(parsed.data.password ?? "");
+  const websiteUrl = parsed.data.websiteUrl ?? "";
   const row = await prisma.buyingPortal.upsert({
     where: { name: parsed.data.name },
     create: {
       name: parsed.data.name,
-      websiteUrl: parsed.data.websiteUrl,
+      websiteUrl,
       username,
       passwordEncrypted,
       enabled: parsed.data.enabled ?? true,
@@ -53,8 +59,8 @@ async function postHandler(request: Request) {
       whatsappCatalogueNo: parsed.data.whatsappCatalogueNo ?? "",
     },
     update: {
-      websiteUrl: parsed.data.websiteUrl,
-      username,
+      ...(websiteUrl ? { websiteUrl } : {}),
+      ...(username ? { username } : {}),
       ...(parsed.data.password ? { passwordEncrypted } : {}),
       ...(parsed.data.whatsappCatalogueNo !== undefined
         ? { whatsappCatalogueNo: parsed.data.whatsappCatalogueNo }

@@ -674,10 +674,17 @@ export const mechanicReferralActionSchema = z.object({
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const positiveQty = z.coerce.number().int().positive();
 const money = z.coerce.number().finite();
+const optionalWebsiteUrl = z
+  .string()
+  .trim()
+  .optional()
+  .refine((value) => !value || z.string().url().safeParse(value).success, {
+    message: "Invalid website URL",
+  });
 
 export const createBuyingPortalSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  websiteUrl: z.string().trim().url(),
+  websiteUrl: optionalWebsiteUrl,
   username: z.string().trim().max(120).optional(),
   password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),
@@ -687,7 +694,7 @@ export const createBuyingPortalSchema = z.object({
 
 export const updateBuyingPortalSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
-  websiteUrl: z.string().trim().url().optional(),
+  websiteUrl: optionalWebsiteUrl,
   username: z.string().trim().max(120).optional(),
   password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),

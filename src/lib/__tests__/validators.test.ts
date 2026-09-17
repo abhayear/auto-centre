@@ -13,6 +13,7 @@ import {
   serviceSchema,
   vehicleSchema,
   createInventoryPartNameOnlySchema,
+  createBuyingPortalSchema,
   manualReceiveSchema,
 } from "../validators";
 
@@ -293,5 +294,15 @@ describe("inventory validators", () => {
     if (withRate.success) {
       expect(withRate.data).not.toHaveProperty("purchaseRate");
     }
+  });
+
+  it("lets a portal be saved with only a name", () => {
+    expect(createBuyingPortalSchema.safeParse({ name: "R K Enterprises" }).success).toBe(true);
+    expect(
+      createBuyingPortalSchema.safeParse({ name: "R K Enterprises", websiteUrl: "" }).success,
+    ).toBe(true);
+    expect(
+      createBuyingPortalSchema.safeParse({ name: "R K Enterprises", websiteUrl: "not-a-url" }).success,
+    ).toBe(false);
   });
 });
