@@ -4,6 +4,7 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "crons": [
-    { "path": "/api/ops/health-check?digest=1", "schedule": "30 3 * * *" }
+    { "path": "/api/ops/health-check?digest=1", "schedule": "30 3 * * *" },
+    { "path": "/api/ops/inventory-sync", "schedule": "0 2 * * *" }
   ]
 }

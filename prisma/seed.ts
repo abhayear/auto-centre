@@ -5,6 +5,7 @@ import {
   DEFAULT_SERVICE_SCHEDULE_SUMMARY,
   DEFAULT_SERVICE_SCHEDULE_TITLE,
 } from "../src/lib/service-schedule-default";
+import { SEED_BUYING_PORTALS } from "../src/lib/inventory-portals";
 
 const prisma = new PrismaClient();
 
@@ -32,6 +33,18 @@ async function main() {
     update: { passwordHash, role: "admin", active: true },
     create: { email: adminEmail, passwordHash, role: "admin", active: true },
   });
+
+  for (const portal of SEED_BUYING_PORTALS) {
+    await prisma.buyingPortal.upsert({
+      where: { name: portal.name },
+      update: { websiteUrl: portal.websiteUrl },
+      create: {
+        name: portal.name,
+        websiteUrl: portal.websiteUrl,
+        createdByEmail: adminEmail,
+      },
+    });
+  }
 
   await prisma.serviceBooking.deleteMany();
   await prisma.jobApplication.deleteMany();

@@ -12,6 +12,8 @@ import {
   createStaffSchema,
   serviceSchema,
   vehicleSchema,
+  createInventoryPartNameOnlySchema,
+  manualReceiveSchema,
 } from "../validators";
 
 describe("vehicleSchema", () => {
@@ -250,5 +252,46 @@ describe("jobApplicationSchema", () => {
       coverLetter: "I am excited to apply for this role.",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("inventory validators", () => {
+  it("accepts name-only parts", () => {
+    expect(
+      createInventoryPartNameOnlySchema.safeParse({ code: "BRG-1", name: "Bearing" }).success,
+    ).toBe(true);
+  });
+
+  it("accepts valid manual receive and rejects qty 0 and strips rate fields", () => {
+    expect(
+      manualReceiveSchema.safeParse({
+        portalId: "p1",
+        billNumber: "B-1",
+        billDate: "2026-09-17",
+        partId: "part-1",
+        qty: 2,
+      }).success,
+    ).toBe(true);
+    expect(
+      manualReceiveSchema.safeParse({
+        portalId: "p1",
+        billNumber: "B-1",
+        billDate: "2026-09-17",
+        partId: "part-1",
+        qty: 0,
+      }).success,
+    ).toBe(false);
+    const withRate = manualReceiveSchema.safeParse({
+      portalId: "p1",
+      billNumber: "B-1",
+      billDate: "2026-09-17",
+      partId: "part-1",
+      qty: 2,
+      purchaseRate: 99,
+    });
+    expect(withRate.success).toBe(true);
+    if (withRate.success) {
+      expect(withRate.data).not.toHaveProperty("purchaseRate");
+    }
   });
 });

@@ -671,6 +671,73 @@ export const mechanicReferralActionSchema = z.object({
   action: z.enum(["hire", "reward"]),
 });
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const positiveQty = z.coerce.number().int().positive();
+const money = z.coerce.number().finite();
+
+export const createBuyingPortalSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  websiteUrl: z.string().trim().url(),
+  username: z.string().trim().max(120).optional(),
+  password: z.string().max(200).optional(),
+  enabled: z.boolean().optional(),
+  connectorId: z.string().trim().min(1).nullable().optional(),
+});
+
+export const updateBuyingPortalSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  websiteUrl: z.string().trim().url().optional(),
+  username: z.string().trim().max(120).optional(),
+  password: z.string().max(200).optional(),
+  enabled: z.boolean().optional(),
+  connectorId: z.string().trim().min(1).nullable().optional(),
+});
+
+export const createInventoryPartNameOnlySchema = z.object({
+  code: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(1).max(160),
+});
+
+export const upsertInventoryPartSchema = createInventoryPartNameOnlySchema.extend({
+  purchaseRate: money.optional(),
+  sellingPrice: money.optional(),
+});
+
+export const patchInventoryPartRatesSchema = z.object({
+  purchaseRate: money.optional(),
+  sellingPrice: money.optional(),
+  name: z.string().trim().min(1).max(160).optional(),
+  code: z.string().trim().min(1).max(40).optional(),
+});
+
+export const manualReceiveSchema = z.object({
+  portalId: z.string().min(1),
+  billNumber: z.string().trim().min(1).max(80),
+  billDate: isoDate,
+  partId: z.string().min(1),
+  qty: positiveQty,
+});
+
+export const confirmBillSchema = z.object({}).strict();
+
+export const linkCatalogLineSchema = z.object({
+  inventoryPartId: z.string().min(1),
+});
+
+export const stockActionSchema = z.object({
+  kind: z.enum(["issue", "job_use", "spare_sale", "count"]),
+  partId: z.string().min(1),
+  qty: z.coerce.number().int().min(0),
+  jobRef: z.string().trim().max(80).optional(),
+  note: z.string().trim().max(300).optional(),
+});
+
+export const auditQuerySchema = z.object({
+  partId: z.string().min(1).optional(),
+  from: isoDate.optional(),
+  to: isoDate.optional(),
+});
+
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
