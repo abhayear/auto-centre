@@ -679,7 +679,7 @@ export const createBuyingPortalSchema = z.object({
   name: z.string().trim().min(1).max(120),
   websiteUrl: z.string().trim().url(),
   username: z.string().trim().max(120).optional(),
-  password: z.string().max(200).optional(),
+  password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
 });
@@ -688,7 +688,7 @@ export const updateBuyingPortalSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   websiteUrl: z.string().trim().url().optional(),
   username: z.string().trim().max(120).optional(),
-  password: z.string().max(200).optional(),
+  password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
 });

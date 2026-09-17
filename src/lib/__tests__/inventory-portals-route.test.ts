@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireStaffSession, buyingPortalCreate, buyingPortalFindMany, encryptPortalPassword } =
+const { requireStaffSession, buyingPortalCreate, buyingPortalFindMany, buyingPortalUpsert, encryptPortalPassword } =
   vi.hoisted(() => ({
     requireStaffSession: vi.fn(),
     buyingPortalCreate: vi.fn(),
     buyingPortalFindMany: vi.fn(),
+    buyingPortalUpsert: vi.fn(),
     encryptPortalPassword: vi.fn((value: string) => (value ? `enc:${value}` : "")),
   }));
 
 vi.mock("@/lib/auth", () => ({ requireStaffSession }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    buyingPortal: { create: buyingPortalCreate, findMany: buyingPortalFindMany },
+    buyingPortal: { create: buyingPortalCreate, findMany: buyingPortalFindMany, upsert: buyingPortalUpsert },
   },
 }));
 vi.mock("@/lib/portal-password", () => ({ encryptPortalPassword }));
@@ -25,7 +26,7 @@ describe("/api/inventory/portals", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     buyingPortalFindMany.mockResolvedValue([]);
-    buyingPortalCreate.mockResolvedValue({
+    buyingPortalUpsert.mockResolvedValue({
       id: "p1",
       name: "Maple",
       websiteUrl: "https://example.com/maple",
@@ -74,9 +75,37 @@ describe("/api/inventory/portals", () => {
     );
     expect(response.status).toBe(201);
     expect(encryptPortalPassword).toHaveBeenCalledWith("secret");
+    expect(buyingPortalUpsert).toHaveBeenCalled();
     const json = await response.json();
     expect(json.passwordSaved).toBe(true);
     expect(json.password).toBeUndefined();
+  });
+
+  it("accepts a website without https", async () => {
+    requireStaffSession.mockResolvedValue({
+      user: { email: "mgr@example.com", role: "manager" },
+    });
+    const response = await POST(
+      new Request("https://example.com/api/inventory/portals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Elyf EV Spare",
+          websiteUrl: "elyfevspare.com",
+          username: "shop",
+          password: "secret",
+        }),
+      }),
+      undefined,
+    );
+    expect(response.status).toBe(201);
+    expect(buyingPortalUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          websiteUrl: "https://elyfevspare.com",
+        }),
+      }),
+    );
   });
 
   it("lets manager list portals", async () => {

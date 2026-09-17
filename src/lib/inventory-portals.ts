@@ -1,3 +1,10 @@
+export function normalizeWebsiteUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export const SEED_BUYING_PORTALS: { name: string; websiteUrl: string }[] = [
   { name: "Elyf EV Spare", websiteUrl: "https://example.com/elyf" },
   { name: "Vishal Bearing House", websiteUrl: "https://example.com/vishal-bearing-house" },

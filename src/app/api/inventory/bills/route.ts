@@ -25,7 +25,7 @@ async function getHandler() {
   });
   const portals = await prisma.buyingPortal.findMany({
     where: { enabled: true },
-    select: { id: true, name: true },
+    select: { id: true, name: true, websiteUrl: true },
     orderBy: { name: "asc" },
   });
   return NextResponse.json({ bills, catalogLines, portals });

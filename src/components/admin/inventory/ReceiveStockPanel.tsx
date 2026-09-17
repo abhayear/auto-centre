@@ -15,7 +15,7 @@ type Bill = {
 };
 
 type Part = { id: string; code: string; name: string };
-type PortalOption = { id: string; name: string };
+type PortalOption = { id: string; name: string; websiteUrl: string };
 type CatalogLine = { id: string; vendorSku: string; vendorName: string; inventoryPartId: string | null };
 
 export function ReceiveStockPanel() {
@@ -113,6 +113,22 @@ export function ReceiveStockPanel() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Receive stock</h1>
         <p className="mt-1 text-sm text-slate-400">Confirm synced bills or type qty. Rates are not editable here.</p>
+        {portals.length > 0 ? (
+          <ul className="mt-3 space-y-1 text-sm">
+            {portals.map((portal) => (
+              <li key={portal.id}>
+                <a
+                  href={portal.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-400 underline hover:text-red-300"
+                >
+                  {portal.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
       <div>
         <h2 className="mb-2 text-lg text-white">Draft bills</h2>

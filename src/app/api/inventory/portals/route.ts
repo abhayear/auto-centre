@@ -2,7 +2,7 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { requireStaffSession } from "@/lib/auth";
 import { canManageBuyingPortals } from "@/lib/inventory-access";
-import { serializeBuyingPortal } from "@/lib/inventory-portals";
+import { normalizeWebsiteUrl, serializeBuyingPortal } from "@/lib/inventory-portals";
 import { encryptPortalPassword } from "@/lib/portal-password";
 import { prisma } from "@/lib/prisma";
 import { createBuyingPortalSchema } from "@/lib/validators";
@@ -27,19 +27,34 @@ async function postHandler(request: Request) {
   if (!canManageBuyingPortals(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const parsed = createBuyingPortalSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+  const body = (await request.json()) as Record<string, unknown>;
+  if (typeof body.websiteUrl === "string") {
+    body.websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
   }
-  const row = await prisma.buyingPortal.create({
-    data: {
+  const parsed = createBuyingPortalSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Enter a portal name and a website (for example https://supplier.com)" },
+      { status: 400 },
+    );
+  }
+  const username = parsed.data.username ?? "";
+  const passwordEncrypted = encryptPortalPassword(parsed.data.password ?? "");
+  const row = await prisma.buyingPortal.upsert({
+    where: { name: parsed.data.name },
+    create: {
       name: parsed.data.name,
       websiteUrl: parsed.data.websiteUrl,
-      username: parsed.data.username ?? "",
-      passwordEncrypted: encryptPortalPassword(parsed.data.password ?? ""),
+      username,
+      passwordEncrypted,
       enabled: parsed.data.enabled ?? true,
       connectorId: parsed.data.connectorId ?? null,
       createdByEmail: session.user.email,
+    },
+    update: {
+      websiteUrl: parsed.data.websiteUrl,
+      username,
+      ...(parsed.data.password ? { passwordEncrypted } : {}),
     },
   });
   return NextResponse.json(serializeBuyingPortal(row), { status: 201 });

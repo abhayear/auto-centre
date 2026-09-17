@@ -2,7 +2,7 @@ import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { requireStaffSession } from "@/lib/auth";
 import { canManageBuyingPortals } from "@/lib/inventory-access";
-import { serializeBuyingPortal } from "@/lib/inventory-portals";
+import { normalizeWebsiteUrl, serializeBuyingPortal } from "@/lib/inventory-portals";
 import { encryptPortalPassword } from "@/lib/portal-password";
 import { prisma } from "@/lib/prisma";
 import { updateBuyingPortalSchema } from "@/lib/validators";
@@ -19,9 +19,16 @@ async function patchHandler(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await context.params;
-  const parsed = updateBuyingPortalSchema.safeParse(await request.json());
+  const body = (await request.json()) as Record<string, unknown>;
+  if (typeof body.websiteUrl === "string") {
+    body.websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
+  }
+  const parsed = updateBuyingPortalSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validation failed" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Check the website address and try again" },
+      { status: 400 },
+    );
   }
   const data: {
     name?: string;

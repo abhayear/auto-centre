@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SEED_BUYING_PORTALS, serializeBuyingPortal } from "@/lib/inventory-portals";
+import { normalizeWebsiteUrl, SEED_BUYING_PORTALS, serializeBuyingPortal } from "@/lib/inventory-portals";
+
+describe("normalizeWebsiteUrl", () => {
+  it("adds https when the protocol is missing", () => {
+    expect(normalizeWebsiteUrl("elyfevspare.com")).toBe("https://elyfevspare.com");
+    expect(normalizeWebsiteUrl("https://maple.in")).toBe("https://maple.in");
+  });
+});
 
 describe("SEED_BUYING_PORTALS", () => {
   it("seeds the six buying portals from the spec", () => {
