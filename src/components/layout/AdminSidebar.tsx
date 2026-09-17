@@ -30,6 +30,7 @@ import {
   Store,
   UserCog,
   UserPlus,
+  Warehouse,
   Wrench,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -44,6 +45,12 @@ import {
   isStaffRole,
   type StaffRole,
 } from "@/lib/admin-roles";
+import {
+  canAuditInventory,
+  canIssueInventory,
+  canManageBuyingPortals,
+  canReceiveInventory,
+} from "@/lib/inventory-access";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import type { LucideIcon } from "lucide-react";
@@ -73,6 +80,8 @@ function panelSubtitle(role: StaffRole): string {
     junior_developer: "Junior Developer",
     sales: "Sales Training",
     mechanic: "Mechanic Training",
+    purchasing: "Purchasing",
+    store: "Store",
   };
   return labels[role];
 }
@@ -92,6 +101,10 @@ const navItems: NavItem[] = [
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare, show: canUseOpsPortal },
   { href: "/admin/showroom-walk-ins", label: "Walk-in Enquiries", icon: Store, show: canUseOpsPortal },
   { href: "/admin/replacement-parts", label: "Replacement Parts", icon: Package, show: canUseOpsPortal },
+  { href: "/admin/inventory/portals", label: "Buying portals", icon: Warehouse, show: canManageBuyingPortals },
+  { href: "/admin/inventory/receive", label: "Receive stock", icon: Package, show: canReceiveInventory },
+  { href: "/admin/inventory/issue", label: "Issue & count", icon: ClipboardList, show: canIssueInventory },
+  { href: "/admin/inventory/audit", label: "Stock audit", icon: ListChecks, show: canAuditInventory },
   { href: "/admin/esteemed-customers", label: "Esteemed Customers", icon: Star, show: canUseOpsPortal },
   { href: "/admin/site-analytics", label: "Site Analytics", icon: BarChart3, show: canUseOpsPortal },
   { href: "/admin/services", label: "Services", icon: Wrench, show: canUseOpsPortal },

@@ -50,6 +50,16 @@ const roleOptions: { value: StaffRole; label: string; description: string }[] = 
     label: "Mechanic",
     description: "Access mechanic training materials",
   },
+  {
+    value: "purchasing",
+    label: "Purchasing",
+    description: "Receive portal bills; cannot change rates",
+  },
+  {
+    value: "store",
+    label: "Store",
+    description: "Issue, count, and audit stock; cannot change rates",
+  },
 ];
 
 export function StaffSignInForm({

@@ -10,6 +10,8 @@ describe("assertOpsRole", () => {
   it("rejects non-ops staff and unknown roles", () => {
     expect(assertOpsRole("sales")).toBe(false);
     expect(assertOpsRole("mechanic")).toBe(false);
+    expect(assertOpsRole("purchasing")).toBe(false);
+    expect(assertOpsRole("store")).toBe(false);
     expect(assertOpsRole("senior_developer")).toBe(false);
     expect(assertOpsRole("junior_developer")).toBe(false);
     expect(assertOpsRole(undefined)).toBe(false);

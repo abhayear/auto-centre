@@ -28,6 +28,8 @@ const roleLabels: Record<StaffRole, string> = {
   junior_developer: "Junior developer",
   sales: "Sales",
   mechanic: "Mechanic",
+  purchasing: "Purchasing",
+  store: "Store",
 };
 
 type Props = {

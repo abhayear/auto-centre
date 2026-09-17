@@ -4,6 +4,8 @@ export const SENIOR_DEVELOPER_ROLE = "senior_developer" as const;
 export const JUNIOR_DEVELOPER_ROLE = "junior_developer" as const;
 export const SALES_ROLE = "sales" as const;
 export const MECHANIC_ROLE = "mechanic" as const;
+export const PURCHASING_ROLE = "purchasing" as const;
+export const STORE_ROLE = "store" as const;
 
 export const STAFF_ROLES = [
   ADMIN_ROLE,
@@ -12,6 +14,8 @@ export const STAFF_ROLES = [
   JUNIOR_DEVELOPER_ROLE,
   SALES_ROLE,
   MECHANIC_ROLE,
+  PURCHASING_ROLE,
+  STORE_ROLE,
 ] as const;
 
 export type StaffRole = (typeof STAFF_ROLES)[number];

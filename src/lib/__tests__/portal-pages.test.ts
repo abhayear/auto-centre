@@ -15,6 +15,13 @@ describe("homeRedirectForRole", () => {
   ] as const)("maps %s to its portal home", (role, expected) => {
     expect(homeRedirectForRole(role)).toBe(expected);
   });
+
+  it.each([
+    ["purchasing", "/admin/inventory/receive"],
+    ["store", "/admin/inventory/issue"],
+  ] as const)("maps %s to its inventory home", (role, expected) => {
+    expect(homeRedirectForRole(role)).toBe(expected);
+  });
 });
 
 describe("assertStaffPageAccess", () => {
@@ -106,4 +113,29 @@ describe("assertStaffPageAccess", () => {
       }
     },
   );
+
+  it("allows purchasing on receive and blocks issue and vehicles", () => {
+    expect(assertStaffPageAccess("/admin/inventory/receive", "purchasing")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/issue", "purchasing")).toBe(
+      "/admin/inventory/receive",
+    );
+    expect(assertStaffPageAccess("/admin/vehicles", "purchasing")).toBe(
+      "/admin/inventory/receive",
+    );
+  });
+
+  it("allows store on issue and audit and blocks portals", () => {
+    expect(assertStaffPageAccess("/admin/inventory/issue", "store")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/audit", "store")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/portals", "store")).toBe(
+      "/admin/inventory/issue",
+    );
+  });
+
+  it("allows manager on all inventory pages", () => {
+    expect(assertStaffPageAccess("/admin/inventory/portals", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/receive", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/issue", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/audit", "manager")).toBeNull();
+  });
 });

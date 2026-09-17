@@ -7,8 +7,17 @@ import {
   trainingAudienceForRole,
   type StaffRole,
 } from "@/lib/admin-roles";
+import {
+  canAuditInventory,
+  canIssueInventory,
+  canManageBuyingPortals,
+  canReceiveInventory,
+  inventoryHomeForRole,
+} from "@/lib/inventory-access";
 
 export function homeRedirectForRole(role: StaffRole): string | null {
+  const inventoryHome = inventoryHomeForRole(role);
+  if (inventoryHome) return inventoryHome;
   if (canUseOpsPortal(role)) return null;
   if (role === "senior_developer") return "/admin/releases";
   if (role === "junior_developer") return "/admin/work";
@@ -34,6 +43,22 @@ export function assertStaffPageAccess(
   if (pathname === "/admin") return null;
 
   if (isPage(pathname, "/admin/change-password")) return null;
+
+  if (isPage(pathname, "/admin/inventory/portals")) {
+    return canManageBuyingPortals(role) ? null : fallbackRedirectForRole(role);
+  }
+
+  if (isPage(pathname, "/admin/inventory/receive")) {
+    return canReceiveInventory(role) ? null : fallbackRedirectForRole(role);
+  }
+
+  if (isPage(pathname, "/admin/inventory/issue")) {
+    return canIssueInventory(role) ? null : fallbackRedirectForRole(role);
+  }
+
+  if (isPage(pathname, "/admin/inventory/audit")) {
+    return canAuditInventory(role) ? null : fallbackRedirectForRole(role);
+  }
 
   if (isPage(pathname, "/admin/training")) {
     const canAccessTraining =
