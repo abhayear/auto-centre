@@ -153,4 +153,15 @@ describe("/api/inventory/portals", () => {
     );
     expect(response.status).toBe(200);
   });
+
+  it("lets store list courier contacts", async () => {
+    requireStaffSession.mockResolvedValue({
+      user: { email: "store@example.com", role: "store" },
+    });
+    const response = await GET(
+      new Request("https://example.com/api/inventory/portals"),
+      undefined,
+    );
+    expect(response.status).toBe(200);
+  });
 });

@@ -133,10 +133,13 @@ describe("assertStaffPageAccess", () => {
     expect(assertStaffPageAccess("/admin/inventory/portals", "store")).toBe(
       "/admin/inventory/issue",
     );
+    expect(assertStaffPageAccess("/admin/inventory/couriers", "store")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/couriers", "purchasing")).toBeNull();
   });
 
   it("allows manager on all inventory pages", () => {
     expect(assertStaffPageAccess("/admin/inventory/portals", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/inventory/couriers", "manager")).toBeNull();
     expect(assertStaffPageAccess("/admin/inventory/receive", "manager")).toBeNull();
     expect(assertStaffPageAccess("/admin/inventory/issue", "manager")).toBeNull();
     expect(assertStaffPageAccess("/admin/inventory/audit", "manager")).toBeNull();

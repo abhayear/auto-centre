@@ -681,6 +681,7 @@ const optionalWebsiteUrl = z
   .refine((value) => !value || z.string().url().safeParse(value).success, {
     message: "Invalid website URL",
   });
+const buyingPortalServiceKind = z.enum(["supplier", "delivery", "local_courier", "transport"]);
 
 export const createBuyingPortalSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -690,6 +691,7 @@ export const createBuyingPortalSchema = z.object({
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
   whatsappCatalogueNo: z.string().trim().max(40).optional(),
+  serviceKind: buyingPortalServiceKind.optional(),
 });
 
 export const updateBuyingPortalSchema = z.object({
@@ -700,6 +702,7 @@ export const updateBuyingPortalSchema = z.object({
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
   whatsappCatalogueNo: z.string().trim().max(40).optional(),
+  serviceKind: buyingPortalServiceKind.optional(),
 });
 
 export const createInventoryPartNameOnlySchema = z.object({

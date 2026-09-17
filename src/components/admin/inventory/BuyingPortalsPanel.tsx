@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { whatsappOrderHref } from "@/lib/inventory-portals";
+import { isCourierServiceKind, whatsappOrderHref } from "@/lib/inventory-portals";
 
 type Portal = {
   id: string;
@@ -17,6 +17,7 @@ type Portal = {
   lastSyncedAt: string | null;
   lastError: string | null;
   whatsappCatalogueNo?: string;
+  serviceKind?: string;
 };
 
 type Part = {
@@ -69,7 +70,14 @@ export function BuyingPortalsPanel() {
     const res = await fetch("/api/inventory/portals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, websiteUrl, username, password, whatsappCatalogueNo }),
+      body: JSON.stringify({
+        name,
+        websiteUrl,
+        username,
+        password,
+        whatsappCatalogueNo,
+        serviceKind: "supplier",
+      }),
     });
     const json = await res.json().catch(() => ({}));
     setSaving(false);
@@ -149,7 +157,7 @@ export function BuyingPortalsPanel() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Buying portals</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Sign in as Admin or Manager. Name is enough. Buy link, username, and password are optional. Purchasing uses Place order on WhatsApp to chat and order.
+          Save supplier buy links and logins. Courier and transport are on their own page.
         </p>
       </div>
       <form className="space-y-4" onSubmit={(event) => void addPortal(event)}>
@@ -199,39 +207,12 @@ export function BuyingPortalsPanel() {
           Save portal login
         </Button>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-slate-800">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-900 text-slate-400">
-            <tr>
-              <th className="px-3 py-2 text-left">Name</th>
-              <th className="px-3 py-2 text-left">Buy link</th>
-              <th className="px-3 py-2 text-left">WhatsApp order</th>
-              <th className="px-3 py-2 text-left">Username</th>
-              <th className="px-3 py-2 text-left">New password</th>
-              <th className="px-3 py-2 text-left">Login</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {portals.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-3 py-4 text-slate-500">
-                  No portals yet. Fill the form above and click Save portal login.
-                </td>
-              </tr>
-            ) : (
-              portals.map((portal) => (
-                <PortalLoginRow
-                  key={portal.id}
-                  portal={portal}
-                  onSave={saveLogin}
-                  onSync={syncPortal}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <PortalTable
+        empty="No suppliers yet. Fill the form above and click Save portal login."
+        portals={portals.filter((portal) => !isCourierServiceKind(portal.serviceKind))}
+        onSave={saveLogin}
+        onSync={syncPortal}
+      />
       <div>
         <h2 className="mb-3 text-lg font-medium text-white">Parts</h2>
         <div className="grid gap-3 md:grid-cols-4">
@@ -255,6 +236,49 @@ export function BuyingPortalsPanel() {
   );
 }
 
+function PortalTable({
+  empty,
+  portals,
+  onSave,
+  onSync,
+}: {
+  empty: string;
+  portals: Portal[];
+  onSave: (portal: Portal, username: string, password: string, whatsapp: string) => Promise<void>;
+  onSync: (id: string) => Promise<void>;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-800">
+      <table className="min-w-full text-sm">
+        <thead className="bg-slate-900 text-slate-400">
+          <tr>
+            <th className="px-3 py-2 text-left">Name</th>
+            <th className="px-3 py-2 text-left">Buy link</th>
+            <th className="px-3 py-2 text-left">WhatsApp</th>
+            <th className="px-3 py-2 text-left">Username</th>
+            <th className="px-3 py-2 text-left">New password</th>
+            <th className="px-3 py-2 text-left">Login</th>
+            <th className="px-3 py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {portals.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="px-3 py-4 text-slate-500">
+                {empty}
+              </td>
+            </tr>
+          ) : (
+            portals.map((portal) => (
+              <PortalLoginRow key={portal.id} portal={portal} onSave={onSave} onSync={onSync} />
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function PortalLoginRow({
   portal,
   onSave,
@@ -267,7 +291,7 @@ function PortalLoginRow({
   const [username, setUsername] = useState(portal.username);
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState(portal.whatsappCatalogueNo ?? "");
-  const orderHref = whatsappOrderHref(whatsapp, portal.name);
+  const orderHref = whatsappOrderHref(whatsapp, portal.name, "supplier");
 
   return (
     <tr className="border-t border-slate-800 text-slate-200">
@@ -307,11 +331,7 @@ function PortalLoginRow({
         )}
       </td>
       <td className="px-3 py-2">
-        <Input
-          value={username}
-          autoComplete="off"
-          onChange={(e) => setUsername(e.target.value)}
-        />
+        <Input value={username} autoComplete="off" onChange={(e) => setUsername(e.target.value)} />
       </td>
       <td className="px-3 py-2">
         <Input
@@ -324,11 +344,7 @@ function PortalLoginRow({
       </td>
       <td className="px-3 py-2">{portal.passwordSaved ? "Saved" : "Missing"}</td>
       <td className="space-y-2 px-3 py-2">
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => void onSave(portal, username, password, whatsapp)}
-        >
+        <Button type="button" size="sm" onClick={() => void onSave(portal, username, password, whatsapp)}>
           Save login
         </Button>
         <Button type="button" size="sm" variant="secondary" onClick={() => void onSync(portal.id)}>

@@ -14,6 +14,26 @@ export const SEED_BUYING_PORTALS: { name: string; websiteUrl: string }[] = [
   { name: "R K Enterprises", websiteUrl: "https://example.com/rk-enterprises" },
 ];
 
+export const BUYING_PORTAL_SERVICE_KINDS = [
+  "supplier",
+  "delivery",
+  "local_courier",
+  "transport",
+] as const;
+
+export type BuyingPortalServiceKind = (typeof BUYING_PORTAL_SERVICE_KINDS)[number];
+
+export const BUYING_PORTAL_SERVICE_KIND_LABELS: Record<BuyingPortalServiceKind, string> = {
+  supplier: "Supplier",
+  delivery: "Delivery",
+  local_courier: "Local courier",
+  transport: "Transport",
+};
+
+export function isCourierServiceKind(kind: string | undefined): boolean {
+  return kind === "delivery" || kind === "local_courier" || kind === "transport";
+}
+
 export type PublicBuyingPortal = {
   id: string;
   name: string;
@@ -25,6 +45,7 @@ export type PublicBuyingPortal = {
   lastSyncedAt: string | null;
   lastError: string | null;
   whatsappCatalogueNo: string;
+  serviceKind: BuyingPortalServiceKind;
 };
 
 export function serializeBuyingPortal(row: {
@@ -38,7 +59,11 @@ export function serializeBuyingPortal(row: {
   lastSyncedAt: Date | null;
   lastError: string | null;
   whatsappCatalogueNo?: string;
+  serviceKind?: string | null;
 }): PublicBuyingPortal {
+  const serviceKind = BUYING_PORTAL_SERVICE_KINDS.includes(row.serviceKind as BuyingPortalServiceKind)
+    ? (row.serviceKind as BuyingPortalServiceKind)
+    : "supplier";
   return {
     id: row.id,
     name: row.name,
@@ -50,16 +75,23 @@ export function serializeBuyingPortal(row: {
     lastSyncedAt: row.lastSyncedAt ? row.lastSyncedAt.toISOString() : null,
     lastError: row.lastError,
     whatsappCatalogueNo: row.whatsappCatalogueNo ?? "",
+    serviceKind,
   };
 }
 
-export function whatsappOrderHref(no: string, supplierName = ""): string | null {
+export function whatsappOrderHref(
+  no: string,
+  supplierName = "",
+  kind: string = "supplier",
+): string | null {
   const digits = no.replace(/\D/g, "");
   if (digits.length < 10) return null;
   const withCountry = digits.length === 10 ? `91${digits}` : digits;
   const greeting = supplierName.trim() ? ` ${supplierName.trim()}` : "";
   const text = encodeURIComponent(
-    `Hello${greeting}, this is Auto Galaxy. We would like to place an order.`,
+    isCourierServiceKind(kind)
+      ? `Hello${greeting}, this is Auto Galaxy. We need to send a faulty battery or move goods. Please arrange pickup.`
+      : `Hello${greeting}, this is Auto Galaxy. We would like to place an order.`,
   );
   return `https://wa.me/${withCountry}?text=${text}`;
 }

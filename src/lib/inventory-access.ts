@@ -26,6 +26,14 @@ export function canAuditInventory(role: StaffRole): boolean {
   return canIssueInventory(role);
 }
 
+export function canListBuyingPortals(role: StaffRole): boolean {
+  return canManageBuyingPortals(role) || canReceiveInventory(role) || canIssueInventory(role);
+}
+
+export function canUseCourierTransport(role: StaffRole): boolean {
+  return canListBuyingPortals(role);
+}
+
 export function inventoryHomeForRole(role: StaffRole): string | null {
   if (role === PURCHASING_ROLE) return "/admin/inventory/receive";
   if (role === STORE_ROLE) return "/admin/inventory/issue";

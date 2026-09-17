@@ -304,5 +304,8 @@ describe("inventory validators", () => {
     expect(
       createBuyingPortalSchema.safeParse({ name: "R K Enterprises", websiteUrl: "not-a-url" }).success,
     ).toBe(false);
+    expect(
+      createBuyingPortalSchema.safeParse({ name: "Local tempo", serviceKind: "transport" }).success,
+    ).toBe(true);
   });
 });

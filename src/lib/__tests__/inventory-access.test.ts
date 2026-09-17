@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   canAuditInventory,
   canIssueInventory,
+  canListBuyingPortals,
   canManageBuyingPortals,
   canReceiveInventory,
+  canUseCourierTransport,
   canWriteInventoryRates,
   inventoryHomeForRole,
 } from "@/lib/inventory-access";
@@ -26,6 +28,12 @@ describe("inventory access", () => {
     expect(canAuditInventory("purchasing")).toBe(false);
     expect(canReceiveInventory("manager")).toBe(true);
     expect(canIssueInventory("admin")).toBe(true);
+    expect(canListBuyingPortals("store")).toBe(true);
+    expect(canListBuyingPortals("purchasing")).toBe(true);
+    expect(canListBuyingPortals("sales")).toBe(false);
+    expect(canUseCourierTransport("store")).toBe(true);
+    expect(canUseCourierTransport("purchasing")).toBe(true);
+    expect(canUseCourierTransport("sales")).toBe(false);
   });
 
   it("homes purchasing on receive and store on issue", () => {

@@ -1,7 +1,7 @@
 import { observeRoute } from "@/lib/health/observe-route";
 import { NextResponse } from "next/server";
 import { requireStaffSession } from "@/lib/auth";
-import { canManageBuyingPortals } from "@/lib/inventory-access";
+import { canListBuyingPortals, canManageBuyingPortals } from "@/lib/inventory-access";
 import { normalizeWebsiteUrl, serializeBuyingPortal } from "@/lib/inventory-portals";
 import { encryptPortalPassword } from "@/lib/portal-password";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ async function getHandler(_request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!canManageBuyingPortals(session.user.role)) {
+  if (!canListBuyingPortals(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const rows = await prisma.buyingPortal.findMany({ orderBy: { name: "asc" } });
@@ -46,6 +46,7 @@ async function postHandler(request: Request) {
   const username = parsed.data.username ?? "";
   const passwordEncrypted = encryptPortalPassword(parsed.data.password ?? "");
   const websiteUrl = parsed.data.websiteUrl ?? "";
+  const serviceKind = parsed.data.serviceKind ?? "supplier";
   const row = await prisma.buyingPortal.upsert({
     where: { name: parsed.data.name },
     create: {
@@ -57,6 +58,7 @@ async function postHandler(request: Request) {
       connectorId: parsed.data.connectorId ?? null,
       createdByEmail: session.user.email,
       whatsappCatalogueNo: parsed.data.whatsappCatalogueNo ?? "",
+      serviceKind,
     },
     update: {
       ...(websiteUrl ? { websiteUrl } : {}),
@@ -65,6 +67,7 @@ async function postHandler(request: Request) {
       ...(parsed.data.whatsappCatalogueNo !== undefined
         ? { whatsappCatalogueNo: parsed.data.whatsappCatalogueNo }
         : {}),
+      serviceKind,
     },
   });
   return NextResponse.json(serializeBuyingPortal(row), { status: 201 });

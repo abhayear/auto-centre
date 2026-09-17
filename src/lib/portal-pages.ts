@@ -12,6 +12,7 @@ import {
   canIssueInventory,
   canManageBuyingPortals,
   canReceiveInventory,
+  canUseCourierTransport,
   inventoryHomeForRole,
 } from "@/lib/inventory-access";
 
@@ -46,6 +47,10 @@ export function assertStaffPageAccess(
 
   if (isPage(pathname, "/admin/inventory/portals")) {
     return canManageBuyingPortals(role) ? null : fallbackRedirectForRole(role);
+  }
+
+  if (isPage(pathname, "/admin/inventory/couriers")) {
+    return canUseCourierTransport(role) ? null : fallbackRedirectForRole(role);
   }
 
   if (isPage(pathname, "/admin/inventory/receive")) {

@@ -17,6 +17,14 @@ describe("whatsappOrderHref", () => {
       )}`,
     );
   });
+
+  it("opens WhatsApp with a pickup message for transport", () => {
+    expect(whatsappOrderHref("9876543210", "Local tempo", "transport")).toBe(
+      `https://wa.me/919876543210?text=${encodeURIComponent(
+        "Hello Local tempo, this is Auto Galaxy. We need to send a faulty battery or move goods. Please arrange pickup.",
+      )}`,
+    );
+  });
 });
 
 describe("SEED_BUYING_PORTALS", () => {
@@ -46,6 +54,7 @@ describe("serializeBuyingPortal", () => {
       lastError: null,
     });
     expect(publicPortal.passwordSaved).toBe(true);
+    expect(publicPortal.serviceKind).toBe("supplier");
     expect(publicPortal).not.toHaveProperty("password");
     expect(publicPortal).not.toHaveProperty("passwordEncrypted");
   });

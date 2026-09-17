@@ -28,6 +28,7 @@ import {
   Package,
   Star,
   Store,
+  Truck,
   UserCog,
   UserPlus,
   Warehouse,
@@ -50,6 +51,7 @@ import {
   canIssueInventory,
   canManageBuyingPortals,
   canReceiveInventory,
+  canUseCourierTransport,
 } from "@/lib/inventory-access";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -102,6 +104,7 @@ const navItems: NavItem[] = [
   { href: "/admin/showroom-walk-ins", label: "Walk-in Enquiries", icon: Store, show: canUseOpsPortal },
   { href: "/admin/replacement-parts", label: "Replacement Parts", icon: Package, show: canUseOpsPortal },
   { href: "/admin/inventory/portals", label: "Buying portals", icon: Warehouse, show: canManageBuyingPortals },
+  { href: "/admin/inventory/couriers", label: "Courier / transport", icon: Truck, show: canUseCourierTransport },
   { href: "/admin/inventory/receive", label: "Receive stock", icon: Package, show: canReceiveInventory },
   { href: "/admin/inventory/issue", label: "Issue & count", icon: ClipboardList, show: canIssueInventory },
   { href: "/admin/inventory/audit", label: "Stock audit", icon: ListChecks, show: canAuditInventory },

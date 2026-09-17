@@ -5,7 +5,8 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { whatsappOrderHref } from "@/lib/inventory-portals";
+import { WhatsAppContactRows } from "@/components/admin/inventory/WhatsAppContactRows";
+import { isCourierServiceKind } from "@/lib/inventory-portals";
 
 type Bill = {
   id: string;
@@ -16,7 +17,13 @@ type Bill = {
 };
 
 type Part = { id: string; code: string; name: string };
-type PortalOption = { id: string; name: string; websiteUrl: string; whatsappCatalogueNo?: string };
+type PortalOption = {
+  id: string;
+  name: string;
+  websiteUrl: string;
+  whatsappCatalogueNo?: string;
+  serviceKind?: string;
+};
 type CatalogLine = { id: string; vendorSku: string; vendorName: string; inventoryPartId: string | null };
 
 export function ReceiveStockPanel() {
@@ -108,6 +115,7 @@ export function ReceiveStockPanel() {
   }
 
   const drafts = bills.filter((bill) => bill.status === "draft");
+  const suppliers = portals.filter((portal) => !isCourierServiceKind(portal.serviceKind));
 
   return (
     <div className="space-y-8">
@@ -117,17 +125,13 @@ export function ReceiveStockPanel() {
           Place an order on the supplier WhatsApp, then receive qty here. Rates are not editable.
         </p>
       </div>
-      {portals.length > 0 ? (
+      {suppliers.length > 0 ? (
         <div>
           <h2 className="mb-2 text-lg text-white">Place order on WhatsApp</h2>
           <p className="mb-3 text-sm text-slate-400">
             Opens the WhatsApp app (or WhatsApp Web) to that supplier so you can send the order.
           </p>
-          <ul className="space-y-2">
-            {portals.map((portal) => (
-              <WhatsAppOrderRow key={portal.id} portal={portal} />
-            ))}
-          </ul>
+          <WhatsAppContactRows contacts={suppliers} />
         </div>
       ) : null}
       <div>
@@ -154,7 +158,7 @@ export function ReceiveStockPanel() {
           onChange={(e) => setPortalId(e.target.value)}
           options={[
             { value: "", label: "Select portal" },
-            ...portals.map((portal) => ({ value: portal.id, label: portal.name })),
+            ...suppliers.map((portal) => ({ value: portal.id, label: portal.name })),
           ]}
         />
         <Input label="Bill no" value={billNumber} onChange={(e) => setBillNumber(e.target.value)} />
@@ -204,48 +208,5 @@ export function ReceiveStockPanel() {
         </div>
       ) : null}
     </div>
-  );
-}
-
-function WhatsAppOrderRow({ portal }: { portal: PortalOption }) {
-  const [whatsapp, setWhatsapp] = useState(portal.whatsappCatalogueNo ?? "");
-  const orderHref = whatsappOrderHref(whatsapp, portal.name);
-
-  return (
-    <li className="flex flex-wrap items-end justify-between gap-3 rounded border border-slate-800 px-3 py-3">
-      <div className="min-w-[12rem] flex-1 space-y-2">
-        <p className="text-slate-200">{portal.name}</p>
-        <Input
-          label="Supplier WhatsApp no."
-          value={whatsapp}
-          placeholder="9876543210"
-          onChange={(e) => setWhatsapp(e.target.value)}
-        />
-      </div>
-      <div className="flex flex-wrap gap-2 pb-1">
-        {portal.websiteUrl ? (
-          <a
-            href={portal.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
-          >
-            Open website
-          </a>
-        ) : null}
-        {orderHref ? (
-          <a
-            href={orderHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
-          >
-            Place order on WhatsApp
-          </a>
-        ) : (
-          <span className="inline-flex items-center text-sm text-slate-500">Enter a 10-digit number</span>
-        )}
-      </div>
-    </li>
   );
 }

@@ -552,6 +552,7 @@ model BuyingPortal {
   lastError         String?
   createdByEmail    String
   whatsappCatalogueNo String            @default("")
+  serviceKind       String              @default("supplier")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   catalogLines      PortalCatalogLine[]

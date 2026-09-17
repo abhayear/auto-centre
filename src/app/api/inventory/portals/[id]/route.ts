@@ -38,6 +38,7 @@ async function patchHandler(
     enabled?: boolean;
     connectorId?: string | null;
     whatsappCatalogueNo?: string;
+    serviceKind?: string;
   } = {};
   if (parsed.data.name !== undefined) data.name = parsed.data.name;
   if (parsed.data.websiteUrl !== undefined) data.websiteUrl = parsed.data.websiteUrl;
@@ -47,6 +48,7 @@ async function patchHandler(
   if (parsed.data.whatsappCatalogueNo !== undefined) {
     data.whatsappCatalogueNo = parsed.data.whatsappCatalogueNo;
   }
+  if (parsed.data.serviceKind !== undefined) data.serviceKind = parsed.data.serviceKind;
   if (parsed.data.password) {
     data.passwordEncrypted = encryptPortalPassword(parsed.data.password);
   }
