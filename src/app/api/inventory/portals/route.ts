@@ -50,11 +50,15 @@ async function postHandler(request: Request) {
       enabled: parsed.data.enabled ?? true,
       connectorId: parsed.data.connectorId ?? null,
       createdByEmail: session.user.email,
+      whatsappCatalogueNo: parsed.data.whatsappCatalogueNo ?? "",
     },
     update: {
       websiteUrl: parsed.data.websiteUrl,
       username,
       ...(parsed.data.password ? { passwordEncrypted } : {}),
+      ...(parsed.data.whatsappCatalogueNo !== undefined
+        ? { whatsappCatalogueNo: parsed.data.whatsappCatalogueNo }
+        : {}),
     },
   });
   return NextResponse.json(serializeBuyingPortal(row), { status: 201 });

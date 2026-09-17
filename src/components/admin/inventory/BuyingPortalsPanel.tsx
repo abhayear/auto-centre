@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { whatsappOrderHref } from "@/lib/inventory-portals";
 
 type Portal = {
   id: string;
@@ -15,6 +16,7 @@ type Portal = {
   connectorId: string | null;
   lastSyncedAt: string | null;
   lastError: string | null;
+  whatsappCatalogueNo?: string;
 };
 
 type Part = {
@@ -33,6 +35,7 @@ export function BuyingPortalsPanel() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [whatsappCatalogueNo, setWhatsappCatalogueNo] = useState("");
   const [saving, setSaving] = useState(false);
   const [partCode, setPartCode] = useState("");
   const [partName, setPartName] = useState("");
@@ -66,7 +69,7 @@ export function BuyingPortalsPanel() {
     const res = await fetch("/api/inventory/portals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, websiteUrl, username, password }),
+      body: JSON.stringify({ name, websiteUrl, username, password, whatsappCatalogueNo }),
     });
     const json = await res.json().catch(() => ({}));
     setSaving(false);
@@ -78,16 +81,23 @@ export function BuyingPortalsPanel() {
     setWebsiteUrl("");
     setUsername("");
     setPassword("");
+    setWhatsappCatalogueNo("");
     toast.success("Portal login saved");
     await load();
   }
 
-  async function saveLogin(portal: Portal, nextUsername: string, nextPassword: string) {
+  async function saveLogin(
+    portal: Portal,
+    nextUsername: string,
+    nextPassword: string,
+    nextWhatsapp: string,
+  ) {
     const res = await fetch(`/api/inventory/portals/${portal.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: nextUsername,
+        whatsappCatalogueNo: nextWhatsapp,
         ...(nextPassword ? { password: nextPassword } : {}),
       }),
     });
@@ -139,7 +149,7 @@ export function BuyingPortalsPanel() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Buying portals</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Sign in as Admin or Manager. Enter the supplier website login here. Purchasing cannot save these passwords.
+          Sign in as Admin or Manager. Save the supplier website login and WhatsApp number. Purchasing uses Place order on WhatsApp to chat and order.
         </p>
       </div>
       <form className="space-y-4" onSubmit={(event) => void addPortal(event)}>
@@ -177,6 +187,14 @@ export function BuyingPortalsPanel() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <Input
+            label="Supplier WhatsApp no."
+            name="whatsappCatalogueNo"
+            autoComplete="off"
+            placeholder="9876543210"
+            value={whatsappCatalogueNo}
+            onChange={(e) => setWhatsappCatalogueNo(e.target.value)}
+          />
         </div>
         <Button type="submit" loading={saving}>
           Save portal login
@@ -188,6 +206,7 @@ export function BuyingPortalsPanel() {
             <tr>
               <th className="px-3 py-2 text-left">Name</th>
               <th className="px-3 py-2 text-left">Buy link</th>
+              <th className="px-3 py-2 text-left">WhatsApp order</th>
               <th className="px-3 py-2 text-left">Username</th>
               <th className="px-3 py-2 text-left">New password</th>
               <th className="px-3 py-2 text-left">Login</th>
@@ -197,7 +216,7 @@ export function BuyingPortalsPanel() {
           <tbody>
             {portals.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
+                <td colSpan={7} className="px-3 py-4 text-slate-500">
                   No portals yet. Fill the form above and click Save portal login.
                 </td>
               </tr>
@@ -243,11 +262,13 @@ function PortalLoginRow({
   onSync,
 }: {
   portal: Portal;
-  onSave: (portal: Portal, username: string, password: string) => Promise<void>;
+  onSave: (portal: Portal, username: string, password: string, whatsapp: string) => Promise<void>;
   onSync: (id: string) => Promise<void>;
 }) {
   const [username, setUsername] = useState(portal.username);
   const [password, setPassword] = useState("");
+  const [whatsapp, setWhatsapp] = useState(portal.whatsappCatalogueNo ?? "");
+  const orderHref = whatsappOrderHref(whatsapp, portal.name);
 
   return (
     <tr className="border-t border-slate-800 text-slate-200">
@@ -261,6 +282,26 @@ function PortalLoginRow({
         >
           {portal.websiteUrl}
         </a>
+      </td>
+      <td className="space-y-2 px-3 py-2">
+        <Input
+          value={whatsapp}
+          autoComplete="off"
+          placeholder="9876543210"
+          onChange={(e) => setWhatsapp(e.target.value)}
+        />
+        {orderHref ? (
+          <a
+            href={orderHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600"
+          >
+            Place order on WhatsApp
+          </a>
+        ) : (
+          <p className="text-xs text-slate-500">Save a 10-digit WhatsApp number first.</p>
+        )}
       </td>
       <td className="px-3 py-2">
         <Input
@@ -283,7 +324,7 @@ function PortalLoginRow({
         <Button
           type="button"
           size="sm"
-          onClick={() => void onSave(portal, username, password)}
+          onClick={() => void onSave(portal, username, password, whatsapp)}
         >
           Save login
         </Button>

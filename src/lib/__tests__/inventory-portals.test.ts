@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { normalizeWebsiteUrl, SEED_BUYING_PORTALS, serializeBuyingPortal } from "@/lib/inventory-portals";
+import { normalizeWebsiteUrl, SEED_BUYING_PORTALS, serializeBuyingPortal, whatsappOrderHref } from "@/lib/inventory-portals";
 
 describe("normalizeWebsiteUrl", () => {
   it("adds https when the protocol is missing", () => {
     expect(normalizeWebsiteUrl("elyfevspare.com")).toBe("https://elyfevspare.com");
     expect(normalizeWebsiteUrl("https://maple.in")).toBe("https://maple.in");
+  });
+});
+
+describe("whatsappOrderHref", () => {
+  it("opens WhatsApp with a prefilled Auto Galaxy order message", () => {
+    expect(whatsappOrderHref("9876543210", "R K Enterprises")).toBe(
+      `https://wa.me/919876543210?text=${encodeURIComponent(
+        "Hello R K Enterprises, this is Auto Galaxy. We would like to place an order.",
+      )}`,
+    );
   });
 });
 

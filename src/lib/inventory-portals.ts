@@ -24,6 +24,7 @@ export type PublicBuyingPortal = {
   connectorId: string | null;
   lastSyncedAt: string | null;
   lastError: string | null;
+  whatsappCatalogueNo: string;
 };
 
 export function serializeBuyingPortal(row: {
@@ -36,6 +37,7 @@ export function serializeBuyingPortal(row: {
   connectorId: string | null;
   lastSyncedAt: Date | null;
   lastError: string | null;
+  whatsappCatalogueNo?: string;
 }): PublicBuyingPortal {
   return {
     id: row.id,
@@ -47,5 +49,17 @@ export function serializeBuyingPortal(row: {
     connectorId: row.connectorId,
     lastSyncedAt: row.lastSyncedAt ? row.lastSyncedAt.toISOString() : null,
     lastError: row.lastError,
+    whatsappCatalogueNo: row.whatsappCatalogueNo ?? "",
   };
+}
+
+export function whatsappOrderHref(no: string, supplierName = ""): string | null {
+  const digits = no.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const withCountry = digits.length === 10 ? `91${digits}` : digits;
+  const greeting = supplierName.trim() ? ` ${supplierName.trim()}` : "";
+  const text = encodeURIComponent(
+    `Hello${greeting}, this is Auto Galaxy. We would like to place an order.`,
+  );
+  return `https://wa.me/${withCountry}?text=${text}`;
 }

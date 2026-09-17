@@ -682,6 +682,7 @@ export const createBuyingPortalSchema = z.object({
   password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
+  whatsappCatalogueNo: z.string().trim().max(40).optional(),
 });
 
 export const updateBuyingPortalSchema = z.object({
@@ -691,6 +692,7 @@ export const updateBuyingPortalSchema = z.object({
   password: z.string().max(500).optional(),
   enabled: z.boolean().optional(),
   connectorId: z.string().trim().min(1).nullable().optional(),
+  whatsappCatalogueNo: z.string().trim().max(40).optional(),
 });
 
 export const createInventoryPartNameOnlySchema = z.object({

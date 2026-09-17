@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { whatsappOrderHref } from "@/lib/inventory-portals";
 
 type Bill = {
   id: string;
@@ -15,7 +16,7 @@ type Bill = {
 };
 
 type Part = { id: string; code: string; name: string };
-type PortalOption = { id: string; name: string; websiteUrl: string };
+type PortalOption = { id: string; name: string; websiteUrl: string; whatsappCatalogueNo?: string };
 type CatalogLine = { id: string; vendorSku: string; vendorName: string; inventoryPartId: string | null };
 
 export function ReceiveStockPanel() {
@@ -112,24 +113,23 @@ export function ReceiveStockPanel() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Receive stock</h1>
-        <p className="mt-1 text-sm text-slate-400">Confirm synced bills or type qty. Rates are not editable here.</p>
-        {portals.length > 0 ? (
-          <ul className="mt-3 space-y-1 text-sm">
+        <p className="mt-1 text-sm text-slate-400">
+          Place an order on the supplier WhatsApp, then receive qty here. Rates are not editable.
+        </p>
+      </div>
+      {portals.length > 0 ? (
+        <div>
+          <h2 className="mb-2 text-lg text-white">Place order on WhatsApp</h2>
+          <p className="mb-3 text-sm text-slate-400">
+            Opens the WhatsApp app (or WhatsApp Web) to that supplier so you can send the order.
+          </p>
+          <ul className="space-y-2">
             {portals.map((portal) => (
-              <li key={portal.id}>
-                <a
-                  href={portal.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-red-400 underline hover:text-red-300"
-                >
-                  {portal.name}
-                </a>
-              </li>
+              <WhatsAppOrderRow key={portal.id} portal={portal} />
             ))}
           </ul>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <div>
         <h2 className="mb-2 text-lg text-white">Draft bills</h2>
         {drafts.length === 0 ? (
@@ -204,5 +204,46 @@ export function ReceiveStockPanel() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function WhatsAppOrderRow({ portal }: { portal: PortalOption }) {
+  const [whatsapp, setWhatsapp] = useState(portal.whatsappCatalogueNo ?? "");
+  const orderHref = whatsappOrderHref(whatsapp, portal.name);
+
+  return (
+    <li className="flex flex-wrap items-end justify-between gap-3 rounded border border-slate-800 px-3 py-3">
+      <div className="min-w-[12rem] flex-1 space-y-2">
+        <p className="text-slate-200">{portal.name}</p>
+        <Input
+          label="Supplier WhatsApp no."
+          value={whatsapp}
+          placeholder="9876543210"
+          onChange={(e) => setWhatsapp(e.target.value)}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2 pb-1">
+        <a
+          href={portal.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+        >
+          Open website
+        </a>
+        {orderHref ? (
+          <a
+            href={orderHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+          >
+            Place order on WhatsApp
+          </a>
+        ) : (
+          <span className="inline-flex items-center text-sm text-slate-500">Enter a 10-digit number</span>
+        )}
+      </div>
+    </li>
   );
 }

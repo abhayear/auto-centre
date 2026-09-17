@@ -551,6 +551,7 @@ model BuyingPortal {
   lastSyncedAt      DateTime?
   lastError         String?
   createdByEmail    String
+  whatsappCatalogueNo String            @default("")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   catalogLines      PortalCatalogLine[]
@@ -598,6 +599,7 @@ model PurchaseBill {
   source           String
   status           String             @default("draft")
   confirmedByEmail String?
+  whatsappCatalogueNo String          @default("")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   lines            PurchaseBillLine[]
