@@ -144,4 +144,14 @@ describe("assertStaffPageAccess", () => {
     expect(assertStaffPageAccess("/admin/inventory/issue", "manager")).toBeNull();
     expect(assertStaffPageAccess("/admin/inventory/audit", "manager")).toBeNull();
   });
+
+  it("opens the warranty board to its queue owners only", () => {
+    expect(assertStaffPageAccess("/admin/warranty", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty", "admin")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty", "purchasing")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty", "store")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty", "mechanic")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty", "sales")).toBe("/admin/training");
+    expect(assertStaffPageAccess("/admin/warranty", "junior_developer")).toBe("/admin/work");
+  });
 });

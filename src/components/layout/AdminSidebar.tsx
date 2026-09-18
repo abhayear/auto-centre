@@ -26,6 +26,7 @@ import {
   Megaphone,
   MessageSquare,
   Package,
+  ShieldCheck,
   Star,
   Store,
   Truck,
@@ -53,6 +54,7 @@ import {
   canReceiveInventory,
   canUseCourierTransport,
 } from "@/lib/inventory-access";
+import { canUseWarrantyBoard } from "@/lib/warranty-workflow";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import type { LucideIcon } from "lucide-react";
@@ -103,6 +105,7 @@ const navItems: NavItem[] = [
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare, show: canUseOpsPortal },
   { href: "/admin/showroom-walk-ins", label: "Walk-in Enquiries", icon: Store, show: canUseOpsPortal },
   { href: "/admin/replacement-parts", label: "Replacement Parts", icon: Package, show: canUseOpsPortal },
+  { href: "/admin/warranty", label: "Warranty 2.0", icon: ShieldCheck, show: canUseWarrantyBoard },
   { href: "/admin/inventory/portals", label: "Buying portals", icon: Warehouse, show: canManageBuyingPortals },
   { href: "/admin/inventory/couriers", label: "Courier / transport", icon: Truck, show: canUseCourierTransport },
   { href: "/admin/inventory/receive", label: "Receive stock", icon: Package, show: canReceiveInventory },

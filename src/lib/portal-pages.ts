@@ -15,6 +15,7 @@ import {
   canUseCourierTransport,
   inventoryHomeForRole,
 } from "@/lib/inventory-access";
+import { canUseWarrantyBoard } from "@/lib/warranty-workflow";
 
 export function homeRedirectForRole(role: StaffRole): string | null {
   const inventoryHome = inventoryHomeForRole(role);
@@ -44,6 +45,10 @@ export function assertStaffPageAccess(
   if (pathname === "/admin") return null;
 
   if (isPage(pathname, "/admin/change-password")) return null;
+
+  if (isPage(pathname, "/admin/warranty")) {
+    return canUseWarrantyBoard(role) ? null : fallbackRedirectForRole(role);
+  }
 
   if (isPage(pathname, "/admin/inventory/portals")) {
     return canManageBuyingPortals(role) ? null : fallbackRedirectForRole(role);
