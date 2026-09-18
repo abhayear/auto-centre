@@ -451,16 +451,36 @@ model ReplacementClaim {
   companyDeliveryNote    String?
   returnedToCustomerDate DateTime?              @db.Date
   notes                  String?
+  customerId             String?
+  customer               WarrantyCustomer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  bikeId                 String?
+  bike                   EBike?                 @relation(fields: [bikeId], references: [id], onDelete: SetNull)
+  faultyComponentId      String?
+  faultyComponent        WarrantyComponent?     @relation("ClaimFaultyComponent", fields: [faultyComponentId], references: [id], onDelete: SetNull)
+  replacementComponentId String?
+  replacementComponent   WarrantyComponent?     @relation("ClaimReplacementComponent", fields: [replacementComponentId], references: [id], onDelete: SetNull)
+  companyLocationId      String?
+  companyLocation        CompanyLocation?       @relation(fields: [companyLocationId], references: [id], onDelete: SetNull)
+  returnType             String?
+  expectedReturnDate     DateTime?              @db.Date
+  installedAt            DateTime?              @db.Date
+  codedAt                DateTime?              @db.Date
+  codingRef              String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   items                  ReplacementClaimItem[]
   sourcedStock           ReplacementStockItem[] @relation("StockSource")
   allocatedStock         ReplacementStockItem[] @relation("StockAllocation")
+  documents              ClaimDocument[]
+  events                 ComponentEvent[]
 
   @@index([receivedDate])
   @@index([status])
   @@index([sentToCompanyDate])
   @@index([destination])
+  @@index([customerId])
+  @@index([bikeId])
+  @@index([faultyComponentId])
 }
 
 model ReplacementClaimItem {
@@ -658,4 +678,137 @@ model RateChangeLog {
   source     String
   actorEmail String
   createdAt  DateTime      @default(now())
+}
+
+model WarrantyCustomer {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String   @unique
+  altPhone   String?
+  address    String?
+  area       String?
+  distanceKm Float?
+  latitude   Float?
+  longitude  Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bikes      EBike[]
+  claims     ReplacementClaim[]
+
+  @@index([name])
+}
+
+model EBike {
+  id                 String             @id @default(cuid())
+  customerId         String
+  customer           WarrantyCustomer   @relation(fields: [customerId], references: [id])
+  bikeNumber         String             @unique
+  chassisNumber      String?
+  modelName          String?
+  saleDate           DateTime           @db.Date
+  invoiceNumber      String?
+  invoiceDate        DateTime?          @db.Date
+  warrantyStartBasis String?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  components         WarrantyComponent[]
+  claims             ReplacementClaim[]
+  events             ComponentEvent[]
+
+  @@index([customerId])
+  @@index([chassisNumber])
+}
+
+/// One row per physical component. A serial is never edited into another serial.
+model WarrantyComponent {
+  id                   String              @id @default(cuid())
+  serialNumber         String              @unique
+  componentType        String
+  modelCode            String?
+  ah                   Float?
+  voltage              String?
+  origin               String              @default("sold_with_bike")
+  status               String              @default("installed")
+  currentBikeId        String?
+  currentBike          EBike?              @relation(fields: [currentBikeId], references: [id], onDelete: SetNull)
+  warrantyStartDate    DateTime?           @db.Date
+  warrantyMonths       Int?
+  replacedComponentId  String?
+  replacedComponent    WarrantyComponent?  @relation("ComponentReplacement", fields: [replacedComponentId], references: [id], onDelete: SetNull)
+  replacedBy           WarrantyComponent[] @relation("ComponentReplacement")
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  events               ComponentEvent[]
+  faultyClaims         ReplacementClaim[]  @relation("ClaimFaultyComponent")
+  replacementClaims    ReplacementClaim[]  @relation("ClaimReplacementComponent")
+
+  @@index([componentType])
+  @@index([status])
+  @@index([currentBikeId])
+  @@index([modelCode])
+}
+
+/// Append-only. Never updated or deleted, so any status can be rebuilt.
+model ComponentEvent {
+  id          String            @id @default(cuid())
+  componentId String
+  component   WarrantyComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  kind        String
+  occurredAt  DateTime          @db.Date
+  bikeId      String?
+  bike        EBike?            @relation(fields: [bikeId], references: [id], onDelete: SetNull)
+  claimId     String?
+  claim       ReplacementClaim? @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  locationId  String?
+  location    CompanyLocation?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  note        String?
+  actorEmail  String
+  createdAt   DateTime          @default(now())
+
+  @@index([componentId, occurredAt])
+  @@index([claimId])
+}
+
+/// Plant master, so Sirsa / Dabra / Delhi are rows and not hard-coded.
+model CompanyLocation {
+  id           String             @id @default(cuid())
+  name         String             @unique
+  kind         String             @default("plant")
+  address      String?
+  contactPhone String?
+  active       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  claims       ReplacementClaim[]
+  events       ComponentEvent[]
+}
+
+/// Single row. Company may raise or lower cover, so durations are settings.
+model WarrantyPolicy {
+  id               String   @id @default("default")
+  batteryMonths    Int      @default(36)
+  chargerMonths    Int      @default(12)
+  motorMonths      Int      @default(36)
+  controllerMonths Int      @default(36)
+  startBasis       String   @default("sale_date")
+  expiringSoonDays Int      @default(30)
+  companyDelayDays Int      @default(21)
+  nearbyKm         Int      @default(10)
+  escalationDays   Int      @default(21)
+  updatedByEmail   String?
+  updatedAt        DateTime @updatedAt
+}
+
+model ClaimDocument {
+  id             String           @id @default(cuid())
+  claimId        String
+  claim          ReplacementClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  kind           String
+  url            String
+  uploadedByEmail String
+  createdAt      DateTime         @default(now())
+
+  @@index([claimId])
 }

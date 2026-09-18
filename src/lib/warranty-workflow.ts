@@ -169,10 +169,46 @@ export type WarrantyCounts = {
   exceptions: number;
 };
 
+export const WARRANTY_PIPELINE_STEPS = [
+  "complaint_received",
+  "with_company",
+  "received_back",
+  "waiting_installation",
+  "installed_coded",
+  "closed",
+] as const;
+
+export type WarrantyPipelineStep = (typeof WARRANTY_PIPELINE_STEPS)[number];
+
+export const WARRANTY_PIPELINE_LABELS: Record<WarrantyPipelineStep, string> = {
+  complaint_received: "Complaint received",
+  with_company: "Sent to company / under repair",
+  received_back: "Received back",
+  waiting_installation: "Waiting for installation",
+  installed_coded: "Installed + coded",
+  closed: "Closed",
+};
+
+export type WarrantyPipelineStage = {
+  step: WarrantyPipelineStep;
+  label: string;
+  count: number;
+};
+
+/** Counts of every physical component we track, not just the ones in a claim. */
+export type WarrantyMasterCounts = {
+  totalCustomers: number;
+  totalBikes: number;
+  componentsInWarranty: number;
+  warrantyExpiringSoon: number;
+};
+
 export type WarrantyBoard = {
   role: WarrantyRole;
   seesAllCases: boolean;
   counts: WarrantyCounts;
+  pipeline: WarrantyPipelineStage[];
+  masterCounts?: WarrantyMasterCounts;
   myTasks: WarrantyTask[];
   queues: { role: WarrantyRole; label: string; tasks: WarrantyTask[] }[];
   exceptions: WarrantyException[];
@@ -447,6 +483,29 @@ export function countWarrantyBoard(
   };
 }
 
+const PIPELINE_STAGES: Record<WarrantyPipelineStep, WarrantyStage[]> = {
+  complaint_received: ["ready_to_dispatch"],
+  with_company: ["with_company", "company_overdue"],
+  received_back: ["awaiting_allocation"],
+  waiting_installation: ["awaiting_installation"],
+  installed_coded: ["awaiting_verification"],
+  closed: ["closed"],
+};
+
+/** The dealer's mental model: one strip from complaint to closed. */
+export function buildWarrantyPipeline(
+  claims: WarrantyCase[],
+  today: string,
+): WarrantyPipelineStage[] {
+  const stages = claims.map((claim) => warrantyStageFor(claim, today));
+
+  return WARRANTY_PIPELINE_STEPS.map((step) => ({
+    step,
+    label: WARRANTY_PIPELINE_LABELS[step],
+    count: stages.filter((stage) => PIPELINE_STAGES[step].includes(stage)).length,
+  }));
+}
+
 export function buildWarrantyBoard(
   role: WarrantyRole,
   claims: WarrantyCase[],
@@ -469,6 +528,7 @@ export function buildWarrantyBoard(
     role,
     seesAllCases,
     counts: countWarrantyBoard(claims, tasks, exceptions, today),
+    pipeline: buildWarrantyPipeline(claims, today),
     myTasks: warrantyTasksForRole(tasks, role),
     queues,
     exceptions: seesAllCases ? exceptions : [],

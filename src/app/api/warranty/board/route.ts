@@ -4,9 +4,16 @@ import { requireStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { warrantyRoleForStaffRole } from "@/lib/warranty-roles";
 import {
+  DEFAULT_WARRANTY_POLICY,
+  componentWarranty,
+  isWarrantyCovered,
+  type WarrantyPolicySettings,
+} from "@/lib/component-warranty";
+import {
   buildWarrantyBoard,
   canUseWarrantyBoard,
   type WarrantyCase,
+  type WarrantyMasterCounts,
   type WarrantyStockRow,
 } from "@/lib/warranty-workflow";
 
@@ -69,7 +76,81 @@ async function getHandler(_request: Request) {
   }));
 
   const today = new Date().toISOString().slice(0, 10);
-  return NextResponse.json(buildWarrantyBoard(warrantyRole, claims, stockItems, today));
+  const board = buildWarrantyBoard(warrantyRole, claims, stockItems, today);
+
+  return NextResponse.json({ ...board, masterCounts: await masterCounts(today) });
+}
+
+const EMPTY_MASTER_COUNTS: WarrantyMasterCounts = {
+  totalCustomers: 0,
+  totalBikes: 0,
+  componentsInWarranty: 0,
+  warrantyExpiringSoon: 0,
+};
+
+async function masterCounts(today: string): Promise<WarrantyMasterCounts> {
+  try {
+    return await countRegistry(today);
+  } catch {
+    // Serial registry tables may not be migrated yet; the task board still works.
+    return EMPTY_MASTER_COUNTS;
+  }
+}
+
+async function countRegistry(today: string): Promise<WarrantyMasterCounts> {
+  const [totalCustomers, totalBikes, components, policyRow] = await Promise.all([
+    prisma.warrantyCustomer.count(),
+    prisma.eBike.count(),
+    prisma.warrantyComponent.findMany({
+      where: { status: { in: ["installed", "available"] } },
+      select: {
+        componentType: true,
+        warrantyMonths: true,
+        warrantyStartDate: true,
+        currentBike: {
+          select: { saleDate: true, invoiceDate: true, warrantyStartBasis: true },
+        },
+      },
+    }),
+    prisma.warrantyPolicy.findUnique({ where: { id: "default" } }),
+  ]);
+
+  const policy: WarrantyPolicySettings = policyRow
+    ? {
+        batteryMonths: policyRow.batteryMonths,
+        chargerMonths: policyRow.chargerMonths,
+        motorMonths: policyRow.motorMonths,
+        controllerMonths: policyRow.controllerMonths,
+        startBasis: (policyRow.startBasis as WarrantyPolicySettings["startBasis"]) ?? "sale_date",
+        expiringSoonDays: policyRow.expiringSoonDays,
+      }
+    : DEFAULT_WARRANTY_POLICY;
+
+  let componentsInWarranty = 0;
+  let warrantyExpiringSoon = 0;
+
+  for (const component of components) {
+    const result = componentWarranty(
+      {
+        componentType: component.componentType,
+        warrantyMonths: component.warrantyMonths,
+        warrantyStartDate: dateOnly(component.warrantyStartDate),
+      },
+      {
+        saleDate: dateOnly(component.currentBike?.saleDate),
+        invoiceDate: dateOnly(component.currentBike?.invoiceDate),
+        warrantyStartBasis:
+          (component.currentBike?.warrantyStartBasis as WarrantyPolicySettings["startBasis"]) ??
+          null,
+      },
+      today,
+      policy,
+    );
+    if (isWarrantyCovered(result)) componentsInWarranty += 1;
+    if (result.status === "expiring_soon") warrantyExpiringSoon += 1;
+  }
+
+  return { totalCustomers, totalBikes, componentsInWarranty, warrantyExpiringSoon };
 }
 
 export const GET = observeRoute(getHandler);

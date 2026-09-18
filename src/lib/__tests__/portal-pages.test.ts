@@ -154,4 +154,18 @@ describe("assertStaffPageAccess", () => {
     expect(assertStaffPageAccess("/admin/warranty", "sales")).toBe("/admin/training");
     expect(assertStaffPageAccess("/admin/warranty", "junior_developer")).toBe("/admin/work");
   });
+
+  it("keeps the printable warranty guide to managers and admins", () => {
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "manager")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "admin")).toBeNull();
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "purchasing")).toBe(
+      "/admin/inventory/receive",
+    );
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "store")).toBe(
+      "/admin/inventory/issue",
+    );
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "mechanic")).toBe("/admin/training");
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "sales")).toBe("/admin/training");
+    expect(assertStaffPageAccess("/admin/warranty/handbook", "junior_developer")).toBe("/admin/work");
+  });
 });

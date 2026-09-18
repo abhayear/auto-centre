@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildWarrantyBoard,
+  buildWarrantyPipeline,
   buildWarrantyTasks,
   canUseWarrantyBoard,
   detectWarrantyExceptions,
@@ -292,6 +293,47 @@ describe("buildWarrantyBoard", () => {
   it("gives a technician no tasks when nothing is allocated", () => {
     const board = buildWarrantyBoard("technician", claims, [stock()], today);
     expect(board.myTasks).toEqual([]);
+  });
+});
+
+describe("buildWarrantyPipeline", () => {
+  it("places every claim on one strip from complaint to closed", () => {
+    const pipeline = buildWarrantyPipeline(
+      [
+        claim(),
+        claim({
+          id: "claim-2",
+          status: "sent_to_company",
+          receivedDate: "2026-09-28",
+          sentToCompanyDate: "2026-10-01",
+        }),
+        claim({ id: "claim-3", status: "received_from_company" }),
+        claim({ id: "claim-4", allocatedStockId: "stock-1" }),
+        claim({
+          id: "claim-5",
+          status: "returned_to_customer",
+          returnedToCustomerDate: "2026-10-09",
+        }),
+        claim({ id: "claim-6", status: "closed" }),
+      ],
+      today,
+    );
+
+    expect(pipeline.map((stage) => [stage.step, stage.count])).toEqual([
+      ["complaint_received", 1],
+      ["with_company", 1],
+      ["received_back", 1],
+      ["waiting_installation", 1],
+      ["installed_coded", 1],
+      ["closed", 1],
+    ]);
+  });
+
+  it("keeps every step visible when nothing is in it", () => {
+    const pipeline = buildWarrantyPipeline([], today);
+    expect(pipeline).toHaveLength(6);
+    expect(pipeline.every((stage) => stage.count === 0)).toBe(true);
+    expect(pipeline[0].label).toBe("Complaint received");
   });
 });
 

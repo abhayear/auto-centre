@@ -147,7 +147,7 @@ function parseDateOnly(value: string): Date {
   return new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
 }
 
-function addUtcMonths(date: Date, months: number): Date {
+export function addUtcMonths(date: Date, months: number): Date {
   const next = new Date(date.getTime());
   const day = next.getUTCDate();
   next.setUTCDate(1);

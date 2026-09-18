@@ -46,6 +46,12 @@ export function assertStaffPageAccess(
 
   if (isPage(pathname, "/admin/change-password")) return null;
 
+  // Must be checked before the board, which matches this path as a prefix.
+  if (isPage(pathname, "/admin/warranty/handbook")) {
+    return canUseOpsPortal(role) ? null : fallbackRedirectForRole(role);
+  }
+
+  // Covers the board itself, which stays open to every queue owner.
   if (isPage(pathname, "/admin/warranty")) {
     return canUseWarrantyBoard(role) ? null : fallbackRedirectForRole(role);
   }

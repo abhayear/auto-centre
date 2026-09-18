@@ -12,7 +12,12 @@ import {
   warrantyLevel,
   type WarrantyRole,
 } from "@/lib/warranty-roles";
-import type { WarrantyBoard, WarrantyException, WarrantyTask } from "@/lib/warranty-workflow";
+import type {
+  WarrantyBoard,
+  WarrantyException,
+  WarrantyPipelineStage,
+  WarrantyTask,
+} from "@/lib/warranty-workflow";
 
 const TILES = [
   { key: "openClaims", label: "Open claims" },
@@ -61,12 +66,40 @@ export function WarrantyBoardPanel() {
           <span className="text-slate-200">{WARRANTY_ROLE_LABELS[board.role]}</span> — level{" "}
           {warrantyLevel(board.role)} ({WARRANTY_LEVEL_LABELS[warrantyLevel(board.role)]}).
         </p>
+        {board.seesAllCases ? (
+          <p className="mt-2 text-sm">
+            <Link href="/admin/warranty/handbook" className="text-blue-300 hover:underline">
+              How to handle warranty — printable guide
+            </Link>
+          </p>
+        ) : null}
       </div>
 
       <MyTasks tasks={board.myTasks} role={board.role} />
 
       {board.seesAllCases ? (
         <>
+          {board.masterCounts ? (
+            <section>
+              <h2 className="mb-3 text-lg text-white">What we look after</h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <MasterTile label="Customers" value={board.masterCounts.totalCustomers} />
+                <MasterTile label="E-bikes" value={board.masterCounts.totalBikes} />
+                <MasterTile
+                  label="Components in warranty"
+                  value={board.masterCounts.componentsInWarranty}
+                />
+                <MasterTile
+                  label="Warranty expiring soon"
+                  value={board.masterCounts.warrantyExpiringSoon}
+                  alert
+                />
+              </div>
+            </section>
+          ) : null}
+
+          <Pipeline stages={board.pipeline} />
+
           <section>
             <h2 className="mb-3 text-lg text-white">Warranty dashboard</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -119,6 +152,49 @@ export function WarrantyBoardPanel() {
 
       <Authority role={board.role} />
     </div>
+  );
+}
+
+function MasterTile({
+  label,
+  value,
+  alert,
+}: {
+  label: string;
+  value: number;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-4 ${
+        alert && value > 0 ? "border-amber-900/60 bg-amber-950/20" : "border-slate-800 bg-slate-900/40"
+      }`}
+    >
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function Pipeline({ stages }: { stages: WarrantyPipelineStage[] }) {
+  return (
+    <section>
+      <h2 className="mb-1 text-lg text-white">Warranty pipeline</h2>
+      <p className="mb-3 text-sm text-slate-400">
+        Where every claim sits, from the customer&apos;s complaint to a closed case.
+      </p>
+      <ol className="flex flex-wrap items-stretch gap-2">
+        {stages.map((stage) => (
+          <li
+            key={stage.step}
+            className="min-w-[10rem] flex-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-3"
+          >
+            <p className="text-2xl font-semibold text-white">{stage.count}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{stage.label}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
