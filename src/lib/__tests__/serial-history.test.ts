@@ -56,6 +56,21 @@ describe("buildSerialTimeline", () => {
     expect(timeline[0].detail).toBe("BAT-99172");
     expect(timeline[0].label).toBe("Replaced by another serial");
   });
+
+  it("records batch events without a unique serial", () => {
+    const timeline = buildSerialTimeline([
+      {
+        kind: "fault_reported",
+        occurredAt: "2026-09-15",
+        batchNumber: "BAT-LOT-2026-08",
+        caseNumber: "WC-0125",
+        note: "Not charging",
+      },
+    ]);
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].detail).toContain("BAT-LOT-2026-08");
+    expect(timeline[0].detail).toContain("WC-0125");
+  });
 });
 
 describe("componentStatusFromEvents", () => {

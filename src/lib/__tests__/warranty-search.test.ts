@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyWarrantySearch } from "@/lib/warranty-search";
+import { classifyWarrantySearch, findClaimsByWarrantySearch } from "@/lib/warranty-search";
 
 describe("classifyWarrantySearch", () => {
   it("recognises a warranty case number", () => {
@@ -48,5 +48,40 @@ describe("classifyWarrantySearch", () => {
   it("ignores an empty box", () => {
     expect(classifyWarrantySearch("")).toBeNull();
     expect(classifyWarrantySearch("   ")).toBeNull();
+  });
+
+  it("recognises a batch number the same way it recognises a serial", () => {
+    expect(classifyWarrantySearch("BAT-LOT-2026-08")?.kind).toBe("batch");
+    expect(classifyWarrantySearch("bat-lot-2026-08")?.normalized).toBe("BAT-LOT-2026-08");
+    expect(classifyWarrantySearch("LOT-88")?.kind).toBe("batch");
+    expect(classifyWarrantySearch("BATCH-2026-08")?.kind).toBe("batch");
+  });
+});
+
+describe("findClaimsByWarrantySearch", () => {
+  const claims = [
+    {
+      id: "claim-1",
+      caseNumber: "WC-0001",
+      customerName: "Rajesh Kumar",
+      batchNumber: "BAT-LOT-2026-08",
+      items: [{ serialNumber: null, batchNumber: "BAT-LOT-2026-08" }],
+    },
+    {
+      id: "claim-2",
+      caseNumber: "WC-0002",
+      customerName: "Sita",
+      items: [{ serialNumber: "BAT-45821", batchNumber: null }],
+    },
+  ];
+
+  it("finds a claim by batch number the same way it finds by serial", () => {
+    expect(findClaimsByWarrantySearch(claims, "BAT-LOT-2026-08").map((row) => row.id)).toEqual([
+      "claim-1",
+    ]);
+    expect(findClaimsByWarrantySearch(claims, "bat-lot-2026-08").map((row) => row.id)).toEqual([
+      "claim-1",
+    ]);
+    expect(findClaimsByWarrantySearch(claims, "BAT-45821").map((row) => row.id)).toEqual(["claim-2"]);
   });
 });

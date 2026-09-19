@@ -84,6 +84,19 @@ Status on a given complaint date:
 
 Charger at 12 months and battery at 36 months on the same bike therefore expire on different dates, which is the point. Durations are policy-driven so the company raising battery cover from 3 to 5 years is a settings change, not a migration.
 
+## Sent-as tracking: serial or batch
+
+This is still Warranty 2.0. A claim is followed by **how it was sent on the challan**, not by a later guess.
+
+- Intake or the warranty manager (admin / manager login) chooses `serial` or `batch` when the claim is created or sent. That choice is `trackingMode`. Default is `serial`, so existing claims keep current behaviour.
+- **Sent by serial — track this serial.** Follow-up, receiving, allocation, and search use that serial. Do not collapse it into a batch later.
+- **Sent by batch — track this batch.** Staff type a lot such as `BAT-LOT-2026-08`. Serial is optional. A batch can cover quantity greater than 1. Duplicate open claims on the same batch are allowed unless they share the same bike/customer and the same component type.
+- After dispatch, only the manager or owner may correct the sent-as mode, and only with a reason (`correct_records`). Intake cannot flip it. Dispatch, receiving, technician, accounts, support, and auditor cannot change it.
+- If a batch-sent part comes back as a different unit with a unique serial, record the serial as extra history. Never overwrite or delete the batch it was sent under.
+- One claim/item has one sent-as mode. Mixed is allowed across claims.
+- Search finds a claim by batch number the same way it finds by serial.
+- `WarrantyComponent.serialNumber` stays unique and becomes nullable. Batch-only rows have `batchNumber` (indexed, not unique) and no placeholder serial.
+
 ## Serial-number logic
 
 Three rules decide everything:

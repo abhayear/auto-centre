@@ -13,6 +13,11 @@ import {
 } from "@/lib/warranty-allocation";
 import { SHOWROOM_PAYMENT_MODES } from "@/lib/showroom-walk-ins";
 import {
+  WARRANTY_TRACKING_MODES,
+  hasWarrantyTrackingIdentifier,
+  normalizeWarrantyTrackingMode,
+} from "@/lib/warranty-tracking";
+import {
   CREDIT_NOTE_ITC_STATUSES,
   CREDIT_NOTE_KINDS,
   CREDIT_NOTE_REASONS,
@@ -475,6 +480,8 @@ export const replacementClaimItemSchema = z.object({
   side: z.enum(REPLACEMENT_ITEM_SIDES),
   modelCode: z.string().trim().optional().or(z.literal("")),
   serialNumber: z.string().trim().optional().or(z.literal("")),
+  trackingMode: z.enum(WARRANTY_TRACKING_MODES).optional(),
+  batchNumber: z.string().trim().optional().or(z.literal("")),
   ah: z.coerce.number().positive().optional().nullable(),
   voltage: z.enum(REPLACEMENT_VOLTAGES).optional().nullable(),
   quantity: z.coerce.number().int().min(1).default(1),
@@ -482,7 +489,55 @@ export const replacementClaimItemSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).default(0),
 });
 
-export const replacementClaimSchema = z.object({
+type ClaimTrackingInput = {
+  trackingMode?: string;
+  batchNumber?: string;
+  items?: Array<{
+    trackingMode?: string;
+    serialNumber?: string;
+    batchNumber?: string;
+  }>;
+};
+
+function refineWarrantyTracking(
+  data: ClaimTrackingInput,
+  ctx: z.RefinementCtx,
+  requireSerial: boolean,
+) {
+  if (!data.items?.length) return;
+
+  const claimMode = normalizeWarrantyTrackingMode(data.trackingMode);
+  const claimBatch = data.batchNumber?.trim() ?? "";
+
+  for (const [index, item] of data.items.entries()) {
+    const mode = normalizeWarrantyTrackingMode(item.trackingMode ?? claimMode);
+    const serial = item.serialNumber?.trim() ?? "";
+    const batch = item.batchNumber?.trim() || claimBatch;
+    const identified = hasWarrantyTrackingIdentifier({
+      trackingMode: mode,
+      serialNumber: serial,
+      batchNumber: batch,
+    });
+
+    if (mode === "batch" && !identified) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["items", index, "batchNumber"],
+        message: "Enter the batch number this item is sent by, or a serial if one is already known",
+      });
+    }
+
+    if (requireSerial && mode === "serial" && !serial) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["items", index, "serialNumber"],
+        message: "Enter the serial number this item is sent by",
+      });
+    }
+  }
+}
+
+const replacementClaimObjectSchema = z.object({
   receivedDate: replacementDateSchema,
   customerName: z.string().trim().min(2, "Customer name is required"),
   customerPhone: z.string().trim().optional().or(z.literal("")),
@@ -498,8 +553,20 @@ export const replacementClaimSchema = z.object({
   companyDeliveryNote: z.string().trim().max(100).optional().or(z.literal("")),
   returnedToCustomerDate: optionalReplacementDateSchema,
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  trackingMode: z.enum(WARRANTY_TRACKING_MODES).default("serial"),
+  batchNumber: z.string().trim().optional().or(z.literal("")),
+  trackingChangeReason: z.string().trim().max(500).optional().or(z.literal("")),
   items: z.array(replacementClaimItemSchema).min(1, "At least one item is required"),
 });
+
+export const replacementClaimSchema = replacementClaimObjectSchema.superRefine((data, ctx) =>
+  refineWarrantyTracking(data, ctx, false),
+);
+
+/** Warranty 2.0 submit: a serial-sent item must carry the serial on the challan. */
+export const warrantyClaimSubmitSchema = replacementClaimObjectSchema.superRefine((data, ctx) =>
+  refineWarrantyTracking(data, ctx, true),
+);
 
 export const replacementCompanyReceiptSchema = z.object({
   id: z.string().min(1),
@@ -544,9 +611,12 @@ export const replacementReturnToCustomerSchema = z.object({
   handoverNote: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
-export const replacementClaimUpdateSchema = replacementClaimSchema.partial().extend({
-  id: z.string().min(1),
-});
+export const replacementClaimUpdateSchema = replacementClaimObjectSchema
+  .partial()
+  .extend({
+    id: z.string().min(1),
+  })
+  .superRefine((data, ctx) => refineWarrantyTracking(data, ctx, false));
 
 export const replacementStatusUpdateSchema = z.object({
   id: z.string().min(1),

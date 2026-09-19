@@ -13,6 +13,11 @@ import {
   type SerializedReplacementStockItem,
 } from "@/lib/replacement-parts";
 import {
+  WARRANTY_SENT_BY_LABELS,
+  normalizeWarrantyTrackingMode,
+  warrantySentTrackingKey,
+} from "@/lib/warranty-tracking";
+import {
   claimToAllocationClaim,
   recommendAllocation,
   type AllocationRecommendation,
@@ -190,6 +195,17 @@ function AllocationRow({
         {oldItem
           ? `${formatReplacementItemType(oldItem.itemType)} · ${oldItem.modelCode ?? "No code"}`
           : "No submitted item"}
+        <p className="mt-1 text-xs text-slate-400">
+          {WARRANTY_SENT_BY_LABELS[normalizeWarrantyTrackingMode(claim.trackingMode)]}
+          {(() => {
+            const key = warrantySentTrackingKey({
+              trackingMode: claim.trackingMode,
+              serialNumber: oldItem?.serialNumber,
+              batchNumber: oldItem?.batchNumber ?? claim.batchNumber,
+            });
+            return key.identifier ? ` · ${key.identifier}` : "";
+          })()}
+        </p>
       </td>
       <td className="px-3 py-3 align-top">
         <PieceCountInput
@@ -210,7 +226,7 @@ function AllocationRow({
               onChange={(event) => onManualChange(event.target.value)}
               options={available.map((item) => ({
                 value: item.id,
-                label: `${item.modelCode ?? "No code"} · ${formatReplacementItemType(item.itemType)} · 1 piece`,
+                label: `${item.modelCode ?? "No code"} · ${formatReplacementItemType(item.itemType)} · ${item.serialNumber ?? item.batchNumber ?? "1 piece"}`,
               }))}
             />
           </div>

@@ -19,6 +19,7 @@ import {
   formatZodErrors,
   replacementAllocateSchema,
   replacementClaimSchema,
+  replacementClaimUpdateSchema,
   replacementCompanyReceiptSchema,
   replacementPieceCountsSchema,
   replacementReturnToCustomerSchema,
@@ -26,6 +27,11 @@ import {
   replacementStatusUpdateSchema,
 } from "@/lib/validators";
 import { nextWarrantyCaseNumber } from "@/lib/warranty-allocation";
+import { warrantyRoleForStaffRole } from "@/lib/warranty-roles";
+import {
+  canChangeWarrantyTrackingMode,
+  normalizeWarrantyTrackingMode,
+} from "@/lib/warranty-tracking";
 
 const itemsInclude = {
   items: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }] },
@@ -163,18 +169,27 @@ async function persistPieceCounts(
 
 function toItemCreateData(
   items: z.infer<typeof replacementClaimSchema>["items"],
+  claimMode?: string,
+  claimBatch?: string | null,
 ) {
-  return items.map((item, index) => ({
-    itemType: item.itemType,
-    side: item.side,
-    modelCode: item.modelCode?.trim() || null,
-    serialNumber: item.serialNumber?.trim() || null,
-    ah: item.itemType === "battery" ? (item.ah ?? null) : null,
-    voltage: item.itemType === "charger" ? (item.voltage ?? null) : null,
-    quantity: item.quantity,
-    notes: item.notes?.trim() || null,
-    sortOrder: item.sortOrder ?? index,
-  }));
+  const fallbackMode = normalizeWarrantyTrackingMode(claimMode);
+  const fallbackBatch = claimBatch?.trim() || null;
+  return items.map((item, index) => {
+    const trackingMode = normalizeWarrantyTrackingMode(item.trackingMode ?? fallbackMode);
+    return {
+      itemType: item.itemType,
+      side: item.side,
+      modelCode: item.modelCode?.trim() || null,
+      serialNumber: item.serialNumber?.trim() || null,
+      trackingMode,
+      batchNumber: item.batchNumber?.trim() || fallbackBatch,
+      ah: item.itemType === "battery" ? (item.ah ?? null) : null,
+      voltage: item.itemType === "charger" ? (item.voltage ?? null) : null,
+      quantity: item.quantity,
+      notes: item.notes?.trim() || null,
+      sortOrder: item.sortOrder ?? index,
+    };
+  });
 }
 
 function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
@@ -199,8 +214,10 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
     companyDeliveryNote: data.companyDeliveryNote?.trim() || null,
     returnedToCustomerDate: optionalDateInput(data.returnedToCustomerDate),
     notes: data.notes?.trim() || null,
+    trackingMode: normalizeWarrantyTrackingMode(data.trackingMode),
+    batchNumber: data.batchNumber?.trim() || null,
     items: {
-      create: toItemCreateData(data.items),
+      create: toItemCreateData(data.items, data.trackingMode, data.batchNumber),
     },
   };
 }
@@ -466,6 +483,7 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
                   itemType: item.itemType,
                   modelCode: item.modelCode?.trim() || null,
                   serialNumber: item.serialNumber?.trim() || null,
+                  batchNumber: item.batchNumber?.trim() || null,
                   ah: item.itemType === "battery" ? (item.ah ?? null) : null,
                   voltage: item.itemType === "charger" ? (item.voltage ?? null) : null,
                   result,
@@ -628,7 +646,36 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
       return NextResponse.json({ error: "Claim ID required" }, { status: 400 });
     }
 
-    const data = replacementClaimSchema.partial().parse(rest);
+    const data = replacementClaimUpdateSchema.parse({ id, ...rest });
+
+    if (data.trackingMode !== undefined) {
+      const existingClaim = await prisma.replacementClaim.findUnique({
+        where: { id },
+        select: { status: true, trackingMode: true },
+      });
+      if (
+        existingClaim &&
+        normalizeWarrantyTrackingMode(existingClaim.trackingMode) !==
+          normalizeWarrantyTrackingMode(data.trackingMode)
+      ) {
+        const warrantyRole = warrantyRoleForStaffRole(session.user.role);
+        const change = warrantyRole
+          ? canChangeWarrantyTrackingMode(warrantyRole, existingClaim.status)
+          : { allowed: false, requiresReason: false };
+        if (!change.allowed) {
+          return NextResponse.json(
+            { error: "Only intake or a manager can choose how this claim is sent" },
+            { status: 403 },
+          );
+        }
+        if (change.requiresReason && !data.trackingChangeReason?.trim()) {
+          return NextResponse.json(
+            { error: "Give a reason to correct how this claim was sent" },
+            { status: 400 },
+          );
+        }
+      }
+    }
 
     const record = await prisma.$transaction(async (tx) => {
       if (data.items) {
@@ -670,8 +717,18 @@ function toCreateData(data: z.infer<typeof replacementClaimSchema>) {
             : {}),
           ...companyReceiptFields(data),
           ...(data.notes !== undefined ? { notes: data.notes?.trim() || null } : {}),
+          ...(data.trackingMode !== undefined
+            ? { trackingMode: normalizeWarrantyTrackingMode(data.trackingMode) }
+            : {}),
+          ...(data.batchNumber !== undefined
+            ? { batchNumber: data.batchNumber?.trim() || null }
+            : {}),
           ...(data.items
-            ? { items: { create: toItemCreateData(data.items) } }
+            ? {
+                items: {
+                  create: toItemCreateData(data.items, data.trackingMode, data.batchNumber),
+                },
+              }
             : {}),
         },
         include: claimInclude,

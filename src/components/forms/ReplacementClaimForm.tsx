@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { WarrantyTrackingModeField } from "@/components/admin/warranty/WarrantyTrackingModeField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -14,6 +16,17 @@ import {
   type SerializedReplacementClaim,
   type SerializedReplacementClaimItem,
 } from "@/lib/replacement-parts";
+import {
+  canChangeWarrantyTrackingMode,
+  WARRANTY_IDENTIFIER_LABEL,
+  initialWarrantyTrackingMode,
+  normalizeWarrantyTrackingMode,
+  type WarrantyTrackingMode,
+} from "@/lib/warranty-tracking";
+import {
+  staffCanSetWarrantyTrackingMode,
+  warrantyRoleForStaffRole,
+} from "@/lib/warranty-roles";
 
 export type ReplacementClaimView = SerializedReplacementClaim;
 
@@ -23,6 +36,7 @@ type ItemDraft = {
   side: "old" | "new";
   modelCode: string;
   serialNumber: string;
+  batchNumber: string;
   ah: string;
   voltage: string;
   quantity: string;
@@ -36,6 +50,7 @@ function createEmptyItem(side: "old" | "new", index: number): ItemDraft {
     side,
     modelCode: "",
     serialNumber: "",
+    batchNumber: "",
     ah: "",
     voltage: "",
     quantity: "1",
@@ -50,6 +65,7 @@ function itemToDraft(item: SerializedReplacementClaimItem, index: number): ItemD
     side: item.side,
     modelCode: item.modelCode ?? "",
     serialNumber: item.serialNumber ?? "",
+    batchNumber: item.batchNumber ?? "",
     ah: item.ah != null ? String(item.ah) : "",
     voltage: item.voltage ?? "",
     quantity: String(item.quantity),
@@ -71,10 +87,23 @@ interface ReplacementClaimFormProps {
 }
 
 export function ReplacementClaimForm({ claim, onSuccess, onCancel }: ReplacementClaimFormProps) {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ItemDraft[]>(() => buildInitialItems(claim));
+  const [trackingMode, setTrackingMode] = useState<WarrantyTrackingMode>(() =>
+    initialWarrantyTrackingMode(claim?.trackingMode),
+  );
+  const [batchNumber, setBatchNumber] = useState(claim?.batchNumber ?? "");
+  const [trackingChangeReason, setTrackingChangeReason] = useState("");
   const isEdit = !!claim;
   const today = new Date().toISOString().slice(0, 10);
+  const staffRole = session?.user.role;
+  const warrantyRole = staffRole ? warrantyRoleForStaffRole(staffRole) : null;
+  const canEditMode = staffRole ? staffCanSetWarrantyTrackingMode(staffRole) : false;
+  const modeChange = warrantyRole
+    ? canChangeWarrantyTrackingMode(warrantyRole, claim?.status ?? "received_from_customer")
+    : { allowed: false, requiresReason: false };
+  const modeLocked = isEdit && !modeChange.allowed;
 
   function addItem(side: "old" | "new") {
     setItems((current) => [...current, createEmptyItem(side, current.length)]);
@@ -114,11 +143,16 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
       companyInvoiceNumber: formData.get("companyInvoiceNumber") || undefined,
       companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
       notes: formData.get("notes") || undefined,
+      trackingMode,
+      batchNumber: batchNumber || undefined,
+      trackingChangeReason: trackingChangeReason || undefined,
       items: items.map((item, index) => ({
         itemType: item.itemType,
         side: item.side,
         modelCode: item.modelCode || undefined,
         serialNumber: item.serialNumber || undefined,
+        trackingMode,
+        batchNumber: item.batchNumber || batchNumber || undefined,
         ah: item.itemType === "battery" && item.ah ? Number(item.ah) : undefined,
         voltage: item.itemType === "charger" && item.voltage ? item.voltage : undefined,
         quantity: Number(item.quantity) || 1,
@@ -192,12 +226,31 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             value={item.modelCode}
             onChange={(e) => updateItem(item.key, "modelCode", e.target.value)}
           />
-          <Input
-            id={`serialNumber-${item.key}`}
-            label="Serial number"
-            value={item.serialNumber}
-            onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
-          />
+          {trackingMode === "batch" ? (
+            <Input
+              id={`batchNumber-${item.key}`}
+              label={WARRANTY_IDENTIFIER_LABEL}
+              placeholder="e.g. BAT-LOT-2026-08"
+              value={item.batchNumber}
+              onChange={(e) => updateItem(item.key, "batchNumber", e.target.value)}
+            />
+          ) : (
+            <Input
+              id={`serialNumber-${item.key}`}
+              label="Serial number"
+              value={item.serialNumber}
+              onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
+            />
+          )}
+          {trackingMode === "batch" ? (
+            <Input
+              id={`serialNumber-${item.key}`}
+              label="Serial number (optional later)"
+              placeholder="Fill if a unique serial comes back"
+              value={item.serialNumber}
+              onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
+            />
+          ) : null}
           {item.itemType === "battery" && (
             <Input
               id={`ah-${item.key}`}
@@ -298,6 +351,30 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             label="Fault"
             defaultValue={claim?.fault ?? ""}
           />
+          <WarrantyTrackingModeField
+            value={trackingMode}
+            editable={canEditMode && !modeLocked}
+            onChange={setTrackingMode}
+          />
+          {trackingMode === "batch" ? (
+            <Input
+              id="batchNumber"
+              name="batchNumber"
+              label={WARRANTY_IDENTIFIER_LABEL}
+              placeholder="e.g. BAT-LOT-2026-08"
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+            />
+          ) : null}
+          {modeChange.requiresReason && canEditMode ? (
+            <Input
+              id="trackingChangeReason"
+              name="trackingChangeReason"
+              label="Reason to correct how this was sent"
+              value={trackingChangeReason}
+              onChange={(e) => setTrackingChangeReason(e.target.value)}
+            />
+          ) : null}
         </div>
         <div>
           <label htmlFor="notes" className="mb-1 block text-sm font-medium text-slate-300">

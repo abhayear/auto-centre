@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   WARRANTY_ROLES,
+  canSetWarrantyTrackingMode,
   canViewAllWarrantyCases,
   canWarrantyAction,
   isWarrantyReadOnly,
   requiresWarrantyReason,
+  staffCanSetWarrantyTrackingMode,
   warrantyLevel,
   warrantyRoleForStaffRole,
 } from "@/lib/warranty-roles";
@@ -79,5 +81,33 @@ describe("warrantyRoleForStaffRole", () => {
   it("leaves developers outside the warranty flow", () => {
     expect(warrantyRoleForStaffRole("senior_developer")).toBeNull();
     expect(warrantyRoleForStaffRole("junior_developer")).toBeNull();
+  });
+});
+
+describe("canSetWarrantyTrackingMode", () => {
+  it("lets owner and warranty manager choose serial or batch", () => {
+    expect(canSetWarrantyTrackingMode("owner")).toBe(true);
+    expect(canSetWarrantyTrackingMode("warranty_manager")).toBe(true);
+    expect(canSetWarrantyTrackingMode("intake")).toBe(true);
+  });
+
+  it("stops dispatch, receiving, technicians, and viewers from changing the mode", () => {
+    expect(canSetWarrantyTrackingMode("dispatch")).toBe(false);
+    expect(canSetWarrantyTrackingMode("followup")).toBe(false);
+    expect(canSetWarrantyTrackingMode("receiving")).toBe(false);
+    expect(canSetWarrantyTrackingMode("allocation")).toBe(false);
+    expect(canSetWarrantyTrackingMode("technician")).toBe(false);
+    expect(canSetWarrantyTrackingMode("accounts")).toBe(false);
+    expect(canSetWarrantyTrackingMode("support")).toBe(false);
+    expect(canSetWarrantyTrackingMode("auditor")).toBe(false);
+  });
+
+  it("maps only admin and manager staff logins onto that choice", () => {
+    expect(staffCanSetWarrantyTrackingMode("admin")).toBe(true);
+    expect(staffCanSetWarrantyTrackingMode("manager")).toBe(true);
+    expect(staffCanSetWarrantyTrackingMode("purchasing")).toBe(false);
+    expect(staffCanSetWarrantyTrackingMode("store")).toBe(false);
+    expect(staffCanSetWarrantyTrackingMode("mechanic")).toBe(false);
+    expect(staffCanSetWarrantyTrackingMode("sales")).toBe(false);
   });
 });

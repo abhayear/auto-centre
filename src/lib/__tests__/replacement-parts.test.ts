@@ -31,6 +31,7 @@ import {
 } from "@/lib/replacement-parts";
 import {
   replacementClaimSchema,
+  warrantyClaimSubmitSchema,
   replacementCompanyReceiptSchema,
   replacementAllocateSchema,
   replacementPieceCountsSchema,
@@ -162,6 +163,68 @@ describe("replacement-parts validators", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts a batch-tracked claim with a batch number and no serial", () => {
+    const result = replacementClaimSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "batch",
+      batchNumber: "BAT-LOT-2026-08",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          trackingMode: "batch",
+          batchNumber: "BAT-LOT-2026-08",
+          quantity: 2,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.trackingMode).toBe("batch");
+      expect(result.data.items[0].serialNumber === undefined || result.data.items[0].serialNumber === "").toBe(
+        true,
+      );
+    }
+  });
+
+  it("rejects batch mode when neither a batch number nor a serial is given", () => {
+    const result = replacementClaimSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "batch",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          trackingMode: "batch",
+          quantity: 1,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("still requires a serial on Warranty 2.0 submit when the mode is serial", () => {
+    const missing = warrantyClaimSubmitSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "serial",
+      items: [{ itemType: "battery", side: "old", quantity: 1 }],
+    });
+    expect(missing.success).toBe(false);
+
+    const present = warrantyClaimSubmitSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "serial",
+      items: [{ itemType: "battery", side: "old", serialNumber: "BAT-8821", quantity: 1 }],
+    });
+    expect(present.success).toBe(true);
   });
 });
 

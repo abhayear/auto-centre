@@ -3,20 +3,30 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { WarrantyTrackingModeField } from "@/components/admin/warranty/WarrantyTrackingModeField";
 import { Badge } from "@/components/ui/Badge";
 import {
   WARRANTY_ACTION_LABELS,
   WARRANTY_LEVEL_LABELS,
   WARRANTY_ROLE_LABELS,
+  canSetWarrantyTrackingMode,
   warrantyActionsFor,
   warrantyLevel,
   type WarrantyRole,
 } from "@/lib/warranty-roles";
-import type {
-  WarrantyBoard,
-  WarrantyException,
-  WarrantyPipelineStage,
-  WarrantyTask,
+import {
+  DEFAULT_WARRANTY_TRACKING_MODE,
+  WARRANTY_IDENTIFIER_LABEL,
+  WARRANTY_SENT_BY_LABELS,
+  normalizeWarrantyTrackingMode,
+  type WarrantyTrackingMode,
+} from "@/lib/warranty-tracking";
+import {
+  WARRANTY_EXCEPTION_ACTIONS,
+  type WarrantyBoard,
+  type WarrantyException,
+  type WarrantyPipelineStage,
+  type WarrantyTask,
 } from "@/lib/warranty-workflow";
 
 const TILES = [
@@ -28,12 +38,14 @@ const TILES = [
   { key: "awaitingInstallation", label: "Waiting installation / coding" },
   { key: "awaitingVerification", label: "Waiting your verification" },
   { key: "customerWaiting", label: "Customers waiting", alert: true },
-  { key: "exceptions", label: "Exceptions", alert: true },
+  { key: "exceptions", label: "Need a manager decision", alert: true },
 ] as const;
 
 export function WarrantyBoardPanel() {
   const [board, setBoard] = useState<WarrantyBoard | null>(null);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [intakeMode, setIntakeMode] = useState<WarrantyTrackingMode>(DEFAULT_WARRANTY_TRACKING_MODE);
 
   useEffect(() => {
     async function load() {
@@ -75,7 +87,15 @@ export function WarrantyBoardPanel() {
         ) : null}
       </div>
 
-      <MyTasks tasks={board.myTasks} role={board.role} />
+      <SearchBox query={query} onChange={setQuery} />
+
+      <IntakeTrackingCard
+        role={board.role}
+        mode={intakeMode}
+        onChange={setIntakeMode}
+      />
+
+      <MyTasks tasks={filterTasks(board.myTasks, query)} role={board.role} />
 
       {board.seesAllCases ? (
         <>
@@ -122,7 +142,7 @@ export function WarrantyBoardPanel() {
             </div>
           </section>
 
-          <Exceptions exceptions={board.exceptions} />
+          <Exceptions exceptions={filterExceptions(board.exceptions, query)} />
 
           <section>
             <h2 className="mb-1 text-lg text-white">Queues by role</h2>
@@ -141,7 +161,7 @@ export function WarrantyBoardPanel() {
                         {queue.tasks.length} task{queue.tasks.length === 1 ? "" : "s"}
                       </Badge>
                     </div>
-                    <TaskTable tasks={queue.tasks} />
+                    <TaskTable tasks={filterTasks(queue.tasks, query)} />
                   </div>
                 ))
               )}
@@ -264,25 +284,29 @@ function TaskTable({ tasks }: { tasks: WarrantyTask[] }) {
 function Exceptions({ exceptions }: { exceptions: WarrantyException[] }) {
   return (
     <section>
-      <h2 className="mb-1 text-lg text-white">Exceptions</h2>
+      <h2 className="mb-1 text-lg text-white">Need a manager decision</h2>
       <p className="mb-3 text-sm text-slate-400">
-        Normal cases flow on their own. Only these need a decision.
+        This list is only on Warranty 2.0 for the manager. Staff do not see it in the printed guide.
+        Normal cases move on their own.
       </p>
       {exceptions.length === 0 ? (
-        <p className="text-sm text-slate-500">No exceptions. The workflow is running clean.</p>
+        <p className="text-sm text-slate-500">Nothing needs a manager decision.</p>
       ) : (
         <ul className="space-y-2">
           {exceptions.map((exception, index) => (
             <li
               key={`${exception.kind}-${exception.reference}-${index}`}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 px-3 py-3"
+              className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-slate-800 px-3 py-3"
             >
-              <div>
+              <div className="min-w-[16rem] flex-1">
                 <p className="text-slate-200">
                   {exception.label}
                   <span className="ml-2 text-sm text-slate-500">{exception.reference}</span>
                 </p>
                 <p className="text-sm text-slate-400">{exception.detail}</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  {WARRANTY_EXCEPTION_ACTIONS[exception.kind]}
+                </p>
               </div>
               <Badge variant={exception.severity === "high" ? "danger" : "warning"}>
                 {exception.severity === "high" ? "Act now" : "Monitor"}
@@ -290,6 +314,83 @@ function Exceptions({ exceptions }: { exceptions: WarrantyException[] }) {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function filterTasks(tasks: WarrantyTask[], query: string): WarrantyTask[] {
+  const needle = query.trim().toUpperCase();
+  if (!needle) return tasks;
+  return tasks.filter((task) =>
+    [task.caseNumber, task.customerName, task.detail, task.action]
+      .filter(Boolean)
+      .some((value) => String(value).toUpperCase().includes(needle)),
+  );
+}
+
+function filterExceptions(exceptions: WarrantyException[], query: string): WarrantyException[] {
+  const needle = query.trim().toUpperCase();
+  if (!needle) return exceptions;
+  return exceptions.filter((exception) =>
+    [exception.reference, exception.detail, exception.label, exception.caseNumber]
+      .filter(Boolean)
+      .some((value) => String(value).toUpperCase().includes(needle)),
+  );
+}
+
+function SearchBox({ query, onChange }: { query: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-slate-300">{WARRANTY_IDENTIFIER_LABEL}</span>
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="WC-0001, BAT-45821, or BAT-LOT-2026-08"
+        className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+      />
+    </label>
+  );
+}
+
+function IntakeTrackingCard({
+  role,
+  mode,
+  onChange,
+}: {
+  role: WarrantyRole;
+  mode: WarrantyTrackingMode;
+  onChange: (mode: WarrantyTrackingMode) => void;
+}) {
+  const canChoose = canSetWarrantyTrackingMode(role);
+  return (
+    <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <h2 className="text-lg text-white">How this claim is sent</h2>
+      <p className="mt-1 text-sm text-slate-400">
+        Follow-up, receiving, and search use the identifier on the challan. Receiving does not invent
+        the other one.
+      </p>
+      <div className="mt-3 max-w-sm">
+        <WarrantyTrackingModeField
+          value={mode}
+          editable={canChoose}
+          onChange={onChange}
+        />
+      </div>
+      {!canChoose ? (
+        <p className="mt-2 text-sm text-slate-400">
+          {WARRANTY_SENT_BY_LABELS[normalizeWarrantyTrackingMode(mode)]}
+        </p>
+      ) : (
+        <p className="mt-3 text-sm">
+          <Link
+            href={`/admin/replacement-parts?tracking=${mode}`}
+            className="text-blue-300 hover:underline"
+          >
+            Open a new claim sent by {mode === "batch" ? "batch number" : "serial number"}
+          </Link>
+        </p>
       )}
     </section>
   );

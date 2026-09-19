@@ -73,7 +73,7 @@ function summarizeNewItems(claim: ReplacementClaimView): string {
   return newItems
     .map(
       (item) =>
-        `${formatReplacementItemType(item.itemType)}${item.serialNumber ? ` / ${item.serialNumber}` : item.modelCode ? ` (${item.modelCode})` : ""}`,
+        `${formatReplacementItemType(item.itemType)}${item.serialNumber ? ` / ${item.serialNumber}` : item.batchNumber ? ` / ${item.batchNumber}` : item.modelCode ? ` (${item.modelCode})` : ""}`,
     )
     .join(", ");
 }

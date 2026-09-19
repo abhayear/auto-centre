@@ -6,6 +6,10 @@ import {
   warrantyRoleForStaffRole,
   type WarrantyRole,
 } from "@/lib/warranty-roles";
+import {
+  normalizeWarrantyTrackingMode,
+  warrantySentTrackingKey,
+} from "@/lib/warranty-tracking";
 
 /** Days with the company before follow-up becomes an escalation. */
 export const WARRANTY_COMPANY_DELAY_DAYS = 21;
@@ -80,6 +84,8 @@ export type WarrantyCaseItem = {
   side: string;
   modelCode?: string | null;
   serialNumber?: string | null;
+  batchNumber?: string | null;
+  trackingMode?: string | null;
   quantity?: number | null;
 };
 
@@ -94,6 +100,10 @@ export type WarrantyCase = {
   companyInvoiceNumber?: string | null;
   returnedToCustomerDate?: string | null;
   allocatedStockId?: string | null;
+  trackingMode?: string | null;
+  batchNumber?: string | null;
+  bikeId?: string | null;
+  bikeNumber?: string | null;
   items: WarrantyCaseItem[];
 };
 
@@ -129,6 +139,7 @@ export const WARRANTY_EXCEPTION_KINDS = [
   "replacement_unavailable",
   "serial_missing",
   "duplicate_serial",
+  "duplicate_batch",
   "credit_note_missing",
   "allocated_not_installed",
   "stock_without_claim",
@@ -142,9 +153,23 @@ export const WARRANTY_EXCEPTION_LABELS: Record<WarrantyExceptionKind, string> = 
   replacement_unavailable: "Replacement unavailable",
   serial_missing: "Serial number missing",
   duplicate_serial: "Duplicate claim on one serial",
+  duplicate_batch: "Duplicate open claim on one batch",
   credit_note_missing: "Credit note missing",
   allocated_not_installed: "Allocated but not installed",
   stock_without_claim: "Component received with no matching claim",
+};
+
+/** What the manager should do. Shown only on Warranty 2.0, never in the staff guide. */
+export const WARRANTY_EXCEPTION_ACTIONS: Record<WarrantyExceptionKind, string> = {
+  company_delay: "Call the plant today, write their answer on the claim, and chase until a return date is set.",
+  customer_waiting: "Call the customer with a date. If a compatible part is free, allocate it now.",
+  replacement_unavailable: "Do not promise a date. Arrange stock or a company replacement and keep the claim open.",
+  serial_missing: "Read the serial from the part and add a photo. Never guess. If it was sent by batch, switch tracking to batch instead.",
+  duplicate_serial: "Cancel the wrong claim with a reason. Keep both records. Do not delete either.",
+  duplicate_batch: "Two open claims share one batch. Confirm they are different pieces or cancel the duplicate with a reason.",
+  credit_note_missing: "Ask the company for the credit note or bill and attach it the same week.",
+  allocated_not_installed: "Call the customer to bring the bike, or fit the part today. Do not give that part to anyone else.",
+  stock_without_claim: "Do not issue the part. Find the matching claim first.",
 };
 
 export type WarrantyException = {
@@ -230,12 +255,21 @@ function oldItems(claim: WarrantyCase): WarrantyCaseItem[] {
   return claim.items.filter((item) => item.side === "old");
 }
 
+function itemTrackingMode(claim: WarrantyCase, item: WarrantyCaseItem) {
+  return normalizeWarrantyTrackingMode(item.trackingMode ?? claim.trackingMode);
+}
+
 function itemSummary(claim: WarrantyCase): string {
   const first = oldItems(claim)[0];
   if (!first) return "No faulty item recorded";
-  const serial = first.serialNumber ? ` ${first.serialNumber}` : "";
+  const key = warrantySentTrackingKey({
+    trackingMode: itemTrackingMode(claim, first),
+    serialNumber: first.serialNumber,
+    batchNumber: first.batchNumber ?? claim.batchNumber,
+  });
+  const identifier = key.identifier ? ` ${key.identifier}` : "";
   const model = first.modelCode ? ` ${first.modelCode}` : "";
-  return `${first.itemType}${model}${serial}`.trim();
+  return `${first.itemType}${model}${identifier}`.trim();
 }
 
 export function warrantyStageFor(claim: WarrantyCase, today: string): WarrantyStage {
@@ -324,6 +358,7 @@ export function detectWarrantyExceptions(
 ): WarrantyException[] {
   const exceptions: WarrantyException[] = [];
   const serialOwners = new Map<string, WarrantyCase[]>();
+  const batchOwners = new Map<string, WarrantyCase[]>();
   const availableTypes = new Set(
     stockItems.filter((item) => item.status === "available").map((item) => item.itemType),
   );
@@ -404,7 +439,23 @@ export function detectWarrantyExceptions(
     }
 
     for (const item of oldItems(claim)) {
+      const mode = itemTrackingMode(claim, item);
       const serial = (item.serialNumber ?? "").trim().toUpperCase();
+      const batch = (item.batchNumber ?? claim.batchNumber ?? "").trim().toUpperCase();
+
+      if (mode === "batch") {
+        if (batch) {
+          const bikeOrCustomer = (claim.bikeNumber ?? claim.bikeId ?? claim.customerName)
+            .trim()
+            .toUpperCase();
+          const key = `${batch}|${bikeOrCustomer}|${item.itemType}`;
+          const owners = batchOwners.get(key) ?? [];
+          owners.push(claim);
+          batchOwners.set(key, owners);
+        }
+        continue;
+      }
+
       if (!serial) {
         exceptions.push({
           kind: "serial_missing",
@@ -435,6 +486,22 @@ export function detectWarrantyExceptions(
       caseNumber: null,
       reference: serial,
       detail: `Serial ${serial} is open on ${unique.size} claims: ${refs}`,
+    });
+  }
+
+  for (const [key, owners] of batchOwners) {
+    const unique = new Map(owners.map((claim) => [claim.id, claim]));
+    if (unique.size < 2) continue;
+    const [batch] = key.split("|");
+    const refs = [...unique.values()].map(claimRef).join(", ");
+    exceptions.push({
+      kind: "duplicate_batch",
+      label: WARRANTY_EXCEPTION_LABELS.duplicate_batch,
+      severity: "high",
+      claimId: null,
+      caseNumber: null,
+      reference: batch,
+      detail: `Batch ${batch} is open on ${unique.size} claims for the same customer and part: ${refs}`,
     });
   }
 

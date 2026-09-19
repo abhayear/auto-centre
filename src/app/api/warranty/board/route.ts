@@ -38,6 +38,7 @@ async function getHandler(_request: Request) {
       include: {
         items: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         allocatedStock: { select: { id: true } },
+        bike: { select: { bikeNumber: true } },
       },
     }),
     prisma.replacementStockItem.findMany({ orderBy: { receivedDate: "asc" } }),
@@ -54,11 +55,17 @@ async function getHandler(_request: Request) {
     companyInvoiceNumber: claim.companyInvoiceNumber,
     returnedToCustomerDate: dateOnly(claim.returnedToCustomerDate),
     allocatedStockId: claim.allocatedStock[0]?.id ?? null,
+    trackingMode: claim.trackingMode,
+    batchNumber: claim.batchNumber,
+    bikeId: claim.bikeId,
+    bikeNumber: claim.bike?.bikeNumber ?? null,
     items: claim.items.map((item) => ({
       itemType: item.itemType,
       side: item.side,
       modelCode: item.modelCode,
       serialNumber: item.serialNumber,
+      batchNumber: item.batchNumber,
+      trackingMode: item.trackingMode,
       quantity: item.quantity,
     })),
   }));

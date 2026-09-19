@@ -116,6 +116,8 @@ export type SerializedReplacementClaimItem = {
   side: ReplacementItemSide;
   modelCode: string | null;
   serialNumber: string | null;
+  trackingMode: string;
+  batchNumber: string | null;
   ah: number | null;
   voltage: ReplacementVoltage | null;
   quantity: number;
@@ -128,6 +130,7 @@ export type SerializedReplacementStockItem = {
   itemType: ReplacementItemType;
   modelCode: string | null;
   serialNumber: string | null;
+  batchNumber: string | null;
   ah: number | null;
   voltage: ReplacementVoltage | null;
   result: string;
@@ -158,6 +161,8 @@ export type SerializedReplacementClaim = {
   companyDeliveryNote: string | null;
   returnedToCustomerDate: string | null;
   notes: string | null;
+  trackingMode: string;
+  batchNumber: string | null;
   allocatedStockId: string | null;
   items: SerializedReplacementClaimItem[];
   sourcedStock: SerializedReplacementStockItem[];
@@ -315,6 +320,8 @@ export function serializeReplacementClaimItem(item: {
   side: string;
   modelCode: string | null;
   serialNumber: string | null;
+  trackingMode?: string | null;
+  batchNumber?: string | null;
   ah: number | null;
   voltage: string | null;
   quantity: number;
@@ -327,6 +334,8 @@ export function serializeReplacementClaimItem(item: {
     side: normalizeItemSide(item.side),
     modelCode: item.modelCode,
     serialNumber: item.serialNumber,
+    trackingMode: item.trackingMode === "batch" ? "batch" : "serial",
+    batchNumber: item.batchNumber ?? null,
     ah: item.ah,
     voltage: normalizeVoltage(item.voltage),
     quantity: item.quantity,
@@ -340,6 +349,7 @@ export function serializeReplacementStockItem(item: {
   itemType: string;
   modelCode: string | null;
   serialNumber: string | null;
+  batchNumber?: string | null;
   ah: number | null;
   voltage: string | null;
   result: string;
@@ -356,6 +366,7 @@ export function serializeReplacementStockItem(item: {
     itemType: normalizeItemType(item.itemType),
     modelCode: item.modelCode,
     serialNumber: item.serialNumber,
+    batchNumber: item.batchNumber ?? null,
     ah: item.ah,
     voltage: normalizeVoltage(item.voltage),
     result: item.result,
@@ -387,6 +398,8 @@ export function serializeReplacementClaim(claim: {
   companyDeliveryNote?: string | null;
   returnedToCustomerDate?: Date | null;
   notes: string | null;
+  trackingMode?: string | null;
+  batchNumber?: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: {
@@ -395,6 +408,8 @@ export function serializeReplacementClaim(claim: {
     side: string;
     modelCode: string | null;
     serialNumber: string | null;
+    trackingMode?: string | null;
+    batchNumber?: string | null;
     ah: number | null;
     voltage: string | null;
     quantity: number;
@@ -406,6 +421,7 @@ export function serializeReplacementClaim(claim: {
     itemType: string;
     modelCode: string | null;
     serialNumber: string | null;
+    batchNumber?: string | null;
     ah: number | null;
     voltage: string | null;
     result: string;
@@ -422,6 +438,7 @@ export function serializeReplacementClaim(claim: {
     itemType: string;
     modelCode: string | null;
     serialNumber: string | null;
+    batchNumber?: string | null;
     ah: number | null;
     voltage: string | null;
     result: string;
@@ -454,6 +471,8 @@ export function serializeReplacementClaim(claim: {
     companyDeliveryNote: claim.companyDeliveryNote ?? null,
     returnedToCustomerDate: formatOptionalDate(claim.returnedToCustomerDate),
     notes: claim.notes,
+    trackingMode: claim.trackingMode === "batch" ? "batch" : "serial",
+    batchNumber: claim.batchNumber ?? null,
     allocatedStockId: allocatedStock[0]?.id ?? null,
     items: claim.items
       .slice()

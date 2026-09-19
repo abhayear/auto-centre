@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  WARRANTY_EXCEPTION_ACTIONS,
+  WARRANTY_EXCEPTION_KINDS,
   buildWarrantyBoard,
   buildWarrantyPipeline,
   buildWarrantyTasks,
@@ -151,6 +153,14 @@ describe("warrantyTaskFor", () => {
   });
 });
 
+describe("WARRANTY_EXCEPTION_ACTIONS", () => {
+  it("tells the manager what to do for every problem kind", () => {
+    for (const kind of WARRANTY_EXCEPTION_KINDS) {
+      expect(WARRANTY_EXCEPTION_ACTIONS[kind].length).toBeGreaterThan(10);
+    }
+  });
+});
+
 describe("detectWarrantyExceptions", () => {
   it("raises a company delay past the limit", () => {
     const exceptions = detectWarrantyExceptions(
@@ -175,6 +185,81 @@ describe("detectWarrantyExceptions", () => {
       today,
     );
     expect(exceptions.map((row) => row.kind)).toEqual(["serial_missing"]);
+  });
+
+  it("does not raise serial_missing when the claim is tracked by batch", () => {
+    const exceptions = detectWarrantyExceptions(
+      [
+        claim({
+          trackingMode: "batch",
+          items: [
+            {
+              itemType: "battery",
+              side: "old",
+              serialNumber: null,
+              batchNumber: "BAT-LOT-2026-08",
+              trackingMode: "batch",
+              quantity: 2,
+            },
+          ],
+        }),
+      ],
+      [],
+      today,
+    );
+    expect(exceptions.map((row) => row.kind)).not.toContain("serial_missing");
+  });
+
+  it("allows many open claims to share one batch unless bike, customer, and part match", () => {
+    const batchItem = {
+      itemType: "battery",
+      side: "old" as const,
+      serialNumber: null,
+      batchNumber: "BAT-LOT-2026-08",
+      trackingMode: "batch" as const,
+      quantity: 1,
+    };
+    const differentCustomer = detectWarrantyExceptions(
+      [
+        claim({
+          trackingMode: "batch",
+          items: [batchItem],
+        }),
+        claim({
+          id: "claim-2",
+          caseNumber: "WC-0002",
+          customerName: "Sita",
+          trackingMode: "batch",
+          items: [batchItem],
+        }),
+      ],
+      [],
+      today,
+    );
+    expect(differentCustomer.map((row) => row.kind)).not.toContain("duplicate_serial");
+    expect(differentCustomer.map((row) => row.kind)).not.toContain("duplicate_batch");
+
+    const sameCustomerAndPart = detectWarrantyExceptions(
+      [
+        claim({
+          trackingMode: "batch",
+          customerName: "Rajesh Kumar",
+          bikeNumber: "EB1025",
+          items: [batchItem],
+        }),
+        claim({
+          id: "claim-2",
+          caseNumber: "WC-0002",
+          trackingMode: "batch",
+          customerName: "Rajesh Kumar",
+          bikeNumber: "EB1025",
+          items: [batchItem],
+        }),
+      ],
+      [],
+      today,
+    );
+    expect(sameCustomerAndPart.map((row) => row.kind)).toContain("duplicate_batch");
   });
 
   it("raises a duplicate claim on one serial", () => {

@@ -72,6 +72,7 @@ export type ComponentEventInput = {
   locationName?: string | null;
   caseNumber?: string | null;
   replacementSerial?: string | null;
+  batchNumber?: string | null;
   note?: string | null;
   actorEmail?: string | null;
   createdAt?: string | null;
@@ -99,6 +100,7 @@ function eventDetail(event: ComponentEventInput): string {
   if (kind === "replaced_by" && event.replacementSerial) {
     parts.push(event.replacementSerial);
   }
+  if (event.batchNumber) parts.push(event.batchNumber);
   if (event.bikeNumber) parts.push(`Bike ${event.bikeNumber}`);
   if (event.locationName) parts.push(event.locationName);
   if (event.caseNumber) parts.push(event.caseNumber);

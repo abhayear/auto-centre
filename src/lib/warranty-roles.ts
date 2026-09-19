@@ -184,3 +184,14 @@ const STAFF_ROLE_TO_WARRANTY_ROLE: Partial<Record<StaffRole, WarrantyRole>> = {
 export function warrantyRoleForStaffRole(role: StaffRole): WarrantyRole | null {
   return STAFF_ROLE_TO_WARRANTY_ROLE[role] ?? null;
 }
+
+/** Intake, warranty manager, and owner choose how a part is sent (serial or batch). */
+export function canSetWarrantyTrackingMode(role: WarrantyRole): boolean {
+  return role === "owner" || role === "warranty_manager" || role === "intake";
+}
+
+/** Only admin and manager logins act as intake / manager for that choice. */
+export function staffCanSetWarrantyTrackingMode(role: StaffRole): boolean {
+  const warrantyRole = warrantyRoleForStaffRole(role);
+  return warrantyRole ? canSetWarrantyTrackingMode(warrantyRole) : false;
+}

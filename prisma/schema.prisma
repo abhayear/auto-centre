@@ -466,6 +466,8 @@ model ReplacementClaim {
   installedAt            DateTime?              @db.Date
   codedAt                DateTime?              @db.Date
   codingRef              String?
+  trackingMode           String                 @default("serial")
+  batchNumber            String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   items                  ReplacementClaimItem[]
@@ -481,6 +483,7 @@ model ReplacementClaim {
   @@index([customerId])
   @@index([bikeId])
   @@index([faultyComponentId])
+  @@index([batchNumber])
 }
 
 model ReplacementClaimItem {
@@ -491,12 +494,16 @@ model ReplacementClaimItem {
   side         String
   modelCode    String?
   serialNumber String?
+  trackingMode String           @default("serial")
+  batchNumber  String?
   ah           Float?
   voltage      String?
   quantity     Int              @default(1)
   notes        String?
   sortOrder    Int              @default(0)
   createdAt    DateTime         @default(now())
+
+  @@index([batchNumber])
 }
 
 model ReplacementStockItem {
@@ -504,6 +511,7 @@ model ReplacementStockItem {
   itemType         String
   modelCode        String?
   serialNumber     String?
+  batchNumber      String?
   ah               Float?
   voltage          String?
   result           String            @default("repaired")
@@ -523,6 +531,7 @@ model ReplacementStockItem {
   @@index([receivedDate])
   @@index([sourceClaimId])
   @@index([allocatedClaimId])
+  @@index([batchNumber])
 }
 
 model MechanicBonusRoster {
@@ -722,9 +731,12 @@ model EBike {
 }
 
 /// One row per physical component. A serial is never edited into another serial.
+/// Batch-sent rows may have a null serial until a unique unit comes back.
 model WarrantyComponent {
   id                   String              @id @default(cuid())
-  serialNumber         String              @unique
+  serialNumber         String?             @unique
+  trackingMode         String              @default("serial")
+  batchNumber          String?
   componentType        String
   modelCode            String?
   ah                   Float?
@@ -749,6 +761,7 @@ model WarrantyComponent {
   @@index([status])
   @@index([currentBikeId])
   @@index([modelCode])
+  @@index([batchNumber])
 }
 
 /// Append-only. Never updated or deleted, so any status can be rebuilt.

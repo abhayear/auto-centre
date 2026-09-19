@@ -18,12 +18,18 @@ import {
   REPLACEMENT_RECEIVED_FROM_OPTIONS,
   REPLACEMENT_STOCK_RESULTS,
 } from "@/lib/warranty-allocation";
+import {
+  WARRANTY_IDENTIFIER_LABEL,
+  WARRANTY_SENT_BY_LABELS,
+  normalizeWarrantyTrackingMode,
+} from "@/lib/warranty-tracking";
 
 type ItemDraft = {
   key: string;
   itemType: string;
   modelCode: string;
   serialNumber: string;
+  batchNumber: string;
   ah: string;
   voltage: string;
   quantity: string;
@@ -36,6 +42,7 @@ function createEmptyItem(index: number): ItemDraft {
     itemType: "battery",
     modelCode: "",
     serialNumber: "",
+    batchNumber: "",
     ah: "",
     voltage: "",
     quantity: "1",
@@ -95,6 +102,8 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
         side: "new" as const,
         modelCode: item.modelCode || undefined,
         serialNumber: item.serialNumber || undefined,
+        batchNumber: item.batchNumber || claim.batchNumber || undefined,
+        trackingMode: normalizeWarrantyTrackingMode(claim.trackingMode),
         ah: item.itemType === "battery" && item.ah ? Number(item.ah) : undefined,
         voltage: item.itemType === "charger" && item.voltage ? item.voltage : undefined,
         quantity: Number(item.quantity) || 1,
@@ -144,6 +153,9 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
                 .join(", ")}
             </p>
           )}
+          <p className="mt-2 text-xs text-amber-100">
+            {WARRANTY_SENT_BY_LABELS[normalizeWarrantyTrackingMode(claim.trackingMode)]}
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -267,9 +279,22 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
                   value={item.modelCode}
                   onChange={(e) => updateItem(item.key, "modelCode", e.target.value)}
                 />
+                {normalizeWarrantyTrackingMode(claim.trackingMode) === "batch" ? (
+                  <Input
+                    id={`batchNumber-${item.key}`}
+                    label={WARRANTY_IDENTIFIER_LABEL}
+                    placeholder={claim.batchNumber ?? "e.g. BAT-LOT-2026-08"}
+                    value={item.batchNumber}
+                    onChange={(e) => updateItem(item.key, "batchNumber", e.target.value)}
+                  />
+                ) : null}
                 <Input
                   id={`serialNumber-${item.key}`}
-                  label="Serial number"
+                  label={
+                    normalizeWarrantyTrackingMode(claim.trackingMode) === "batch"
+                      ? "Serial number if a unique unit came back"
+                      : "Serial number"
+                  }
                   value={item.serialNumber}
                   onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
                 />

@@ -19,14 +19,15 @@ import {
   type WarrantyRole,
 } from "@/lib/warranty-roles";
 import {
+  WARRANTY_IDENTIFIER_LABEL,
+  WARRANTY_SENT_BY_LABELS,
+} from "@/lib/warranty-tracking";
+import {
   WARRANTY_COMPANY_DELAY_DAYS,
   WARRANTY_CUSTOMER_WAITING_DAYS,
-  WARRANTY_EXCEPTION_KINDS,
-  WARRANTY_EXCEPTION_LABELS,
   WARRANTY_INSTALL_DELAY_DAYS,
   WARRANTY_STAGE_LABELS,
   warrantyRoleHasQueue,
-  type WarrantyExceptionKind,
 } from "@/lib/warranty-workflow";
 
 type Step = {
@@ -53,6 +54,7 @@ const STEPS: Step[] = [
     boardStage: WARRANTY_STAGE_LABELS.ready_to_dispatch,
     points: [
       "Open a new warranty claim. Choose the bike and the part: battery, charger, motor or controller.",
+      "Choose how the part will be sent: serial number or batch number. That choice is how we track it after it leaves.",
       "Type the complaint date. The portal itself shows if the warranty is still live.",
       "Save. The case gets its own number. Give that number to the customer.",
     ],
@@ -63,8 +65,8 @@ const STEPS: Step[] = [
     boardStage: WARRANTY_STAGE_LABELS.ready_to_dispatch,
     points: [
       "Take the part off the bike.",
-      "Read the serial number from the part itself and check it is the same in the portal.",
-      "Take one clear photo of the serial number.",
+      `Read the ${WARRANTY_IDENTIFIER_LABEL.toLowerCase()} from the part or the lot label and check it is the same in the portal.`,
+      "Take one clear photo of that identifier.",
     ],
   },
   {
@@ -72,7 +74,7 @@ const STEPS: Step[] = [
     owner: "dispatch",
     boardStage: WARRANTY_STAGE_LABELS.with_company,
     points: [
-      "Make the delivery challan. Write one line for each part with its serial number.",
+      `Make the delivery challan. Write one line for each part with the ${WARRANTY_IDENTIFIER_LABEL.toLowerCase()} it is sent by.`,
       "In the claim, choose the plant and save the challan number and the send date.",
       "Keep the courier receipt and attach it to the claim.",
     ],
@@ -93,7 +95,7 @@ const STEPS: Step[] = [
     boardStage: WARRANTY_STAGE_LABELS.awaiting_allocation,
     points: [
       "Open the box with the challan in hand. Count the parts.",
-      "Write the serial number of the part that came back. It may be the same part repaired, or a different part.",
+      "Match the part to the batch or serial it was sent under. If a unique serial comes back on a batch-sent part, add it. Do not erase the batch.",
       "Collect the credit note and the company bill. Attach both. Do not wait for them later.",
     ],
   },
@@ -131,41 +133,6 @@ const ROLE_JOBS: Record<WarrantyRole, string> = {
   accounts: "Collects the credit note, the company bill and the challan copies.",
   support: "Tells the customer where the case has reached.",
   auditor: "Only reads. Checks that nothing is missing.",
-};
-
-const PROBLEM_HELP: Record<WarrantyExceptionKind, { means: string; doThis: string }> = {
-  company_delay: {
-    means: `The plant has kept the part more than ${WARRANTY_COMPANY_DELAY_DAYS} days.`,
-    doThis: "Call the plant today. Write their answer in the claim. Tell your manager.",
-  },
-  customer_waiting: {
-    means: `The customer has waited more than ${WARRANTY_CUSTOMER_WAITING_DAYS} days.`,
-    doThis: "Call the customer and give a clear date. Ask if a ready part can be given now.",
-  },
-  replacement_unavailable: {
-    means: "No matching part is free in the store.",
-    doThis: "Do not promise a date. Tell the manager so a part is arranged. Keep the case open.",
-  },
-  serial_missing: {
-    means: "The claim has no serial number for the faulty part.",
-    doThis: "Go to the part, read the serial number and add it with a photo. Never guess it.",
-  },
-  duplicate_serial: {
-    means: "The same serial number is open on two claims. One of them is wrong.",
-    doThis: "Tell the manager. Cancel the wrong claim with a reason. Do not delete it.",
-  },
-  credit_note_missing: {
-    means: "The part came back but no credit note or company bill is saved.",
-    doThis: "Ask the company for the paper and attach it to the claim the same week.",
-  },
-  allocated_not_installed: {
-    means: `A part is kept for a customer for more than ${WARRANTY_INSTALL_DELAY_DAYS} days and is still not fitted.`,
-    doThis: "Call the customer to bring the bike, or fit it today. Do not give that part to anyone else.",
-  },
-  stock_without_claim: {
-    means: "A part reached the store and no claim matches it.",
-    doThis: "Do not give it to any customer. Find the claim first, with the manager if needed.",
-  },
 };
 
 const DOCUMENTS: { when: string; papers: string }[] = [
@@ -367,8 +334,46 @@ export function WarrantyHandbookPrintClient() {
           for ever, and we could not claim from the company either.
         </p>
 
+        <SectionTitle number={5} title="Sent by serial or sent by batch" />
+        <p className="mb-3 text-sm">
+          Tracking follows how the part was sent on the challan. It is not a later guess.
+        </p>
+        <ul className="mb-8 list-disc space-y-2 pl-5 text-sm">
+          <li>
+            <span className="font-semibold text-white print:text-black">
+              {WARRANTY_SENT_BY_LABELS.serial}.
+            </span>{" "}
+            Follow-up, receiving, allocation and search use that serial. Do not later collapse it
+            into a batch.
+          </li>
+          <li>
+            <span className="font-semibold text-white print:text-black">
+              {WARRANTY_SENT_BY_LABELS.batch}.
+            </span>{" "}
+            Follow-up, receiving, allocation and search use that batch. A batch can cover more than
+            one piece. Keep the quantity.
+          </li>
+          <li>
+            Intake or the warranty manager chooses serial or batch when the claim is created or
+            sent. After dispatch, only the manager or owner may correct that choice, and only with a
+            reason. Dispatch, store and mechanic cannot change it.
+          </li>
+          <li>
+            If a batch-sent part comes back with a unique serial, add the serial as extra history.
+            Never delete the batch it was sent under.
+          </li>
+          <li>
+            One claim has one sent-as mode. Mixed is fine across claims: one battery by batch,
+            another by serial.
+          </li>
+          <li>
+            Staff type a {WARRANTY_IDENTIFIER_LABEL.toLowerCase()}. Receiving must not invent the
+            identifier that was not on the challan.
+          </li>
+        </ul>
+
         <div className="print:break-before-page">
-          <SectionTitle number={5} title="Papers to collect at each step" />
+          <SectionTitle number={6} title="Papers to collect at each step" />
           <p className="mb-3 text-sm">
             Attach the paper on the same day. A case with missing papers cannot be closed.
           </p>
@@ -389,7 +394,7 @@ export function WarrantyHandbookPrintClient() {
             </tbody>
           </table>
 
-          <SectionTitle number={6} title="Time limits" />
+          <SectionTitle number={7} title="Time limits" />
           <p className="mb-3 text-sm">
             The portal counts the days for you. When a limit is crossed, the case turns red on the
             board.
@@ -415,29 +420,6 @@ export function WarrantyHandbookPrintClient() {
         </div>
 
         <div className="print:break-before-page">
-          <SectionTitle number={7} title="Problem cases on the board" />
-          <p className="mb-3 text-sm">
-            Normal cases move on their own. Only these need a person to decide something.
-          </p>
-          <table className="mb-8 w-full text-left text-sm">
-            <thead>
-              <tr>
-                <Th>What the board says</Th>
-                <Th>What it means</Th>
-                <Th>What to do</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {WARRANTY_EXCEPTION_KINDS.map((kind) => (
-                <tr key={kind} className="print:break-inside-avoid">
-                  <Td>{WARRANTY_EXCEPTION_LABELS[kind]}</Td>
-                  <Td>{PROBLEM_HELP[kind].means}</Td>
-                  <Td>{PROBLEM_HELP[kind].doThis}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
           <SectionTitle number={8} title="Nothing is ever deleted" />
           <ul className="mb-8 list-disc space-y-1 pl-5 text-sm">
             <li>A wrong claim is cancelled with a reason. It stays visible.</li>
