@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import {
+  BATTERY_CHEMISTRY_OPTIONS,
+  DEFAULT_BATTERY_CHEMISTRY,
   REPLACEMENT_ITEM_TYPE_OPTIONS,
   REPLACEMENT_STATUS_OPTIONS,
   REPLACEMENT_VOLTAGE_OPTIONS,
@@ -40,6 +42,7 @@ type ItemDraft = {
   ah: string;
   voltage: string;
   quantity: string;
+  batteryChemistry: string;
   notes: string;
 };
 
@@ -54,6 +57,7 @@ function createEmptyItem(side: "old" | "new", index: number): ItemDraft {
     ah: "",
     voltage: "",
     quantity: "1",
+    batteryChemistry: DEFAULT_BATTERY_CHEMISTRY,
     notes: "",
   };
 }
@@ -69,6 +73,7 @@ function itemToDraft(item: SerializedReplacementClaimItem, index: number): ItemD
     ah: item.ah != null ? String(item.ah) : "",
     voltage: item.voltage ?? "",
     quantity: String(item.quantity),
+    batteryChemistry: item.batteryChemistry ?? DEFAULT_BATTERY_CHEMISTRY,
     notes: item.notes ?? "",
   };
 }
@@ -160,6 +165,8 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
         batchNumber: usesWarrantyBatch(trackingMode)
           ? item.batchNumber.trim() || batchNumber.trim() || undefined
           : undefined,
+        batteryChemistry:
+          item.itemType === "battery" ? item.batteryChemistry || DEFAULT_BATTERY_CHEMISTRY : undefined,
         ah: item.itemType === "battery" && item.ah ? Number(item.ah) : undefined,
         voltage: item.itemType === "charger" && item.voltage ? item.voltage : undefined,
         quantity: Number(item.quantity) || 1,
@@ -258,15 +265,24 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             />
           ) : null}
           {item.itemType === "battery" && (
-            <Input
-              id={`ah-${item.key}`}
-              type="number"
-              step="0.1"
-              label="AH"
-              placeholder="e.g. 33.9"
-              value={item.ah}
-              onChange={(e) => updateItem(item.key, "ah", e.target.value)}
-            />
+            <>
+              <Select
+                id={`batteryChemistry-${item.key}`}
+                label="Battery"
+                value={item.batteryChemistry || DEFAULT_BATTERY_CHEMISTRY}
+                onChange={(e) => updateItem(item.key, "batteryChemistry", e.target.value)}
+                options={BATTERY_CHEMISTRY_OPTIONS}
+              />
+              <Input
+                id={`ah-${item.key}`}
+                type="number"
+                step="0.1"
+                label="AH"
+                placeholder="e.g. 33.9"
+                value={item.ah}
+                onChange={(e) => updateItem(item.key, "ah", e.target.value)}
+              />
+            </>
           )}
           {item.itemType === "charger" && (
             <Select

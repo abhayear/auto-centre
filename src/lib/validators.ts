@@ -2,6 +2,7 @@ import { z } from "zod";
 import { STAFF_ROLES } from "@/lib/admin-roles";
 import { TRAINING_AUDIENCES, TRAINING_KINDS } from "@/lib/training-access";
 import {
+  BATTERY_CHEMISTRIES,
   REPLACEMENT_ITEM_SIDES,
   REPLACEMENT_ITEM_TYPES,
   REPLACEMENT_STATUSES,
@@ -482,6 +483,7 @@ export const replacementClaimItemSchema = z.object({
   serialNumber: z.string().trim().optional().or(z.literal("")),
   trackingMode: z.enum(WARRANTY_TRACKING_MODES).optional(),
   batchNumber: z.string().trim().optional().or(z.literal("")),
+  batteryChemistry: z.enum(BATTERY_CHEMISTRIES).default("lead"),
   ah: z.coerce.number().positive().optional().nullable(),
   voltage: z.enum(REPLACEMENT_VOLTAGES).optional().nullable(),
   quantity: z.coerce.number().int().min(1).default(1),

@@ -495,13 +495,14 @@ model ReplacementClaimItem {
   modelCode    String?
   serialNumber String?
   trackingMode String           @default("serial")
-  batchNumber  String?
-  ah           Float?
-  voltage      String?
-  quantity     Int              @default(1)
-  notes        String?
-  sortOrder    Int              @default(0)
-  createdAt    DateTime         @default(now())
+  batchNumber        String?
+  batteryChemistry   String            @default("lead")
+  ah                 Float?
+  voltage            String?
+  quantity           Int               @default(1)
+  notes              String?
+  sortOrder          Int               @default(0)
+  createdAt          DateTime          @default(now())
 
   @@index([batchNumber])
 }
@@ -511,9 +512,10 @@ model ReplacementStockItem {
   itemType         String
   modelCode        String?
   serialNumber     String?
-  batchNumber      String?
-  ah               Float?
-  voltage          String?
+  batchNumber        String?
+  batteryChemistry   String            @default("lead")
+  ah                 Float?
+  voltage            String?
   result           String            @default("repaired")
   source           String
   sourceClaimId    String?

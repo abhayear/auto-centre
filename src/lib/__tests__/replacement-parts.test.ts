@@ -118,6 +118,9 @@ describe("replacement-parts validators", () => {
       ],
     });
     expect(claim.success).toBe(true);
+    if (claim.success) {
+      expect(claim.data.items[0].batteryChemistry).toBe("lead");
+    }
 
     const send = replacementSendToCompanySchema.safeParse({
       ids: ["claim-1"],
@@ -262,6 +265,26 @@ describe("replacement-parts validators", () => {
     });
     expect(missingSerial.success).toBe(false);
   });
+
+  it("accepts a lithium battery and defaults omitted chemistry to lead", () => {
+    const lithium = replacementClaimSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          batteryChemistry: "lithium",
+          serialNumber: "BAT-LI-1",
+          quantity: 1,
+        },
+      ],
+    });
+    expect(lithium.success).toBe(true);
+    if (lithium.success) {
+      expect(lithium.data.items[0].batteryChemistry).toBe("lithium");
+    }
+  });
 });
 
 describe("replacement-parts helpers", () => {
@@ -333,7 +356,10 @@ describe("replacement-parts helpers", () => {
   it("formats battery specs with AH and quantity", () => {
     expect(
       formatItemSpecs({ itemType: "battery", ah: 43, quantity: 2 }),
-    ).toBe("43 AH, Qty 2");
+    ).toBe("Lead, 43 AH, Qty 2");
+    expect(
+      formatItemSpecs({ itemType: "battery", batteryChemistry: "lithium", ah: 30, quantity: 1 }),
+    ).toBe("Lithium, 30 AH");
   });
 
   it("formats charger specs with voltage", () => {

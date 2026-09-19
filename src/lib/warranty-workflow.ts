@@ -91,6 +91,7 @@ export type WarrantyCaseItem = {
   serialNumber?: string | null;
   batchNumber?: string | null;
   trackingMode?: string | null;
+  batteryChemistry?: string | null;
   quantity?: number | null;
 };
 
@@ -189,6 +190,8 @@ export type WarrantyException = {
 
 export type WarrantyPendingFromCompany = {
   total: number;
+  leadBattery: number;
+  lithiumBattery: number;
 } & Record<ReplacementItemType, number>;
 
 export type WarrantyCounts = {
@@ -261,7 +264,15 @@ function asItemType(value: string): ReplacementItemType {
 }
 
 function emptyPendingFromCompany(): WarrantyPendingFromCompany {
-  return { battery: 0, charger: 0, motor: 0, controller: 0, total: 0 };
+  return {
+    battery: 0,
+    leadBattery: 0,
+    lithiumBattery: 0,
+    charger: 0,
+    motor: 0,
+    controller: 0,
+    total: 0,
+  };
 }
 
 /**
@@ -283,12 +294,27 @@ export function countPendingFromCompanyItems(claims: WarrantyCase[]): WarrantyPe
       controller: 0,
     };
     const newByType = { ...oldByType };
+    let oldLead = 0;
+    let newLead = 0;
+    let oldLithium = 0;
+    let newLithium = 0;
 
     for (const item of claim.items) {
       const type = asItemType(item.itemType);
       const qty = item.quantity && item.quantity > 0 ? item.quantity : 1;
       if (item.side === "old") oldByType[type] += qty;
       if (item.side === "new") newByType[type] += qty;
+      if (type === "battery") {
+        const lithium = item.batteryChemistry === "lithium";
+        if (item.side === "old") {
+          if (lithium) oldLithium += qty;
+          else oldLead += qty;
+        }
+        if (item.side === "new") {
+          if (lithium) newLithium += qty;
+          else newLead += qty;
+        }
+      }
     }
 
     for (const type of LETTER_ITEM_TYPE_ORDER) {
@@ -296,6 +322,8 @@ export function countPendingFromCompanyItems(claims: WarrantyCase[]): WarrantyPe
       totals[type] += pending;
       totals.total += pending;
     }
+    totals.leadBattery += Math.max(oldLead - newLead, 0);
+    totals.lithiumBattery += Math.max(oldLithium - newLithium, 0);
   }
 
   return totals;

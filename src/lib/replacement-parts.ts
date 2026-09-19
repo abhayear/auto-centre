@@ -15,6 +15,25 @@ export const REPLACEMENT_ITEM_TYPE_OPTIONS = REPLACEMENT_ITEM_TYPES.map((value) 
   label: REPLACEMENT_ITEM_TYPE_LABELS[value],
 }));
 
+export const BATTERY_CHEMISTRIES = ["lead", "lithium"] as const;
+export type BatteryChemistry = (typeof BATTERY_CHEMISTRIES)[number];
+
+export const DEFAULT_BATTERY_CHEMISTRY: BatteryChemistry = "lead";
+
+export const BATTERY_CHEMISTRY_LABELS: Record<BatteryChemistry, string> = {
+  lead: "Lead",
+  lithium: "Lithium",
+};
+
+export const BATTERY_CHEMISTRY_OPTIONS = BATTERY_CHEMISTRIES.map((value) => ({
+  value,
+  label: BATTERY_CHEMISTRY_LABELS[value],
+}));
+
+export function normalizeBatteryChemistry(value?: string | null): BatteryChemistry {
+  return value === "lithium" ? "lithium" : DEFAULT_BATTERY_CHEMISTRY;
+}
+
 /** Letter totals and sections: battery, charger, motor, controller */
 export const LETTER_ITEM_TYPE_ORDER = ["battery", "charger", "motor", "controller"] as const;
 
@@ -95,13 +114,17 @@ export function formatReplacementStatus(status: string | null | undefined): stri
 
 export function formatItemSpecs(item: {
   itemType: string;
+  batteryChemistry?: string | null;
   ah?: number | null;
   voltage?: string | null;
   quantity?: number | null;
 }): string {
   const parts: string[] = [];
-  if (item.itemType === "battery" && item.ah != null) {
-    parts.push(`${item.ah} AH`);
+  if (item.itemType === "battery") {
+    parts.push(BATTERY_CHEMISTRY_LABELS[normalizeBatteryChemistry(item.batteryChemistry)]);
+    if (item.ah != null) {
+      parts.push(`${item.ah} AH`);
+    }
   }
   if (item.itemType === "charger" && item.voltage) {
     parts.push(item.voltage);
@@ -120,6 +143,7 @@ export type SerializedReplacementClaimItem = {
   serialNumber: string | null;
   trackingMode: string;
   batchNumber: string | null;
+  batteryChemistry: BatteryChemistry;
   ah: number | null;
   voltage: ReplacementVoltage | null;
   quantity: number;
@@ -133,6 +157,7 @@ export type SerializedReplacementStockItem = {
   modelCode: string | null;
   serialNumber: string | null;
   batchNumber: string | null;
+  batteryChemistry: BatteryChemistry;
   ah: number | null;
   voltage: ReplacementVoltage | null;
   result: string;
@@ -324,6 +349,7 @@ export function serializeReplacementClaimItem(item: {
   serialNumber: string | null;
   trackingMode?: string | null;
   batchNumber?: string | null;
+  batteryChemistry?: string | null;
   ah: number | null;
   voltage: string | null;
   quantity: number;
@@ -338,6 +364,7 @@ export function serializeReplacementClaimItem(item: {
     serialNumber: item.serialNumber,
     trackingMode: normalizeWarrantyTrackingMode(item.trackingMode),
     batchNumber: item.batchNumber ?? null,
+    batteryChemistry: normalizeBatteryChemistry(item.batteryChemistry),
     ah: item.ah,
     voltage: normalizeVoltage(item.voltage),
     quantity: item.quantity,
@@ -352,6 +379,7 @@ export function serializeReplacementStockItem(item: {
   modelCode: string | null;
   serialNumber: string | null;
   batchNumber?: string | null;
+  batteryChemistry?: string | null;
   ah: number | null;
   voltage: string | null;
   result: string;
@@ -369,6 +397,7 @@ export function serializeReplacementStockItem(item: {
     modelCode: item.modelCode,
     serialNumber: item.serialNumber,
     batchNumber: item.batchNumber ?? null,
+    batteryChemistry: normalizeBatteryChemistry(item.batteryChemistry),
     ah: item.ah,
     voltage: normalizeVoltage(item.voltage),
     result: item.result,

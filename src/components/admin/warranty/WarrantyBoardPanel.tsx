@@ -22,7 +22,11 @@ import {
   normalizeWarrantyTrackingMode,
   type WarrantyTrackingMode,
 } from "@/lib/warranty-tracking";
-import { LETTER_ITEM_TYPE_ORDER, REPLACEMENT_ITEM_TYPE_LABELS } from "@/lib/replacement-parts";
+import {
+  BATTERY_CHEMISTRY_LABELS,
+  LETTER_ITEM_TYPE_ORDER,
+  REPLACEMENT_ITEM_TYPE_LABELS,
+} from "@/lib/replacement-parts";
 import {
   WARRANTY_EXCEPTION_ACTIONS,
   type WarrantyBoard,
@@ -218,7 +222,15 @@ function PendingFromCompany({ totals }: { totals: WarrantyPendingFromCompany }) 
           <p className="text-sm text-slate-400">All warranty items</p>
           <p className="mt-1 text-3xl font-semibold text-white">{totals.total}</p>
         </div>
-        {LETTER_ITEM_TYPE_ORDER.map((type) => (
+        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+          <p className="text-sm text-slate-400">{BATTERY_CHEMISTRY_LABELS.lead} battery</p>
+          <p className="mt-1 text-2xl font-semibold text-white">{totals.leadBattery}</p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+          <p className="text-sm text-slate-400">{BATTERY_CHEMISTRY_LABELS.lithium} battery</p>
+          <p className="mt-1 text-2xl font-semibold text-white">{totals.lithiumBattery}</p>
+        </div>
+        {LETTER_ITEM_TYPE_ORDER.filter((type) => type !== "battery").map((type) => (
           <div key={type} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
             <p className="text-sm text-slate-400">{REPLACEMENT_ITEM_TYPE_LABELS[type]}</p>
             <p className="mt-1 text-2xl font-semibold text-white">{totals[type]}</p>

@@ -66,6 +66,7 @@ async function getHandler(_request: Request) {
       serialNumber: item.serialNumber,
       batchNumber: item.batchNumber,
       trackingMode: item.trackingMode,
+      batteryChemistry: item.batteryChemistry,
       quantity: item.quantity,
     })),
   }));

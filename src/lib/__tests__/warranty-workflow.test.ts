@@ -345,6 +345,8 @@ describe("buildWarrantyBoard", () => {
     expect(board.counts.customerWaiting).toBe(1);
     expect(board.counts.exceptions).toBeGreaterThan(0);
     expect(board.pendingFromCompany.battery).toBe(1);
+    expect(board.pendingFromCompany.leadBattery).toBe(1);
+    expect(board.pendingFromCompany.lithiumBattery).toBe(0);
     expect(board.pendingFromCompany.charger).toBe(1);
     expect(board.pendingFromCompany.total).toBe(2);
     expect(board.counts.pendingFromCompanyItems).toBe(2);
@@ -373,8 +375,50 @@ describe("buildWarrantyBoard", () => {
       today,
     );
     expect(board.pendingFromCompany.battery).toBe(4);
+    expect(board.pendingFromCompany.leadBattery).toBe(4);
     expect(board.pendingFromCompany.charger).toBe(1);
     expect(board.pendingFromCompany.total).toBe(5);
+  });
+
+  it("splits lead and lithium batteries pending from the company", () => {
+    const board = buildWarrantyBoard(
+      "warranty_manager",
+      [
+        claim({
+          id: "lead",
+          status: "sent_to_company",
+          sentToCompanyDate: "2026-10-01",
+          items: [
+            {
+              itemType: "battery",
+              side: "old",
+              batteryChemistry: "lead",
+              serialNumber: "BAT-1",
+              quantity: 2,
+            },
+          ],
+        }),
+        claim({
+          id: "lithium",
+          status: "sent_to_company",
+          sentToCompanyDate: "2026-10-01",
+          items: [
+            {
+              itemType: "battery",
+              side: "old",
+              batteryChemistry: "lithium",
+              serialNumber: "BAT-LI-1",
+              quantity: 3,
+            },
+          ],
+        }),
+      ],
+      [],
+      today,
+    );
+    expect(board.pendingFromCompany.leadBattery).toBe(2);
+    expect(board.pendingFromCompany.lithiumBattery).toBe(3);
+    expect(board.pendingFromCompany.battery).toBe(5);
   });
 
   it("shows every queue and exception to a supervisor", () => {
