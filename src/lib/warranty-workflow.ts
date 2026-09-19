@@ -1,5 +1,9 @@
 import type { StaffRole } from "@/lib/admin-roles";
 import {
+  LETTER_ITEM_TYPE_ORDER,
+  type ReplacementItemType,
+} from "@/lib/replacement-parts";
+import {
   WARRANTY_ROLES,
   WARRANTY_ROLE_LABELS,
   canViewAllWarrantyCases,
@@ -183,11 +187,16 @@ export type WarrantyException = {
   detail: string;
 };
 
+export type WarrantyPendingFromCompany = {
+  total: number;
+} & Record<ReplacementItemType, number>;
+
 export type WarrantyCounts = {
   openClaims: number;
   readyToDispatch: number;
   withCompany: number;
   overdueWithCompany: number;
+  pendingFromCompanyItems: number;
   awaitingAllocation: number;
   awaitingInstallation: number;
   awaitingVerification: number;
@@ -233,6 +242,7 @@ export type WarrantyBoard = {
   role: WarrantyRole;
   seesAllCases: boolean;
   counts: WarrantyCounts;
+  pendingFromCompany: WarrantyPendingFromCompany;
   pipeline: WarrantyPipelineStage[];
   masterCounts?: WarrantyMasterCounts;
   myTasks: WarrantyTask[];
@@ -241,6 +251,55 @@ export type WarrantyBoard = {
 };
 
 const CLOSED_STATUSES = new Set(["closed", "cancelled"]);
+
+const PENDING_FROM_COMPANY_STATUSES = new Set(["sent_to_company", "received_from_company"]);
+
+function asItemType(value: string): ReplacementItemType {
+  return LETTER_ITEM_TYPE_ORDER.includes(value as ReplacementItemType)
+    ? (value as ReplacementItemType)
+    : "battery";
+}
+
+function emptyPendingFromCompany(): WarrantyPendingFromCompany {
+  return { battery: 0, charger: 0, motor: 0, controller: 0, total: 0 };
+}
+
+/**
+ * Pieces still at the plant/company: sent quantity minus quantity received back.
+ * A batch of 4 batteries counts as 4, not as one claim.
+ */
+export function countPendingFromCompanyItems(claims: WarrantyCase[]): WarrantyPendingFromCompany {
+  const totals = emptyPendingFromCompany();
+
+  for (const claim of claims) {
+    if (!PENDING_FROM_COMPANY_STATUSES.has(claim.status)) {
+      continue;
+    }
+
+    const oldByType: Record<ReplacementItemType, number> = {
+      battery: 0,
+      charger: 0,
+      motor: 0,
+      controller: 0,
+    };
+    const newByType = { ...oldByType };
+
+    for (const item of claim.items) {
+      const type = asItemType(item.itemType);
+      const qty = item.quantity && item.quantity > 0 ? item.quantity : 1;
+      if (item.side === "old") oldByType[type] += qty;
+      if (item.side === "new") newByType[type] += qty;
+    }
+
+    for (const type of LETTER_ITEM_TYPE_ORDER) {
+      const pending = Math.max(oldByType[type] - newByType[type], 0);
+      totals[type] += pending;
+      totals.total += pending;
+    }
+  }
+
+  return totals;
+}
 
 function parseDateOnly(value: string): Date {
   return new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
@@ -534,11 +593,14 @@ export function countWarrantyBoard(
 ): WarrantyCounts {
   const byStage = (stage: WarrantyStage) => tasks.filter((task) => task.stage === stage).length;
 
+  const pendingFromCompany = countPendingFromCompanyItems(claims);
+
   return {
     openClaims: claims.filter(isOpen).length,
     readyToDispatch: byStage("ready_to_dispatch"),
     withCompany: byStage("with_company") + byStage("company_overdue"),
     overdueWithCompany: byStage("company_overdue"),
+    pendingFromCompanyItems: pendingFromCompany.total,
     awaitingAllocation: byStage("awaiting_allocation"),
     awaitingInstallation: byStage("awaiting_installation"),
     awaitingVerification: byStage("awaiting_verification"),
@@ -597,6 +659,7 @@ export function buildWarrantyBoard(
     role,
     seesAllCases,
     counts: countWarrantyBoard(claims, tasks, exceptions, today),
+    pendingFromCompany: countPendingFromCompanyItems(claims),
     pipeline: buildWarrantyPipeline(claims, today),
     myTasks: warrantyTasksForRole(tasks, role),
     queues,

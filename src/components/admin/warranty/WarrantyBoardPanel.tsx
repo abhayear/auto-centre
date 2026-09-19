@@ -22,10 +22,12 @@ import {
   normalizeWarrantyTrackingMode,
   type WarrantyTrackingMode,
 } from "@/lib/warranty-tracking";
+import { LETTER_ITEM_TYPE_ORDER, REPLACEMENT_ITEM_TYPE_LABELS } from "@/lib/replacement-parts";
 import {
   WARRANTY_EXCEPTION_ACTIONS,
   type WarrantyBoard,
   type WarrantyException,
+  type WarrantyPendingFromCompany,
   type WarrantyPipelineStage,
   type WarrantyTask,
 } from "@/lib/warranty-workflow";
@@ -33,7 +35,8 @@ import {
 const TILES = [
   { key: "openClaims", label: "Open claims" },
   { key: "readyToDispatch", label: "Ready to dispatch" },
-  { key: "withCompany", label: "With company" },
+  { key: "withCompany", label: "Claims with company" },
+  { key: "pendingFromCompanyItems", label: "Items pending from company", alert: true },
   { key: "overdueWithCompany", label: "Overdue with company", alert: true },
   { key: "awaitingAllocation", label: "Waiting allocation" },
   { key: "awaitingInstallation", label: "Waiting installation / coding" },
@@ -121,6 +124,8 @@ export function WarrantyBoardPanel() {
 
           <Pipeline stages={board.pipeline} />
 
+          <PendingFromCompany totals={board.pendingFromCompany} />
+
           <section>
             <h2 className="mb-3 text-lg text-white">Warranty dashboard</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -194,6 +199,33 @@ function MasterTile({
       <p className="text-sm text-slate-400">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
     </div>
+  );
+}
+
+function PendingFromCompany({ totals }: { totals: WarrantyPendingFromCompany }) {
+  return (
+    <section>
+      <h2 className="mb-1 text-lg text-white">Pending from company</h2>
+      <p className="mb-3 text-sm text-slate-400">
+        Pieces sent and not yet received back. A batch of four batteries counts as four.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div
+          className={`rounded-xl border p-4 ${
+            totals.total > 0 ? "border-amber-900/60 bg-amber-950/20" : "border-slate-800 bg-slate-900/40"
+          }`}
+        >
+          <p className="text-sm text-slate-400">All warranty items</p>
+          <p className="mt-1 text-3xl font-semibold text-white">{totals.total}</p>
+        </div>
+        {LETTER_ITEM_TYPE_ORDER.map((type) => (
+          <div key={type} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+            <p className="text-sm text-slate-400">{REPLACEMENT_ITEM_TYPE_LABELS[type]}</p>
+            <p className="mt-1 text-2xl font-semibold text-white">{totals[type]}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

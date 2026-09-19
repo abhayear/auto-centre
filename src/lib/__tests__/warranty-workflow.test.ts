@@ -344,6 +344,37 @@ describe("buildWarrantyBoard", () => {
     expect(board.counts.awaitingAllocation).toBe(1);
     expect(board.counts.customerWaiting).toBe(1);
     expect(board.counts.exceptions).toBeGreaterThan(0);
+    expect(board.pendingFromCompany.battery).toBe(1);
+    expect(board.pendingFromCompany.charger).toBe(1);
+    expect(board.pendingFromCompany.total).toBe(2);
+    expect(board.counts.pendingFromCompanyItems).toBe(2);
+  });
+
+  it("counts pieces pending from the company, not just claims", () => {
+    const board = buildWarrantyBoard(
+      "warranty_manager",
+      [
+        claim({
+          id: "batch-4",
+          status: "sent_to_company",
+          sentToCompanyDate: "2026-10-01",
+          items: [{ itemType: "battery", side: "old", batchNumber: "BAT-LOT-1", quantity: 4 }],
+        }),
+        claim({
+          id: "partial",
+          status: "received_from_company",
+          items: [
+            { itemType: "charger", side: "old", serialNumber: "CHG-1", quantity: 2 },
+            { itemType: "charger", side: "new", serialNumber: "CHG-2", quantity: 1 },
+          ],
+        }),
+      ],
+      [],
+      today,
+    );
+    expect(board.pendingFromCompany.battery).toBe(4);
+    expect(board.pendingFromCompany.charger).toBe(1);
+    expect(board.pendingFromCompany.total).toBe(5);
   });
 
   it("shows every queue and exception to a supervisor", () => {
