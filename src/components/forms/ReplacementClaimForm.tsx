@@ -18,7 +18,6 @@ import {
 } from "@/lib/replacement-parts";
 import {
   canChangeWarrantyTrackingMode,
-  WARRANTY_IDENTIFIER_LABEL,
   initialWarrantyTrackingMode,
   normalizeWarrantyTrackingMode,
   type WarrantyTrackingMode,
@@ -104,6 +103,7 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
     ? canChangeWarrantyTrackingMode(warrantyRole, claim?.status ?? "received_from_customer")
     : { allowed: false, requiresReason: false };
   const modeLocked = isEdit && !modeChange.allowed;
+  const canPickMode = !isEdit || (canEditMode && !modeLocked);
 
   function addItem(side: "old" | "new") {
     setItems((current) => [...current, createEmptyItem(side, current.length)]);
@@ -144,7 +144,12 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
       companyDeliveryNote: formData.get("companyDeliveryNote") || undefined,
       notes: formData.get("notes") || undefined,
       trackingMode,
-      batchNumber: batchNumber || undefined,
+      batchNumber:
+        trackingMode === "batch"
+          ? items.find((item) => item.batchNumber.trim())?.batchNumber.trim() ||
+            batchNumber.trim() ||
+            undefined
+          : undefined,
       trackingChangeReason: trackingChangeReason || undefined,
       items: items.map((item, index) => ({
         itemType: item.itemType,
@@ -152,7 +157,10 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
         modelCode: item.modelCode || undefined,
         serialNumber: item.serialNumber || undefined,
         trackingMode,
-        batchNumber: item.batchNumber || batchNumber || undefined,
+        batchNumber:
+          trackingMode === "batch"
+            ? item.batchNumber.trim() || batchNumber.trim() || undefined
+            : undefined,
         ah: item.itemType === "battery" && item.ah ? Number(item.ah) : undefined,
         voltage: item.itemType === "charger" && item.voltage ? item.voltage : undefined,
         quantity: Number(item.quantity) || 1,
@@ -215,7 +223,8 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             id={`quantity-${item.key}`}
             type="number"
             min={1}
-            label="Quantity"
+            label={trackingMode === "batch" ? "How many pieces in this batch" : "Quantity"}
+            placeholder={trackingMode === "batch" ? "e.g. 4" : "1"}
             value={item.quantity}
             onChange={(e) => updateItem(item.key, "quantity", e.target.value)}
           />
@@ -229,28 +238,25 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
           {trackingMode === "batch" ? (
             <Input
               id={`batchNumber-${item.key}`}
-              label={WARRANTY_IDENTIFIER_LABEL}
+              label="Batch number"
               placeholder="e.g. BAT-LOT-2026-08"
               value={item.batchNumber}
-              onChange={(e) => updateItem(item.key, "batchNumber", e.target.value)}
+              onChange={(e) => {
+                updateItem(item.key, "batchNumber", e.target.value);
+                setBatchNumber(e.target.value);
+              }}
+              required
             />
           ) : (
             <Input
               id={`serialNumber-${item.key}`}
               label="Serial number"
+              placeholder="Scan or type the serial on this piece"
               value={item.serialNumber}
               onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
+              required
             />
           )}
-          {trackingMode === "batch" ? (
-            <Input
-              id={`serialNumber-${item.key}`}
-              label="Serial number (optional later)"
-              placeholder="Fill if a unique serial comes back"
-              value={item.serialNumber}
-              onChange={(e) => updateItem(item.key, "serialNumber", e.target.value)}
-            />
-          ) : null}
           {item.itemType === "battery" && (
             <Input
               id={`ah-${item.key}`}
@@ -351,21 +357,6 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
             label="Fault"
             defaultValue={claim?.fault ?? ""}
           />
-          <WarrantyTrackingModeField
-            value={trackingMode}
-            editable={canEditMode && !modeLocked}
-            onChange={setTrackingMode}
-          />
-          {trackingMode === "batch" ? (
-            <Input
-              id="batchNumber"
-              name="batchNumber"
-              label={WARRANTY_IDENTIFIER_LABEL}
-              placeholder="e.g. BAT-LOT-2026-08"
-              value={batchNumber}
-              onChange={(e) => setBatchNumber(e.target.value)}
-            />
-          ) : null}
           {modeChange.requiresReason && canEditMode ? (
             <Input
               id="trackingChangeReason"
@@ -426,12 +417,31 @@ export function ReplacementClaimForm({ claim, onSuccess, onCancel }: Replacement
         </div>
 
         <div className="space-y-3">
+          <WarrantyTrackingModeField
+            value={trackingMode}
+            editable={canPickMode}
+            onChange={(mode) => {
+              setTrackingMode(mode);
+              if (mode === "serial") setBatchNumber("");
+            }}
+          />
+          <p className="text-sm text-slate-400">
+            {trackingMode === "batch"
+              ? "Enter the batch number and how many pieces went in that lot — for example 4 batteries."
+              : "Enter the serial number printed on each piece. Add another row for each extra serial."}
+          </p>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white">Faulty items (old)</h3>
-            <Button type="button" variant="outline" size="sm" onClick={() => addItem("old")}>
-              <Plus className="h-4 w-4" />
-              Add faulty item
-            </Button>
+            <h3 className="text-sm font-semibold text-white">
+              {trackingMode === "batch"
+                ? "Faulty items sent as one batch"
+                : "Faulty items (one serial each)"}
+            </h3>
+            {trackingMode === "serial" ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => addItem("old")}>
+                <Plus className="h-4 w-4" />
+                Add another serial
+              </Button>
+            ) : null}
           </div>
           {oldItems.map(renderItemFields)}
         </div>
