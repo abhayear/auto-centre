@@ -54,7 +54,7 @@ const STEPS: Step[] = [
     boardStage: WARRANTY_STAGE_LABELS.ready_to_dispatch,
     points: [
       "Open a new warranty claim. Choose the bike and the part: battery, charger, motor or controller.",
-      "Choose how the part will be sent: serial number or batch number. That choice is how we track it after it leaves.",
+      "Choose how the part will be sent: serial number, batch number, or both. That choice is how we track it after it leaves.",
       "Type the complaint date. The portal itself shows if the warranty is still live.",
       "Save. The case gets its own number. Give that number to the customer.",
     ],
@@ -354,7 +354,7 @@ export function WarrantyHandbookPrintClient() {
             one piece. Keep the quantity.
           </li>
           <li>
-            Intake or the warranty manager chooses serial or batch when the claim is created or
+            Intake or the warranty manager chooses serial, batch, or both when the claim is created or
             sent. After dispatch, only the manager or owner may correct that choice, and only with a
             reason. Dispatch, store and mechanic cannot change it.
           </li>

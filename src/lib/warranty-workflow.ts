@@ -8,6 +8,7 @@ import {
 } from "@/lib/warranty-roles";
 import {
   normalizeWarrantyTrackingMode,
+  usesWarrantyBatch,
   warrantySentTrackingKey,
 } from "@/lib/warranty-tracking";
 
@@ -443,16 +444,17 @@ export function detectWarrantyExceptions(
       const serial = (item.serialNumber ?? "").trim().toUpperCase();
       const batch = (item.batchNumber ?? claim.batchNumber ?? "").trim().toUpperCase();
 
+      if (usesWarrantyBatch(mode) && batch) {
+        const bikeOrCustomer = (claim.bikeNumber ?? claim.bikeId ?? claim.customerName)
+          .trim()
+          .toUpperCase();
+        const key = `${batch}|${bikeOrCustomer}|${item.itemType}`;
+        const owners = batchOwners.get(key) ?? [];
+        owners.push(claim);
+        batchOwners.set(key, owners);
+      }
+
       if (mode === "batch") {
-        if (batch) {
-          const bikeOrCustomer = (claim.bikeNumber ?? claim.bikeId ?? claim.customerName)
-            .trim()
-            .toUpperCase();
-          const key = `${batch}|${bikeOrCustomer}|${item.itemType}`;
-          const owners = batchOwners.get(key) ?? [];
-          owners.push(claim);
-          batchOwners.set(key, owners);
-        }
         continue;
       }
 

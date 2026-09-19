@@ -1,3 +1,5 @@
+import { normalizeWarrantyTrackingMode } from "@/lib/warranty-tracking";
+
 export const REPLACEMENT_ITEM_TYPES = ["battery", "charger", "controller", "motor"] as const;
 export type ReplacementItemType = (typeof REPLACEMENT_ITEM_TYPES)[number];
 
@@ -334,7 +336,7 @@ export function serializeReplacementClaimItem(item: {
     side: normalizeItemSide(item.side),
     modelCode: item.modelCode,
     serialNumber: item.serialNumber,
-    trackingMode: item.trackingMode === "batch" ? "batch" : "serial",
+    trackingMode: normalizeWarrantyTrackingMode(item.trackingMode),
     batchNumber: item.batchNumber ?? null,
     ah: item.ah,
     voltage: normalizeVoltage(item.voltage),
@@ -471,7 +473,7 @@ export function serializeReplacementClaim(claim: {
     companyDeliveryNote: claim.companyDeliveryNote ?? null,
     returnedToCustomerDate: formatOptionalDate(claim.returnedToCustomerDate),
     notes: claim.notes,
-    trackingMode: claim.trackingMode === "batch" ? "batch" : "serial",
+    trackingMode: normalizeWarrantyTrackingMode(claim.trackingMode),
     batchNumber: claim.batchNumber ?? null,
     allocatedStockId: allocatedStock[0]?.id ?? null,
     items: claim.items

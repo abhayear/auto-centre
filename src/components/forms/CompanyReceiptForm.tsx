@@ -22,6 +22,7 @@ import {
   WARRANTY_IDENTIFIER_LABEL,
   WARRANTY_SENT_BY_LABELS,
   normalizeWarrantyTrackingMode,
+  usesWarrantyBatch,
 } from "@/lib/warranty-tracking";
 
 type ItemDraft = {
@@ -279,7 +280,7 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
                   value={item.modelCode}
                   onChange={(e) => updateItem(item.key, "modelCode", e.target.value)}
                 />
-                {normalizeWarrantyTrackingMode(claim.trackingMode) === "batch" ? (
+                {usesWarrantyBatch(claim.trackingMode) ? (
                   <Input
                     id={`batchNumber-${item.key}`}
                     label={WARRANTY_IDENTIFIER_LABEL}
@@ -291,7 +292,8 @@ export function CompanyReceiptForm({ claim, onSuccess, onCancel }: CompanyReceip
                 <Input
                   id={`serialNumber-${item.key}`}
                   label={
-                    normalizeWarrantyTrackingMode(claim.trackingMode) === "batch"
+                    usesWarrantyBatch(claim.trackingMode) &&
+                    normalizeWarrantyTrackingMode(claim.trackingMode) !== "both"
                       ? "Serial number if a unique unit came back"
                       : "Serial number"
                   }

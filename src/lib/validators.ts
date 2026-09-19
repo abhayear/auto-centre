@@ -527,6 +527,22 @@ function refineWarrantyTracking(
       });
     }
 
+    if (mode === "both" && !batch) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["items", index, "batchNumber"],
+        message: "Enter the batch number as well as the serial",
+      });
+    }
+
+    if (mode === "both" && !serial) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["items", index, "serialNumber"],
+        message: "Enter the serial number as well as the batch",
+      });
+    }
+
     if (requireSerial && mode === "serial" && !serial) {
       ctx.addIssue({
         code: "custom",

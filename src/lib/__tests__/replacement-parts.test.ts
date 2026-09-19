@@ -226,6 +226,42 @@ describe("replacement-parts validators", () => {
     });
     expect(present.success).toBe(true);
   });
+
+  it("accepts a claim sent with both a batch and a serial", () => {
+    const result = warrantyClaimSubmitSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "both",
+      batchNumber: "BAT-LOT-2026-08",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          trackingMode: "both",
+          batchNumber: "BAT-LOT-2026-08",
+          serialNumber: "BAT-8821",
+          quantity: 4,
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+
+    const missingSerial = warrantyClaimSubmitSchema.safeParse({
+      receivedDate: "2026-08-16",
+      customerName: "Rajesh Kumar",
+      trackingMode: "both",
+      items: [
+        {
+          itemType: "battery",
+          side: "old",
+          trackingMode: "both",
+          batchNumber: "BAT-LOT-2026-08",
+          quantity: 4,
+        },
+      ],
+    });
+    expect(missingSerial.success).toBe(false);
+  });
 });
 
 describe("replacement-parts helpers", () => {

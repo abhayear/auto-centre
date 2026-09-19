@@ -18,6 +18,7 @@ import {
   DEFAULT_WARRANTY_TRACKING_MODE,
   WARRANTY_IDENTIFIER_LABEL,
   WARRANTY_SENT_BY_LABELS,
+  WARRANTY_TRACKING_MODE_LABELS,
   normalizeWarrantyTrackingMode,
   type WarrantyTrackingMode,
 } from "@/lib/warranty-tracking";
@@ -388,7 +389,7 @@ function IntakeTrackingCard({
             href={`/admin/replacement-parts?tracking=${mode}`}
             className="text-blue-300 hover:underline"
           >
-            Open a new claim sent by {mode === "batch" ? "batch number" : "serial number"}
+            Open a new claim sent by {WARRANTY_TRACKING_MODE_LABELS[mode].toLowerCase()}
           </Link>
         </p>
       )}

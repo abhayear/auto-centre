@@ -14,9 +14,10 @@ import {
 describe("warranty tracking mode", () => {
   it("defaults existing claims to serial so current behaviour stays", () => {
     expect(DEFAULT_WARRANTY_TRACKING_MODE).toBe("serial");
-    expect(WARRANTY_TRACKING_MODES).toEqual(["serial", "batch"]);
+    expect(WARRANTY_TRACKING_MODES).toEqual(["serial", "batch", "both"]);
     expect(normalizeWarrantyTrackingMode(null)).toBe("serial");
     expect(normalizeWarrantyTrackingMode("batch")).toBe("batch");
+    expect(normalizeWarrantyTrackingMode("both")).toBe("both");
     expect(WARRANTY_IDENTIFIER_LABEL.toLowerCase()).toContain("serial or batch");
   });
 
@@ -42,6 +43,20 @@ describe("warranty tracking mode", () => {
         batchNumber: null,
       }),
     ).toBe(true);
+    expect(
+      hasWarrantyTrackingIdentifier({
+        trackingMode: "both",
+        serialNumber: "BAT-8821",
+        batchNumber: "BAT-LOT-2026-08",
+      }),
+    ).toBe(true);
+    expect(
+      hasWarrantyTrackingIdentifier({
+        trackingMode: "both",
+        serialNumber: "BAT-8821",
+        batchNumber: "",
+      }),
+    ).toBe(false);
   });
 
   it("locks the mode after dispatch unless a manager or owner gives a reason", () => {
@@ -77,6 +92,7 @@ describe("warranty tracking mode", () => {
   it("tracks the identifier the item was sent by, and never swaps it for the other one", () => {
     expect(WARRANTY_SENT_BY_LABELS.serial).toBe("Sent by serial — track this serial");
     expect(WARRANTY_SENT_BY_LABELS.batch).toBe("Sent by batch — track this batch");
+    expect(WARRANTY_SENT_BY_LABELS.both).toBe("Sent by serial and batch — track both");
 
     expect(
       warrantySentTrackingKey({
@@ -93,5 +109,13 @@ describe("warranty tracking mode", () => {
         batchNumber: "BAT-LOT-2026-08",
       }),
     ).toEqual({ mode: "batch", identifier: "BAT-LOT-2026-08" });
+
+    expect(
+      warrantySentTrackingKey({
+        trackingMode: "both",
+        serialNumber: "BAT-8821",
+        batchNumber: "BAT-LOT-2026-08",
+      }),
+    ).toEqual({ mode: "both", identifier: "BAT-LOT-2026-08 / BAT-8821" });
   });
 });

@@ -17,6 +17,11 @@ const CHOICES: { value: WarrantyTrackingMode; title: string; hint: string }[] = 
     title: "Batch number",
     hint: "Several pieces left together, e.g. 4 batteries from one lot. Enter the batch and the quantity.",
   },
+  {
+    value: "both",
+    title: "Serial and batch",
+    hint: "Enter the batch for the lot and a serial for each piece.",
+  },
 ];
 
 export function WarrantyTrackingModeField({
@@ -47,7 +52,7 @@ export function WarrantyTrackingModeField({
     <fieldset className="space-y-2 sm:col-span-2">
       <legend className="text-sm font-medium text-slate-300">How these items are sent</legend>
       <input type="hidden" id={id} name="trackingMode" value={mode} />
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         {CHOICES.map((choice) => {
           const selected = mode === choice.value;
           return (
